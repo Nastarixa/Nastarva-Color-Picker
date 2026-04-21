@@ -5,14 +5,24 @@ GetColorName(hexColor) {
 
     static colorMap := BuildColorMap()
 
-    if colorMap.Has(hexColor)
-        return FormatColorName(colorMap[hexColor])
+    ; =========================
+    ; 1. EXACT MATCH (priority)
+    ; =========================
+    if colorMap.Has(hexColor) {
+        return NormalizeColorName(colorMap[hexColor])
+    }
 
-    nearest := FindNearestColor(hexColor, colorMap)
-    if nearest != ""
-        return FormatColorName(nearest)
+    ; =========================
+    ; 2. SMART FALLBACK
+    ; =========================
+    smart := GetSmartColorName(hexColor)
+    if (smart != "")
+        return smart
 
-    return FormatColorName(GetFallbackColorName(hexColor))
+    ; =========================
+    ; 3. FINAL FALLBACK
+    ; =========================
+    return "Custom Color"
 }
 NormalizeHex(hex) {
     hex := RegExReplace(hex, "[^0-9A-Fa-f]")
@@ -23,119 +33,27 @@ NormalizeHex(hex) {
 
     return hex
 }
-
-FindNearestColor(hex, map) {
+NormalizeColorName(name) {
+    name := RegExReplace(name, "([a-z])([A-Z])", "$1 $2") ; RichBlack → Rich Black
+    name := RegExReplace(name, "\b([a-z])", "$U1")        ; force capitalization style
+    name := RegExReplace(name, "\s+", " ")
+    return Trim(name)
+}
+GetSmartColorName(hex) {
     rgb := HexToRGB(hex)
     if !IsObject(rgb)
         return ""
 
-    bestName := ""
-    bestDist := 999999
+    hsl := RGBtoHSL(rgb.r, rgb.g, rgb.b)
 
-    for key, name in map {
-        c := HexToRGB(key)
-        if !IsObject(c)
-            continue
+    tone := GetBrightnessName(hsl.l)
+    sat  := GetSaturationName(hsl.s)
+    hue  := GetHueName(hsl.h, hsl.s)
 
-        dist :=
-            (rgb.r - c.r) ** 2 +
-            (rgb.g - c.g) ** 2 +
-            (rgb.b - c.b) ** 2
-
-        if (dist < bestDist) {
-            bestDist := dist
-            bestName := name
-        }
-    }
-
-    return (bestDist < 8000) ? bestName : ""
+    return NormalizeColorName(tone " " sat " " hue)
 }
-
-GetFallbackColorName(hex) {
-    rgb := HexToRGB(hex)
-    if !IsObject(rgb)
-        return "Unknown"
-
-    hsl := RGBToHSL(rgb)
-
-    h := hsl.h
-    s := hsl.s
-    l := hsl.l
-
-    ; =========================
-    ; GRAYS (low saturation)
-    ; =========================
-    if (s < 10) {
-        if (l < 10)
-            return "Near Black"
-        if (l < 25)
-            return "Dark Gray"
-        if (l < 60)
-            return "Gray"
-        if (l < 85)
-            return "Light Gray"
-        return "Near White"
-    }
-
-    ; =========================
-    ; HUE → BASE COLOR
-    ; =========================
-    if (h < 15 || h >= 345)
-        base := "Red"
-    else if (h < 45)
-        base := "Orange"
-    else if (h < 65)
-        base := "Yellow"
-    else if (h < 150)
-        base := "Green"
-    else if (h < 200)
-        base := "Cyan"
-    else if (h < 260)
-        base := "Blue"
-    else if (h < 290)
-        base := "Purple"
-    else
-        base := "Pink"
-
-    ; =========================
-    ; LIGHTNESS PREFIX
-    ; =========================
-    if (l < 20)
-        tone := "Dark"
-    else if (l > 80)
-        tone := "Light"
-    else
-        tone := ""
-
-    ; =========================
-    ; SATURATION MODIFIER
-    ; =========================
-    if (s > 80)
-        vivid := "Vivid"
-    else if (s < 25)
-        vivid := "Muted"
-    else
-        vivid := ""
-
-    ; =========================
-    ; BUILD NAME
-    ; =========================
-    name := ""
-
-    if (tone != "")
-        name .= tone " "
-
-    if (vivid != "")
-        name .= vivid " "
-
-    name .= base
-
-    return name
-}
-RGBToHSL(rgb) {
-    r := rgb.r / 255
-    g := rgb.g / 255
-    b := rgb.b / 255
+RGBtoHSL(r, g, b) {
+    r /= 255, g /= 255, b /= 255
 
     max := Max(r, g, b)
     min := Min(r, g, b)
@@ -158,19 +76,51 @@ RGBToHSL(rgb) {
         h /= 6
     }
 
-    return {
-        h: Round(h * 360),
-        s: Round(s * 100),
-        l: Round(l * 100)
-    }
+    return { h: h * 360, s: s * 100, l: l * 100 }
 }
-FormatColorName(name) {
-    if InStr(name, " ")
-        return name
+GetBrightnessName(l) {
+    if (l < 20)
+        return "Dark"
+    if (l < 40)
+        return "Deep"
+    if (l < 65)
+        return ""          ; neutral
+    if (l < 85)
+        return "Light"
+    return "Bright"
+}
+GetSaturationName(s) {
+    if (s < 15)
+        return "Gray"
+    if (s < 35)
+        return "Muted"
+    if (s < 65)
+        return "Soft"
+    return "Vivid"
+}
+GetHueName(h, s) {
+    ; if very low saturation → grayscale
+    if (s < 10)
+        return "Gray"
 
-    name := RegExReplace(name, "([A-Z]+)([A-Z][a-z])", "$1 $2")
-    name := RegExReplace(name, "([a-z])([A-Z])", "$1 $2")
-    return name
+    if (h < 15)
+        return "Red"
+    if (h < 45)
+        return "Orange"
+    if (h < 65)
+        return "Yellow"
+    if (h < 150)
+        return "Green"
+    if (h < 210)
+        return "Cyan"
+    if (h < 260)
+        return "Blue"
+    if (h < 290)
+        return "Purple"
+    if (h < 330)
+        return "Magenta"
+
+    return "Red"
 }
 BuildColorMap() {
     static maps := Map()

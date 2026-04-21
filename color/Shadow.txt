@@ -1,0 +1,24 @@
+#META|version=3.0|historyMax=10|maxCols=3|guiMode=undocked
+#ROLEORDER|Base,Highlight,Shadow,Hi Shadow,2 Shadow
+#SECTION|Default
+#SECTION|Shadow
+8800FF|136,0,255|Vivid Purple|Base|0|0|Shadow|47344296-68-4152
+FF00A5|255,0,165|Vivid Magenta|Base|0|0|Shadow|47343921-67-1413
+9100FF|145,0,255|Vivid Purple|Base|0|0|Shadow|47343046-66-8838
+3AA0AC|58,160,172|Soft Cyan|Base|0|0|Shadow|47342734-65-8319
+FFEB00|255,235,0|Vivid Yellow|Base|0|0|Shadow|47341515-64-6277
+D7FF00|215,255,0|Vivid Green|Base|0|0|Shadow|47341265-63-3481
+E0FF00|224,255,0|Vivid Green|Base|0|0|Shadow|47340953-62-3453
+00FF5A|0,255,90|Vivid Green|Base|0|0|Shadow|47339203-61-4694
+00FF62|0,255,98|Vivid Green|Base|0|0|Shadow|47338906-60-6037
+002EFF|0,46,255|Vivid Blue|Base|0|0|Shadow|47338640-59-9326
+323338|50,51,56|Deep Gray Gray|Base|0|0|Default|47320437-53-4682
+3758FF|55,88,255|Vivid Blue|Base|0|0|Default|47320125-52-2339
+4E4E4E|78,78,78|Deep Gray Gray|Base|0|0|Default|47319781-51-2128
+05091C|5,9,28|Dark Vivid Blue|Base|0|0|Default|47319453-50-7822
+9EFF80|158,255,128|Light Vivid Green|Base|0|0|Default|47317968-49-3303
+7F7F7F|127,127,127|Gray Gray|Base|0|0|Default|47317343-48-4663
+565A64|86,90,100|Deep Gray Gray|Base|0|0|Default|47310375-47-9243
+390F99|57,15,153|Deep Vivid Blue|Base|0|0|Default|47310062-46-5862
+152449|21,36,73|Dark Soft Blue|Base|0|0|Default|47309781-45-3946
+FFFFFF|255,255,255|White|Base|0|0|Default|47309515-44-2633

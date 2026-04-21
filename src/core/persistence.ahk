@@ -43,6 +43,7 @@ CreatePalette(name, file) {
         selectedHex: "",
         highlightHex: "",
         highlightToken: 0,
+        selectedSection: "Default",
         sections: ["Default"],
         roleOrder: DefaultRoleOrder(),
         guiMode: "undocked",
@@ -51,15 +52,34 @@ CreatePalette(name, file) {
     }
 }
 
+NormalizeRoleOrderList(roleOrder) {
+    normalized := []
+    seen := Map()
+
+    for _, role in roleOrder {
+        clean := NormalizeRoleName(role)
+        if (clean = "" || seen.Has(clean))
+            continue
+        normalized.Push(clean)
+        seen[clean] := true
+    }
+
+    for _, role in DefaultRoleOrder() {
+        if !seen.Has(role)
+            normalized.Push(role)
+    }
+
+    return normalized
+}
+
 SwitchPalette(app, name) {
     if !app.palettes.Has(name)
         return
 
+    InitHistoryGui(app)
     app.activePalette := app.palettes[name]
     LoadHistory(app)
     app.ui.cols := app.activePalette.maxCols
-
-    InitHistoryGui(app)
 
     app.ui.generation++
     RebuildUI(app)
@@ -122,7 +142,7 @@ LoadHistory(app) {
         if (SubStr(line, 1, 10) = "#ROLEORDER") {
             roleOrderText := Trim(SubStr(line, 12))
             if (roleOrderText != "")
-                p.roleOrder := StrSplit(roleOrderText, ",")
+                p.roleOrder := NormalizeRoleOrderList(StrSplit(roleOrderText, ","))
             continue
         }
 
@@ -140,6 +160,9 @@ LoadHistory(app) {
 
         item := CreateItem(part[1], part[2], part[3], part[4])
         item.role := NormalizeRoleName(item.role)
+        item.name := Trim(item.name)
+        if (item.name = "")
+            item.name := GetColorName(item.hex)
         item.pinned := (part.Length >= 5 && part[5] = "1")
         item.pinOrder := (part.Length >= 6) ? Integer(part[6]) : 0
         item.section := (part.Length >= 7 && part[7] != "") ? part[7] : "Default"
@@ -155,9 +178,8 @@ LoadHistory(app) {
     }
 
     EnsureDefaultSection(p)
-
-    Emit(App, "history_changed")
-    RebuildUI(app)
+    GetSelectedSectionName(p)
+    p.roleOrder := NormalizeRoleOrderList(p.HasOwnProp("roleOrder") ? p.roleOrder : DefaultRoleOrder())
 }
 
 SaveHistory(app) {
@@ -174,14 +196,22 @@ SavePalette(p, version) {
 
     if !p.HasOwnProp("roleOrder")
         p.roleOrder := DefaultRoleOrder()
+    p.roleOrder := NormalizeRoleOrderList(p.roleOrder)
     f.WriteLine("#ROLEORDER|" JoinRoleOrder(p.roleOrder))
 
     EnsureDefaultSection(p)
     for section in p.sections
         f.WriteLine("#SECTION|" section)
 
-    for item in p.colors
+    for item in p.colors {
+        item.role := NormalizeRoleName(item.role)
+        item.name := Trim(item.name)
+        if (item.name = "")
+            item.name := GetColorName(item.hex)
+        if !item.HasOwnProp("section") || Trim(item.section) = ""
+            item.section := "Default"
         f.WriteLine(item.hex "|" item.rgb "|" item.name "|" item.role "|" item.pinned "|" item.pinOrder "|" item.section "|" item.id)
+    }
     f.Close()
 }
 
@@ -198,7 +228,7 @@ JoinRoleOrder(roleOrder) {
 }
 
 DefaultRoleOrder() {
-    return ["Base ⚫", "Highlight ✨", "Shadow ⬛", "Hi Shadow ♻️", "2 Shadow 💞"]
+    return ["Base", "Highlight", "Shadow", "Hi Shadow", "2 Shadow"]
 }
 
 GenerateItemId() {

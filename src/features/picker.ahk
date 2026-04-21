@@ -96,8 +96,10 @@ PickerTick(app) {
 
     hex := GetColorUnderCursor(app)
     static lastHex := ""
+    static lastTargetSection := ""
+    targetSection := GetSelectedSectionName(app.activePalette)
 
-    if (hex != lastHex) {
+    if (hex != lastHex || targetSection != lastTargetSection) {
         rgb := HexToRGB(hex)
         exists := app.activePalette.map.Has(hex)
 
@@ -118,6 +120,7 @@ PickerTick(app) {
 
         g.txt.Text := text
         lastHex := hex
+        lastTargetSection := targetSection
     }
 
     MouseGetPos(&X, &Y)
@@ -125,7 +128,7 @@ PickerTick(app) {
 
     hoverHistory := GetHoveredHistoryPanelRect(app, X, Y, &hx, &hy, &hw, &hh)
 
-    offsetX := 20
+    offsetX := 23
     offsetY := 30
 
     x := X + offsetX
@@ -173,10 +176,15 @@ SaveColor(app) {
         ShowToast(app, "➕ SAVED COLOR " (app.lastCopyType = "rgb" ? "RGB: " rgb : "HEX: #" hex ))
     }
 
+    targetSection := GetSelectedSectionName(palette)
     item := CreateItem(hex, rgb)
     item.isSaved := true
+    item.section := targetSection
 
-    Mutate(app, (p) => AddColor(p, item))
+    Mutate(app, (p) => (
+        AddSectionName(p, targetSection),
+        AddColor(p, item)
+    ))
     ApplyHighlight(app, hex)
     if app.historyVisible {
         Emit(app, "history_changed")

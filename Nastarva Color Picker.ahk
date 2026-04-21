@@ -26,12 +26,14 @@ InitPalettes(App)
 App.activePalette := App.palettes["Default"]
 LoadHistory(App)
 InitEvents(App)
+ShowHotkeyHelp(App)
 
 ; =========================================================
 ; HOTKEYS (MUST BE GLOBAL SCOPE IN AHK v2)
 ; =========================================================
 ^!p::TogglePicker(App)
 ^!o::ToggleHistory(App)
+^!u::StartPaletteScreenshotImport(App)
 
 ^!1::SwitchPaletteByIndex(App, 1)
 ^!2::SwitchPaletteByIndex(App, 2)
@@ -46,3 +48,4 @@ InitEvents(App)
 
 ~MButton::SaveColor(App)
 ~^MButton::SaveColor(App)
+

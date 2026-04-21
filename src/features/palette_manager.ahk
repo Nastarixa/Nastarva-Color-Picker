@@ -26,12 +26,9 @@ OpenPaletteManager(app) {
         return
     }
 
-    g := Gui("+AlwaysOnTop +Resize", "🎨 Palette Manager v" app.version)
+    g := Gui("+AlwaysOnTop +Resize", "🎨 Nastarva Palette Manager v" app.version)
     g.BackColor := "323338"
     g.SetFont("s10", "Consolas")
-
-    g.SetFont("s11 bold", "Consolas")
-    g.AddText("xm cFFFFFF", "🎨 Nastarva Palette Manager v" app.version)
 
     g.SetFont("s9 norm", "Consolas")
 
@@ -41,42 +38,51 @@ OpenPaletteManager(app) {
     g.list.OnEvent("Change", (*) => PaletteSwitchUI(app, g))
     g.list.OnEvent("DoubleClick", (*) => OpenPaletteFile(app, g))
 
+    g.AddButton("xm y+7 w157 h28", "⬆ Move Up")
+        .OnEvent("Click", (*) => MovePalette(app, g, -1))
+
+    g.AddButton("x+6 w157 h28", "⬇ Move Down")
+        .OnEvent("Click", (*) => MovePalette(app, g, 1))
+
     g.AddText("xm y+10 cAAAAAA", "⚙️ Settings")
 
-    g.AddText("xm y+5 cFFFFFF", "Per Section:")
-    g.inputMax := g.AddEdit("w60 Number x+5 yp-2")
+    g.AddText("xm y+5 cFFFFFF", "Color Section:")
+    g.inputMax := g.AddEdit("w30 Number x+5 yp-2")
 
-    g.AddText("x+15 yp+2 cFFFFFF", "Cols:")
-    g.inputCols := g.AddEdit("w60 Number x+5 yp-2")
+    g.AddText("x+10 yp+2 cFFFFFF", "Cols:")
+    g.inputCols := g.AddEdit("w30 Number x+5 yp-2")
 
-    g.AddText("x+15 yp+2 cFFFFFF", "GUI:")
-    g.inputGuiMode := g.AddDropDownList("w110 x+5 yp-2 Choose1", ["Undocked", "Docked"])
-
-    g.AddButton("x+15 yp w80 h25", "✅ Apply")
-        .OnEvent("Click", (*) => ApplyPaletteSettings(app))
+    g.AddButton("x+15 w105 h21", "🔒 Role Freeze")
+    .OnEvent("Click", (*) => TogglePaletteLockLayout(app))
 
     g.AddText("xm y+8 cFFFFFF", "Role order:")
     g.inputRoleOrder := g.AddEdit("w320 xm y+3")
+
+    g.AddText("xm y+15 cFFFFFF", "GUI:")
+    g.inputGuiMode := g.AddDropDownList("w110 x+5 yp-2 Choose1", ["Undocked", "Docked"])
+
+    g.AddButton("x+15  w80 h20", "✅ Apply")
+        .OnEvent("Click", (*) => ApplyPaletteSettings(app))
 
     g.AddText("xm y+15 cAAAAAA", "🛠 Actions")
 
     g.AddButton("xm w100 h28", "➕ New")
         .OnEvent("Click", (*) => CreatePaletteUI(app, g))
 
-    g.AddButton("x+10 w100 h28", "🗑 Delete")
+    g.AddButton("x+10 w100 h28", "✂ Snip")
+        .OnEvent("Click", (*) => StartPaletteScreenshotImport(app))
+
+    g.AddButton("x+10 w100 h28", "🧩 Import")
+        .OnEvent("Click", (*) => ImportPaletteImageUI(app))
+
+    g.AddButton("xm y+5 w100 h28", "🗑 Delete")
         .OnEvent("Click", (*) => DeletePaletteUI(app, g))
 
     g.AddButton("x+10 w100 h28", "📋 Duplicate")
         .OnEvent("Click", (*) => DuplicatePaletteUI(app, g))
 
-    g.AddButton("xm y+5 w100 h28", "✏ Rename")
+    g.AddButton("x+10 w100 h28", "✏ Rename")
         .OnEvent("Click", (*) => RenamePaletteUI(app, g))
-
-    g.AddButton("x+10 w100 h28", "⬆ Move Up")
-        .OnEvent("Click", (*) => MovePalette(app, g, -1))
-
-    g.AddButton("x+10 w100 h28", "⬇ Move Down")
-        .OnEvent("Click", (*) => MovePalette(app, g, 1))
 
     g.AddText("xm y+15 cAAAAAA", "📤 Export")
 
@@ -459,4 +465,173 @@ MovePalette(app, g, dir) {
     RefreshPaletteList(app, g)
     g.list.Value := newIndex
     SavePaletteList(app)
+}
+TogglePaletteLockLayout(app) {
+    p := app.activePalette
+
+    if !p.HasOwnProp("lockLayoutOrder")
+        p.lockLayoutOrder := false
+
+    p.lockLayoutOrder := !p.lockLayoutOrder
+
+    ShowToast(app, p.lockLayoutOrder
+        ? "🔒 Layout order FROZEN"
+        : "🔓 Layout order UNLOCKED")
+
+    RefreshHistoryUI(app)
+    Layout(app)
+}
+ImportPaletteImageUI(app) {
+    path := FileSelect(1, , "Import Character Sheet Palette", "Images (*.png; *.jpg; *.jpeg; *.bmp)")
+    if (path = "")
+        return
+
+    result := MsgBox(
+        "Replace current palette '" app.activePalette.name "' with colors detected from this image?`n`nBest result: use a screenshot cropped around the swatch area.",
+        "Import Palette Image",
+        "YesNo Icon?"
+    )
+    if (result != "Yes")
+        return
+
+    ImportPaletteImage(app, path)
+}
+
+ImportPaletteImage(app, imagePath) {
+    outPath := A_Temp "\nastarva_palette_import.txt"
+    scriptPath := A_Temp "\nastarva_palette_import.ps1"
+
+    if FileExist(outPath)
+        FileDelete(outPath)
+    if FileExist(scriptPath)
+        FileDelete(scriptPath)
+
+    FileAppend(GetPaletteImageImportScript(), scriptPath, "UTF-8")
+
+    cmd := Format(
+        'powershell -NoProfile -ExecutionPolicy Bypass -File "{}" "{}" "{}"',
+        scriptPath,
+        imagePath,
+        outPath
+    )
+
+    RunWait(cmd, , "Hide")
+
+    if !FileExist(outPath) {
+        MsgBox "Image import failed."
+        return
+    }
+
+    imported := FileRead(outPath, "UTF-8")
+    if (Trim(imported) = "") {
+        MsgBox "No palette blocks were detected from that image."
+        return
+    }
+
+    if FileExist(app.activePalette.file)
+        FileDelete(app.activePalette.file)
+    FileAppend(imported, app.activePalette.file, "UTF-8")
+    LoadHistory(app)
+    InitHistoryGui(app)
+    app.ui.generation++
+    RebuildUI(app)
+    SetSelectedSection(app, GetFirstNonDefaultSectionName(app.activePalette), true)
+    SaveHistory(app)
+    ShowToast(app, "Imported palette from image")
+}
+
+GetPaletteImageImportScript() {
+    return FileRead(A_ScriptDir "\src\features\palette_image_import.ps1")
+}
+
+StartPaletteScreenshotImport(app) {
+    if app.screenshotCapture.active {
+        ShowToast(app, "Screenshot capture already running")
+        return
+    }
+
+    if !IsObject(app.screenshotPollFn)
+        app.screenshotPollFn := PollPaletteScreenshotImport.Bind(app)
+
+    app.screenshotCapture.savedClipboard := ClipboardAll()
+    app.screenshotCapture.active := true
+    app.screenshotCapture.deadline := A_TickCount + 120000
+    app.screenshotCapture.tempPath := A_Temp "\nastarva_palette_capture.png"
+
+    A_Clipboard := ""
+    ShowToast(app, "Snip the palette area, then release mouse")
+    Run("ms-screenclip:")
+    SetTimer(app.screenshotPollFn, 250)
+}
+
+PollPaletteScreenshotImport(app) {
+    if !app.screenshotCapture.active {
+        SetTimer(app.screenshotPollFn, 0)
+        return
+    }
+
+    if (A_TickCount > app.screenshotCapture.deadline) {
+        CancelPaletteScreenshotImport(app, "Screenshot import canceled")
+        return
+    }
+
+    if !ClipboardHasImage()
+        return
+
+    SetTimer(app.screenshotPollFn, 0)
+    tempPath := app.screenshotCapture.tempPath
+
+    if !SaveClipboardImageToFile(tempPath) {
+        CancelPaletteScreenshotImport(app, "Could not read screenshot from clipboard")
+        return
+    }
+
+    app.screenshotCapture.active := false
+    try A_Clipboard := app.screenshotCapture.savedClipboard
+    catch
+    app.screenshotCapture.savedClipboard := 0
+
+    ImportPaletteImage(app, tempPath)
+}
+
+CancelPaletteScreenshotImport(app, message := "") {
+    app.screenshotCapture.active := false
+    SetTimer(app.screenshotPollFn, 0)
+
+    try A_Clipboard := app.screenshotCapture.savedClipboard
+    catch
+    app.screenshotCapture.savedClipboard := 0
+
+    if (message != "")
+        ShowToast(app, message)
+}
+
+ClipboardHasImage() {
+    return DllCall("IsClipboardFormatAvailable", "UInt", 2)
+        || DllCall("IsClipboardFormatAvailable", "UInt", 8)
+        || DllCall("IsClipboardFormatAvailable", "UInt", 17)
+}
+
+SaveClipboardImageToFile(path) {
+    scriptPath := A_Temp "\nastarva_clipboard_image_save.ps1"
+
+    if FileExist(scriptPath)
+        FileDelete(scriptPath)
+    if FileExist(path)
+        FileDelete(path)
+
+    FileAppend(GetClipboardImageSaveScript(), scriptPath, "UTF-8")
+
+    cmd := Format(
+        'powershell -NoProfile -ExecutionPolicy Bypass -File "{}" "{}"',
+        scriptPath,
+        path
+    )
+
+    RunWait(cmd, , "Hide")
+    return FileExist(path)
+}
+
+GetClipboardImageSaveScript() {
+    return FileRead(A_ScriptDir "\src\features\clipboard_image_save.ps1")
 }

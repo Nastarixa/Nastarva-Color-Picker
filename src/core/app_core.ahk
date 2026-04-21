@@ -23,6 +23,8 @@ InitApp() {
         toastTick: 0,
         lastCopyType: "",
         pickerTickFn: 0,
+        screenshotPollFn: 0,
+        helpGui: 0,
 
         ui: {
             controls: Map(),
@@ -31,10 +33,12 @@ InitApp() {
             sectionPositions: Map(),
             panelDragHwnds: Map(),
             controlHexByHwnd: Map(),
+            lockLayoutOrder: false,
             drag: {
                 active: false,
                 hex: "",
-                targetHex: ""
+                targetHex: "",
+                targetSection: ""
             },
             panelMove: {
                 active: false,
@@ -43,11 +47,18 @@ InitApp() {
                 offsetY: 0
             },
             generation: 0,
-            itemW: 170,
+            itemW: 194,
             itemH: 30,
             gap: 4,
             cols: 10,
             rows: 3
+        },
+
+        screenshotCapture: {
+            active: false,
+            deadline: 0,
+            tempPath: "",
+            savedClipboard: 0
         },
 
         toast: {
@@ -57,7 +68,10 @@ InitApp() {
             curY: 0,
             endY: 0,
             x: 0,
-            step: 0
+            step: 0,
+            type: "normal",
+            dismissable: false,
+            hasShownHelp: false
         }
     }
 }

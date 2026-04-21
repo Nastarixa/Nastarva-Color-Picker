@@ -5,11 +5,12 @@
         if !HasHistoryPanels(app) {
             InitHistoryGui(app)
             RebuildUI(app)
+        } else {
+            PrepareSectionPanelsForRestore(app)
         }
 
         RefreshHistoryUI(app)
         Layout(app)
-        ShowHistoryPanels(app)
     } else {
         HideHistoryPanels(app)
     }
@@ -72,13 +73,15 @@ CreateCell(app, item) {
     w := app.ui.itemW
     h := app.ui.itemH
 
+    g.SetFont("s9", "Consolas")
+
     opt := "w" w " h" h " Background" safeHex " Border"
 
     try bg := g.AddText(opt)
     catch
         return
 
-    try txt := g.AddText("cFFFFFF w150 Center", item.hex)
+    try txt := g.AddText("cFFFFFF w180 Center", item.hex)
     catch {
         try bg.Destroy()
         return
@@ -183,8 +186,14 @@ RefreshHistoryUI(app) {
         token := GetItemToken(item)
         if app.ui.controls.Has(token) && app.ui.controls[token].section != itemSection {
             ctrl := app.ui.controls[token]
+            bgHwnd := SafeGetControlHwnd(ctrl.bg)
+            txtHwnd := SafeGetControlHwnd(ctrl.txt)
             try ctrl.bg.Destroy()
             try ctrl.txt.Destroy()
+            if bgHwnd && app.ui.controlHexByHwnd.Has(bgHwnd)
+                app.ui.controlHexByHwnd.Delete(bgHwnd)
+            if txtHwnd && app.ui.controlHexByHwnd.Has(txtHwnd)
+                app.ui.controlHexByHwnd.Delete(txtHwnd)
             app.ui.controls.Delete(token)
         }
 
@@ -201,7 +210,7 @@ RefreshHistoryUI(app) {
         text := FormatColorInfo(item, "compact")
 
         if item.pinned
-            text := "ðŸ“Œ " text
+            text := "📌 " text
 
         try ctrl.txt.Value := text
         catch {
@@ -297,7 +306,7 @@ Layout(app) {
         visibleSections[sectionName] := true
         ShowSectionPanel(app, g, sectionName, panelIndex, totalW, totalH, dockOffset)
         if IsPaletteDocked(app.activePalette)
-            dockOffset += totalH + 8
+            dockOffset += totalH + 15
     }
 
     RemoveEmptySectionPanels(app, visibleSections)
@@ -350,8 +359,21 @@ ShowHistoryPanels(app) {
     }
 }
 
+PrepareSectionPanelsForRestore(app) {
+    if !app.ui.HasOwnProp("sectionGuis")
+        return
+
+    for _, g in app.ui.sectionGuis {
+        if IsObject(g)
+            g.hasShown := false
+    }
+}
+
 SaveSectionPanelPositions(app) {
     if !app.ui.HasOwnProp("sectionGuis")
+        return
+
+    if IsPaletteDocked(app.activePalette)
         return
 
     if !app.ui.HasOwnProp("sectionPositions")
@@ -362,10 +384,17 @@ SaveSectionPanelPositions(app) {
         if hwnd && WinExist("ahk_id " hwnd) {
             try {
                 WinGetPos(&x, &y, &w, &h, "ahk_id " hwnd)
-                app.ui.sectionPositions[sectionName] := { x: x, y: y, w: w, h: h }
+                app.ui.sectionPositions[GetSectionPositionKey(app, sectionName)] := { x: x, y: y, w: w, h: h }
             }
         }
     }
+}
+
+GetSectionPositionKey(app, sectionName) {
+    paletteName := (app.activePalette && app.activePalette.HasOwnProp("name"))
+        ? app.activePalette.name
+        : ""
+    return paletteName "|" sectionName
 }
 
 GetOrCreateSectionGui(app, sectionName) {
@@ -384,10 +413,13 @@ GetOrCreateSectionGui(app, sectionName) {
     g.SetFont("s9", "Consolas")
 
     g.header := g.AddText("x0 y0 h" GetPanelHeaderHeight() " Background323338 cFFFFFF +E0x20", "  " title)
+    g.target := g.AddText("y0 h" GetPanelHeaderHeight() " w24 Center Background4A5A31 cFFFFFF", "○")
     g.menu := g.AddText("y0 h" GetPanelHeaderHeight() " w24 Center Background3B3D44 cFFFFFF", "...")
     g.close := g.AddText("y0 h" GetPanelHeaderHeight() " w24 Center Background4A4C52 cFFFFFF", "x")
+    g.target.OnEvent("Click", (*) => SetSelectedSection(app, sectionName))
     g.menu.OnEvent("Click", (*) => OpenSectionMenu(app, sectionName))
     g.close.OnEvent("Click", (*) => HideSectionPanel(app, sectionName))
+    g.hasShown := false
 
     app.ui.sectionGuis[sectionName] := g
     RegisterSectionPanelDrag(app, g)
@@ -411,8 +443,18 @@ ShowSectionPanel(app, g, sectionName, panelIndex, totalW, totalH, dockOffset := 
     if IsPaletteDocked(app.activePalette) {
         showX := L + 10
         showY := Max(T, B - totalH - 25 - dockOffset)
-    } else if app.ui.HasOwnProp("sectionPositions") && app.ui.sectionPositions.Has(sectionName) {
-        pos := app.ui.sectionPositions[sectionName]
+    } else if g.HasOwnProp("hasShown") && g.hasShown {
+        hwnd := SafeGetGuiHwnd(g)
+        if hwnd && WinExist("ahk_id " hwnd) {
+            WinGetPos(&showX, &showY,,, "ahk_id " hwnd)
+            showX := Max(L, Min(showX, R - totalW))
+            showY := Max(T, Min(showY, B - totalH))
+        } else {
+            showX := L + 10
+            showY := Max(T, B - totalH - 25)
+        }
+    } else if app.ui.HasOwnProp("sectionPositions") && app.ui.sectionPositions.Has(GetSectionPositionKey(app, sectionName)) {
+        pos := app.ui.sectionPositions[GetSectionPositionKey(app, sectionName)]
         showX := Max(L, Min(pos.x, R - totalW))
         showY := Max(T, Min(pos.y, B - totalH))
     } else {
@@ -423,10 +465,31 @@ ShowSectionPanel(app, g, sectionName, panelIndex, totalW, totalH, dockOffset := 
         showY := Max(T, B - totalH - 25 - row * (totalH + 34))
     }
 
-    try g.header.Move(0, 0, totalW - 48, headerH)
+    UpdateSectionPanelChrome(app, g, sectionName)
+    try g.header.Move(0, 0, totalW - 72, headerH)
+    try g.target.Move(totalW - 72, 0, 24, headerH)
     try g.menu.Move(totalW - 48, 0, 24, headerH)
     try g.close.Move(totalW - 24, 0, 24, headerH)
     try g.Show("NA x" showX " y" showY " w" totalW " h" totalH)
+    g.hasShown := true
+}
+
+UpdateSectionPanelChrome(app, g, sectionName) {
+    isTarget := GetSelectedSectionName(app.activePalette) = sectionName
+    isDragTarget := app.ui.drag.active && app.ui.drag.targetSection = sectionName
+    headerText := "  " sectionName
+
+    try g.header.Text := headerText
+    if isDragTarget {
+        try g.header.Opt("Background2A6A3A cFFFFFF")
+        try g.target.Text := "◎"
+        try g.target.Opt("Background4CA35F cFFFFFF")
+        return
+    }
+
+    try g.header.Opt((isTarget ? "Background6E5919 cFFFFFF" : "Background323338 cFFFFFF"))
+    try g.target.Text := isTarget ? "●" : "○"
+    try g.target.Opt(isTarget ? "Background8B7424 cFFFFFF" : "Background4A5A31 cFFFFFF")
 }
 
 IsPaletteDocked(p) {
@@ -438,6 +501,9 @@ GetPanelHeaderHeight() {
 }
 
 RegisterSectionPanelDrag(app, g) {
+    if IsPaletteDocked(app.activePalette)
+        return
+
     if !app.ui.HasOwnProp("panelDragHwnds")
         app.ui.panelDragHwnds := Map()
 
@@ -542,9 +608,11 @@ RenameSectionUI(app, sectionName, menuGui) {
         return
 
     if RenameSection(app, sectionName, newName) {
-        if app.ui.HasOwnProp("sectionPositions") && app.ui.sectionPositions.Has(sectionName) {
-            app.ui.sectionPositions[newName] := app.ui.sectionPositions[sectionName]
-            app.ui.sectionPositions.Delete(sectionName)
+        oldKey := GetSectionPositionKey(app, sectionName)
+        newKey := GetSectionPositionKey(app, newName)
+        if app.ui.HasOwnProp("sectionPositions") && app.ui.sectionPositions.Has(oldKey) {
+            app.ui.sectionPositions[newKey] := app.ui.sectionPositions[oldKey]
+            app.ui.sectionPositions.Delete(oldKey)
         }
     }
 }
@@ -567,8 +635,9 @@ DeleteSectionUI(app, sectionName, menuGui) {
         return
 
     if DeleteSection(app, sectionName) {
-        if app.ui.HasOwnProp("sectionPositions") && app.ui.sectionPositions.Has(sectionName)
-            app.ui.sectionPositions.Delete(sectionName)
+        key := GetSectionPositionKey(app, sectionName)
+        if app.ui.HasOwnProp("sectionPositions") && app.ui.sectionPositions.Has(key)
+            app.ui.sectionPositions.Delete(key)
     }
 }
 
@@ -680,7 +749,8 @@ BuildSectionGroups(app) {
     }
 
     for _, group in groups
-        SortSectionItems(app, group.items)
+        if !(app.activePalette.HasOwnProp("lockLayoutOrder") && app.activePalette.lockLayoutOrder)
+            SortSectionItems(app, group.items)
 
     return groups
 }
@@ -756,23 +826,20 @@ ShowToast(app, text, duration := 2000, speed := 0.8) {
     InitToast(app)
     g := app.toast.gui
 
-    hx := 0, hy := 0, hw := 0, hh := 0
-
     historyHwnd := SafeGetGuiHwnd(app.historyGui)
     if historyHwnd && WinExist("ahk_id " historyHwnd) {
         WinGetPos(&hx, &hy, &hw, &hh, historyHwnd)
+        mon := GetMonitorFromPoint(hx + 20, hy + 20)
     } else {
         MouseGetPos(&mx, &my)
         mon := GetMonitorFromPoint(mx, my)
-        MonitorGetWorkArea(mon, &L, &T, &R, &B)
-
-        hx := L
-        hy := B
     }
 
-    app.toast.x := hx + 10
-    app.toast.curY := hy - 50
-    app.toast.endY := hy - 85
+    MonitorGetWorkArea(mon, &L, &T, &R, &B)
+
+    app.toast.x := L + 12
+    app.toast.curY := T - 20
+    app.toast.endY := T + 20
     app.toast.step := speed
     app.toast.running := true
     app.toast.endTime := A_TickCount + duration
@@ -798,12 +865,8 @@ SlideTick(app) {
 
     g := app.toast.gui
 
-    app.toast.curY -= app.toast.step
-
-    if (app.toast.curY <= app.toast.endY) {
-        StopToast(app)
-        return
-    }
+    if (app.toast.curY < app.toast.endY)
+        app.toast.curY := Min(app.toast.curY + app.toast.step, app.toast.endY)
 
     g.Show("x" app.toast.x " y" app.toast.curY " NoActivate")
 }
@@ -974,8 +1037,11 @@ ConfirmMoveColor(app, token, g) {
     targetName := g.list.Text
     moved := MoveColorToPalette(app, token, targetName)
 
-    if moved
+    if moved {
         g.Destroy()
+        RefreshHistoryUI(app)
+        Layout(app)
+    }
 }
 
 OpenMoveSectionDialog(app, token) {
@@ -1035,6 +1101,9 @@ HistoryPanelHitTest(app, wParam, lParam, msg, hwnd) {
     if !app.historyVisible || !app.ui.HasOwnProp("sectionGuis")
         return
 
+    if IsPaletteDocked(app.activePalette)
+        return
+
     if !IsSectionPanelHwnd(app, hwnd)
         return
 
@@ -1046,7 +1115,7 @@ HistoryPanelHitTest(app, wParam, lParam, msg, hwnd) {
         return
 
     headerH := GetPanelHeaderHeight()
-    closeW := 48
+    closeW := 72
 
     if (y >= wy && y < wy + headerH && x >= wx && x < wx + ww - closeW)
         return 2
@@ -1095,6 +1164,7 @@ HistoryDragMouseDown(app, wParam, lParam, msg, hwnd) {
     app.ui.drag.active := true
     app.ui.drag.hex := token
     app.ui.drag.targetHex := ""
+    app.ui.drag.targetSection := GetItemSectionNameForState(item)
     SetCursor("SizeAll")
     RefreshHistoryUI(app)
 }
@@ -1113,15 +1183,23 @@ HistoryMouseMove(app, wParam, lParam, msg, hwnd) {
         return
 
     targetToken := GetHistoryTokenFromHwnd(app, hwnd)
+    targetSection := GetHistorySectionFromHwnd(app, hwnd)
     if (targetToken = app.ui.drag.hex)
         targetToken := ""
 
-    if (targetToken != app.ui.drag.targetHex) {
+    if (targetToken != "" && targetSection = "") {
+        item := GetItemByToken(app, targetToken)
+        if item
+            targetSection := GetItemSectionNameForState(item)
+    }
+
+    if (targetToken != app.ui.drag.targetHex || targetSection != app.ui.drag.targetSection) {
         app.ui.drag.targetHex := targetToken
+        app.ui.drag.targetSection := targetSection
         RefreshHistoryUI(app)
     }
 
-    SetCursor(targetToken = "" ? "SizeAll" : "Hand")
+    SetCursor((targetToken = "" && targetSection = "") ? "SizeAll" : "Hand")
 }
 
 HistoryDragMouseUp(app, wParam, lParam, msg, hwnd) {
@@ -1134,17 +1212,22 @@ HistoryDragMouseUp(app, wParam, lParam, msg, hwnd) {
         return
 
     sourceToken := app.ui.drag.hex
+    targetToken := app.ui.drag.targetHex
+    targetSection := app.ui.drag.targetSection
     app.ui.drag.active := false
     app.ui.drag.hex := ""
     app.ui.drag.targetHex := ""
+    app.ui.drag.targetSection := ""
     SetCursor("Arrow")
     RefreshHistoryUI(app)
 
-    targetToken := GetHistoryTokenFromHwnd(app, hwnd)
-    if (targetToken = "" || targetToken = sourceToken)
+    if (targetToken != "" && targetToken != sourceToken) {
+        ReorderPinnedColorToTarget(app, sourceToken, targetToken)
         return
+    }
 
-    ReorderPinnedColorToTarget(app, sourceToken, targetToken)
+    if (targetSection != "")
+        MovePinnedColorToSection(app, sourceToken, targetSection)
 }
 
 GetHistoryTokenFromHwnd(app, hwnd) {
@@ -1161,6 +1244,40 @@ GetHistoryTokenFromHwnd(app, hwnd) {
     return token
 }
 
+GetHistorySectionFromHwnd(app, hwnd) {
+    if !hwnd || !app.ui.HasOwnProp("sectionGuis")
+        return ""
+
+    for sectionName, g in app.ui.sectionGuis {
+        panelHwnd := SafeGetGuiHwnd(g)
+        if (panelHwnd = hwnd)
+            return sectionName
+
+        if SafeGetControlHwnd(g.header) = hwnd
+            return sectionName
+        if SafeGetControlHwnd(g.target) = hwnd
+            return sectionName
+        if SafeGetControlHwnd(g.menu) = hwnd
+            return sectionName
+        if SafeGetControlHwnd(g.close) = hwnd
+            return sectionName
+    }
+
+    try parent := DllCall("GetParent", "Ptr", hwnd, "Ptr")
+    catch
+        return ""
+
+    if !parent
+        return ""
+
+    for sectionName, g in app.ui.sectionGuis {
+        if (SafeGetGuiHwnd(g) = parent)
+            return sectionName
+    }
+
+    return ""
+}
+
 StartSectionPanelMove(app, panelHwnd) {
     if !panelHwnd || !WinExist("ahk_id " panelHwnd)
         return
@@ -1172,6 +1289,13 @@ StartSectionPanelMove(app, panelHwnd) {
     app.ui.panelMove.hwnd := panelHwnd
     app.ui.panelMove.offsetX := mx - wx
     app.ui.panelMove.offsetY := my - wy
+
+    for _, g in app.ui.sectionGuis {
+        if (SafeGetGuiHwnd(g) = panelHwnd) {
+            g.hasShown := true
+            break
+        }
+    }
 }
 
 SetCursor(name) {

@@ -809,10 +809,9 @@ OpenPaletteManager(app) {
     ; HEADER
     ; =========================
     g.SetFont("s11 bold", "Consolas")
-    g.AddText("xm cFFFFFF", "🎨 Nastarva Palette Manager")
+    g.AddText("xm cFFFFFF", "🎨 Nastarva Palette Manager v" app.version)
 
     g.SetFont("s9 norm", "Consolas")
-    g.AddText("xm c888888", "Version " app.version)
 
     ; =========================
     ; LIST
@@ -848,7 +847,13 @@ OpenPaletteManager(app) {
     g.AddButton("x+10 w100 h28", "🗑 Delete")
         .OnEvent("Click", (*) => DeletePaletteUI(app, g))
 
-    g.AddButton("xm y+5 w100 h28", "⬆ Move Up")
+    g.AddButton("x+10 w100 h28", "📋 Duplicate")
+        .OnEvent("Click", (*) => DuplicatePaletteUI(app, g))
+
+    g.AddButton("xm y+5 w100 h28", "✏ Rename")
+    .OnEvent("Click", (*) => RenamePaletteUI(app, g))
+
+    g.AddButton("x+10 w100 h28", "⬆ Move Up")
         .OnEvent("Click", (*) => MovePalette(app, g, -1))
 
     g.AddButton("x+10 w100 h28", "⬇ Move Down")
@@ -859,6 +864,7 @@ OpenPaletteManager(app) {
     ; =========================
     g.AddText("xm y+15 c666666", "💡 Click = Switch palette")
     g.AddText("xm c666666", "💡 Double Click = Open file location")
+    g.AddText("xm c666666", "💡 Ctrl + Double Click = Edit file")
 
     ; =========================
     ; INIT DATA
@@ -977,17 +983,25 @@ ApplyColsUI(app, g) {
 
     Emit(app, "history_changed")
 }
+GetActivePaletteName(app) {
+    return app.activePalette.name
+}
 RefreshPaletteList(app, g) {
     g.list.Delete()
 
+    active := app.activePalette.name
+
     for i, name in app.paletteOrder {
-        isActive := (app.activePalette.name = name)
+        isActive := (active = name)
 
         label := (isActive ? "🎯 " : "   ")
                . "[" i "] "
                . name
 
         g.list.Add([label])
+
+        if isActive
+            g.list.Value := i   ; 🔥 force selection sync
     }
 }
 PaletteSwitchUI(app, g) {
@@ -1026,27 +1040,107 @@ CreatePaletteUI(app, g) {
     SavePaletteList(app)
 }
 DeletePaletteUI(app, g) {
-    sel := g.list.Value
-    if !sel
-        return
-
-    name := app.paletteOrder[sel]
+    name := GetActivePaletteName(app)
 
     if (name = "Default") {
         MsgBox "Cannot delete Default palette"
         return
     }
 
-    file := A_ScriptDir "\color\" name ".txt"
+    file := app.palettes[name].file
     if FileExist(file)
         FileDelete(file)
 
     app.palettes.Delete(name)
-    app.paletteOrder.RemoveAt(sel)
 
-    if (app.activePalette.name = name) {
-        app.activePalette := app.palettes[app.paletteOrder[1]]
+    for i, n in app.paletteOrder {
+        if (n = name) {
+            app.paletteOrder.RemoveAt(i)
+            break
+        }
     }
+
+    ; fallback to first palette
+    app.activePalette := app.palettes[app.paletteOrder[1]]
+
+    RefreshPaletteList(app, g)
+    SavePaletteList(app)
+}
+DuplicatePaletteUI(app, g) {
+    srcName := GetActivePaletteName(app)
+
+    result := InputBox("Duplicate palette as:", "📋 Duplicate", "", srcName " Copy")
+    if (result.Result != "OK" || Trim(result.Value) = "")
+        return
+
+    newName := Trim(result.Value)
+
+    if app.palettes.Has(newName) {
+        MsgBox "Palette already exists!"
+        return
+    }
+
+    src := app.palettes[srcName]
+    newFile := A_ScriptDir "\color\" newName ".txt"
+
+    p := CreatePalette(newName, newFile)
+
+    for item in src.colors {
+        clone := CreateItem(item.hex, item.rgb, item.name, item.role)
+        clone.pinned := item.pinned
+        clone.isSaved := true
+
+        p.colors.Push(clone)
+        p.map[clone.hex] := clone
+    }
+
+    p.historyMax := src.historyMax
+    p.maxCols := src.maxCols
+
+    app.palettes[newName] := p
+    app.paletteOrder.Push(newName)
+
+    SaveHistory(app)
+    SavePaletteList(app)
+
+    RefreshPaletteList(app, g)
+}
+RenamePaletteUI(app, g) {
+    oldName := GetActivePaletteName(app)
+
+    result := InputBox("Rename palette:", "✏ Rename", "", oldName)
+    if (result.Result != "OK" || Trim(result.Value) = "")
+        return
+
+    newName := Trim(result.Value)
+
+    if app.palettes.Has(newName) {
+        MsgBox "Palette already exists!"
+        return
+    }
+
+    oldFile := app.palettes[oldName].file
+    newFile := A_ScriptDir "\color\" newName ".txt"
+
+    if FileExist(oldFile)
+        FileMove(oldFile, newFile, true)
+
+    p := app.palettes[oldName]
+    p.name := newName
+    p.file := newFile
+
+    app.palettes.Delete(oldName)
+    app.palettes[newName] := p
+
+    ; update order
+    for i, name in app.paletteOrder {
+        if (name = oldName) {
+            app.paletteOrder[i] := newName
+            break
+        }
+    }
+
+    app.activePalette := p
 
     RefreshPaletteList(app, g)
     SavePaletteList(app)

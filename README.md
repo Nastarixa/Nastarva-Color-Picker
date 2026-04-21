@@ -80,15 +80,6 @@ and role-based shading systems like:
 
 ## ⌨️ Main Hotkeys
 
-  Hotkey_______________Action<br />
-  ------------------- ------------------------<br />
-  Ctrl + Alt + P      Toggle color picker<br />
-  Ctrl + Alt + O      Toggle color palette<br />
-  Ctrl + Alt + I      Toggle palette manager<br />
-  Ctrl + Alt + U      Screenshot import<br />
-  Ctrl + Alt + 1--9   Switch palettes<br />
-
-  
   | Hotkey | Action |
   | -------- | -------- |
   | Ctrl + Alt + P | Toggle color picker |

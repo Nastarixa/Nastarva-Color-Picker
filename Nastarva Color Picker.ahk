@@ -89,10 +89,14 @@ InitApp() {
 }
 
 InitEvents(app) {
-    app.events["history_changed"] := [(*) => RefreshHistoryUI(app)]
+    app.events["history_changed"] := [(*) => SafeRefreshHistoryUI(app)]
 }
+SafeRefreshHistoryUI(app) {
+    if !app.historyVisible
+        return   ; 🔥 HARD BLOCK: never touch UI if hidden
 
-
+    RefreshHistoryUI(app)
+}
 Emit(app, name) {
     global _emitLock
 
@@ -100,6 +104,10 @@ Emit(app, name) {
         return
 
     if !app.events.Has(name)
+        return
+
+    ; 🔥 block history updates when hidden
+    if (name = "history_changed" && !app.historyVisible)
         return
 
     _emitLock := true
@@ -119,8 +127,14 @@ DebouncedRefresh(app) {
     pending := true
     SetTimer(() => (
         pending := false,
-        RefreshHistoryUI(app)
+        SafeHistoryRefresh(app)
     ), -50)
+}
+SafeHistoryRefresh(app) {
+    if !app.historyVisible
+        return  ; 🔥 DO NOTHING if UI is closed
+
+    RefreshHistoryUI(app)
 }
 ; =========================================================
 ; PIXEL CAPTURE
@@ -331,8 +345,11 @@ SaveColor(app) {
 
     Mutate(app, (p) => AddColor(p, item))
     ApplyHighlight(app, hex)
-    Emit(app, "history_changed")
-    Commit(app)
+    if app.historyVisible {
+        Emit(app, "history_changed")
+        DebouncedRefresh(app)
+    }
+    SaveHistory(app)
 }
 ; =========================================================
 ; HISTORY CORE
@@ -599,7 +616,11 @@ Layout(app) {
     mon := GetMonitorFromPoint(x, y)
     MonitorGetWorkArea(mon, &L, &T, &R, &B)
 
-    app.historyGui.Show("NA x" L " y" (B - totalH - 10) " w" totalW " h" totalH)
+    if !app.historyVisible
+        return
+
+    if app.historyVisible
+        app.historyGui.Show("NA x" L " y" (B - totalH - 10) " w" totalW " h" totalH)
 }
 ; =========================================================
 ; TOAST
@@ -626,11 +647,17 @@ ShowToast(app, text, duration := 2000, speed := 0.8) {
     InitToast(app)
     g := app.toast.gui
 
-    if !IsObject(app.historyGui)
-        return
+    hx := 0, hy := 0, hw := 0, hh := 0
 
     if IsObject(app.historyGui) && app.historyGui.Hwnd && WinExist("ahk_id " app.historyGui.Hwnd) {
         WinGetPos(&hx, &hy, &hw, &hh, app.historyGui.Hwnd)
+    } else {
+        MouseGetPos(&mx, &my)
+        mon := GetMonitorFromPoint(mx, my)
+        MonitorGetWorkArea(mon, &L, &T, &R, &B)
+
+        hx := L
+        hy := B
     }
 
     app.toast.x := hx + 10
@@ -695,7 +722,9 @@ HistoryClick(app, hex) {
 
     ShowToast(app, "✔ COPIED " (app.lastCopyType = "rgb" ? "RGB: " rgb : "HEX: #" hex ))
     ApplyHighlight(app, hex)
-    SetTimer(() => Emit(app, "history_changed"), -900)
+    SetTimer(() => (
+        app.historyVisible ? Emit(app, "history_changed") : ""
+    ), -900)
 }
 OpenRoleMenu(app, hex) {
     app.activePalette.selectedHex := hex
@@ -804,7 +833,7 @@ OpenPaletteManager(app) {
     }
 
     g := Gui("+AlwaysOnTop +Resize", "🎨 Palette Manager v" app.version)
-    g.BackColor := "1E1E1E"
+    g.BackColor := "323338"
     g.SetFont("s10", "Consolas")
 
     ; =========================

@@ -57,11 +57,12 @@ RebuildUI(app) {
 
 CreateCell(app, item) {
     sectionName := GetItemSectionName(item)
+    token := GetItemToken(item)
     g := GetOrCreateSectionGui(app, sectionName)
     if !IsObject(g) || !SafeGetGuiHwnd(g)
         return
 
-    if app.ui.controls.Has(item.hex)
+    if app.ui.controls.Has(token)
         return
 
     safeHex := RegExReplace(item.hex, "[^0-9A-Fa-f]")
@@ -84,6 +85,7 @@ CreateCell(app, item) {
     }
 
     try bg.hex := item.hex
+    try bg.token := token
     catch {
         try bg.Destroy()
         try txt.Destroy()
@@ -91,75 +93,76 @@ CreateCell(app, item) {
     }
 
     try txt.hex := item.hex
+    try txt.token := token
     catch {
         try bg.Destroy()
         try txt.Destroy()
         return
     }
 
-    try bg.OnEvent("Click", (*) => HistoryClick(app, item.hex))
+    try bg.OnEvent("Click", (*) => HistoryClick(app, token))
     catch {
         try bg.Destroy()
         try txt.Destroy()
         return
     }
 
-    try bg.OnEvent("ContextMenu", (*) => OpenRoleMenu(app, item.hex))
+    try bg.OnEvent("ContextMenu", (*) => OpenRoleMenu(app, token))
     catch {
         try bg.Destroy()
         try txt.Destroy()
         return
     }
 
-    try txt.OnEvent("Click", (*) => HistoryClick(app, item.hex))
+    try txt.OnEvent("Click", (*) => HistoryClick(app, token))
     catch {
         try bg.Destroy()
         try txt.Destroy()
         return
     }
 
-    try txt.OnEvent("ContextMenu", (*) => OpenRoleMenu(app, item.hex))
+    try txt.OnEvent("ContextMenu", (*) => OpenRoleMenu(app, token))
     catch {
         try bg.Destroy()
         try txt.Destroy()
         return
     }
 
-    app.ui.controls[item.hex] := { bg: bg, txt: txt, section: sectionName }
+    app.ui.controls[token] := { bg: bg, txt: txt, section: sectionName, hex: item.hex }
     bg.gen := app.ui.generation
     txt.gen := app.ui.generation
 
     bgHwnd := SafeGetControlHwnd(bg)
     txtHwnd := SafeGetControlHwnd(txt)
     if bgHwnd
-        app.ui.controlHexByHwnd[bgHwnd] := item.hex
+        app.ui.controlHexByHwnd[bgHwnd] := token
     if txtHwnd
-        app.ui.controlHexByHwnd[txtHwnd] := item.hex
+        app.ui.controlHexByHwnd[txtHwnd] := token
 }
 
 RefreshHistoryUI(app) {
     if !HasHistoryPanels(app)
         return
 
-    ApplyHighlight(app, app.activePalette.selectedHex)
+    ApplyHighlight(app, app.activePalette.highlightToken ? app.activePalette.highlightToken : app.activePalette.selectedHex)
 
     toDelete := []
 
-    for hex, ctrl in app.ui.controls {
+    for token, ctrl in app.ui.controls {
         if !SafeGetControlHwnd(ctrl.bg) || !SafeGetControlHwnd(ctrl.txt) {
-            toDelete.Push(hex)
+            toDelete.Push(token)
             continue
         }
 
         if (ctrl.txt.gen != app.ui.generation)
-            toDelete.Push(hex)
+            toDelete.Push(token)
     }
 
-    for _, hex in toDelete {
-        if !app.ui.controls.Has(hex)
+    for _, token in toDelete {
+        if !app.ui.controls.Has(token)
             continue
 
-        ctrl := app.ui.controls[hex]
+        ctrl := app.ui.controls[token]
 
         bgHwnd := SafeGetControlHwnd(ctrl.bg)
         txtHwnd := SafeGetControlHwnd(ctrl.txt)
@@ -172,16 +175,17 @@ RefreshHistoryUI(app) {
         if txtHwnd && app.ui.controlHexByHwnd.Has(txtHwnd)
             app.ui.controlHexByHwnd.Delete(txtHwnd)
 
-        app.ui.controls.Delete(hex)
+        app.ui.controls.Delete(token)
     }
 
     for _, item in app.activePalette.colors {
         itemSection := GetItemSectionName(item)
-        if app.ui.controls.Has(item.hex) && app.ui.controls[item.hex].section != itemSection {
-            ctrl := app.ui.controls[item.hex]
+        token := GetItemToken(item)
+        if app.ui.controls.Has(token) && app.ui.controls[token].section != itemSection {
+            ctrl := app.ui.controls[token]
             try ctrl.bg.Destroy()
             try ctrl.txt.Destroy()
-            app.ui.controls.Delete(item.hex)
+            app.ui.controls.Delete(token)
         }
 
         ctrl := GetOrCreateCtrl(app, item)
@@ -189,8 +193,8 @@ RefreshHistoryUI(app) {
             continue
 
         if !SafeGetControlHwnd(ctrl.bg) || !SafeGetControlHwnd(ctrl.txt) {
-            if app.ui.controls.Has(item.hex)
-                app.ui.controls.Delete(item.hex)
+            if app.ui.controls.Has(token)
+                app.ui.controls.Delete(token)
             continue
         }
 
@@ -201,16 +205,16 @@ RefreshHistoryUI(app) {
 
         try ctrl.txt.Value := text
         catch {
-            if app.ui.controls.Has(item.hex)
-                app.ui.controls.Delete(item.hex)
+            if app.ui.controls.Has(token)
+                app.ui.controls.Delete(token)
             continue
         }
 
-        isSelected := (item.hex = app.activePalette.highlightHex)
+        isSelected := (GetItemToken(item) = app.activePalette.highlightToken)
 
-        if app.ui.drag.active && item.hex = app.ui.drag.hex {
+        if app.ui.drag.active && token = app.ui.drag.hex {
             try ctrl.txt.Opt("Background00D7FF c000000")
-        } else if app.ui.drag.active && item.hex = app.ui.drag.targetHex {
+        } else if app.ui.drag.active && token = app.ui.drag.targetHex {
             try ctrl.txt.Opt("Background7CFF6B c000000")
         } else if isSelected {
             try ctrl.txt.Opt("BackgroundFFD700 c000000")
@@ -240,6 +244,7 @@ Layout(app) {
     totalW := cols * itemW + Max(0, cols - 1) * gap
     panelIndex := 0
     visibleSections := Map()
+    dockOffset := 0
 
     for _, group in sectionGroups {
         sectionName := group.name
@@ -252,13 +257,14 @@ Layout(app) {
         idx := 0
 
         for _, item in items {
-            if !app.ui.controls.Has(item.hex)
+            token := GetItemToken(item)
+            if !app.ui.controls.Has(token)
                 continue
 
-            ctrl := app.ui.controls[item.hex]
+            ctrl := app.ui.controls[token]
 
             if !SafeGetControlHwnd(ctrl.bg) || !SafeGetControlHwnd(ctrl.txt) {
-                app.ui.controls.Delete(item.hex)
+                app.ui.controls.Delete(token)
                 continue
             }
 
@@ -270,15 +276,15 @@ Layout(app) {
 
             try ctrl.bg.Move(x, y)
             catch {
-                if app.ui.controls.Has(item.hex)
-                    app.ui.controls.Delete(item.hex)
+                if app.ui.controls.Has(token)
+                    app.ui.controls.Delete(token)
                 continue
             }
 
             try ctrl.txt.Move(x + 10, y + 2)
             catch {
-                if app.ui.controls.Has(item.hex)
-                    app.ui.controls.Delete(item.hex)
+                if app.ui.controls.Has(token)
+                    app.ui.controls.Delete(token)
                 continue
             }
 
@@ -289,7 +295,9 @@ Layout(app) {
         totalH := headerH + Max(itemH + gap, usedRowsForSection * (itemH + gap))
         panelIndex++
         visibleSections[sectionName] := true
-        ShowSectionPanel(app, g, sectionName, panelIndex, totalW, totalH)
+        ShowSectionPanel(app, g, sectionName, panelIndex, totalW, totalH, dockOffset)
+        if IsPaletteDocked(app.activePalette)
+            dockOffset += totalH + 8
     }
 
     RemoveEmptySectionPanels(app, visibleSections)
@@ -389,7 +397,7 @@ GetOrCreateSectionGui(app, sectionName) {
     return g
 }
 
-ShowSectionPanel(app, g, sectionName, panelIndex, totalW, totalH) {
+ShowSectionPanel(app, g, sectionName, panelIndex, totalW, totalH, dockOffset := 0) {
     if !app.historyVisible || !SafeGetGuiHwnd(g)
         return
 
@@ -400,7 +408,10 @@ ShowSectionPanel(app, g, sectionName, panelIndex, totalW, totalH) {
     totalH := Min(totalH, B - T - 40)
     headerH := GetPanelHeaderHeight()
 
-    if app.ui.HasOwnProp("sectionPositions") && app.ui.sectionPositions.Has(sectionName) {
+    if IsPaletteDocked(app.activePalette) {
+        showX := L + 10
+        showY := Max(T, B - totalH - 25 - dockOffset)
+    } else if app.ui.HasOwnProp("sectionPositions") && app.ui.sectionPositions.Has(sectionName) {
         pos := app.ui.sectionPositions[sectionName]
         showX := Max(L, Min(pos.x, R - totalW))
         showY := Max(T, Min(pos.y, B - totalH))
@@ -416,6 +427,10 @@ ShowSectionPanel(app, g, sectionName, panelIndex, totalW, totalH) {
     try g.menu.Move(totalW - 48, 0, 24, headerH)
     try g.close.Move(totalW - 24, 0, 24, headerH)
     try g.Show("NA x" showX " y" showY " w" totalW " h" totalH)
+}
+
+IsPaletteDocked(p) {
+    return p.HasOwnProp("guiMode") && StrLower(p.guiMode) = "docked"
 }
 
 GetPanelHeaderHeight() {
@@ -464,9 +479,50 @@ OpenSectionMenu(app, sectionName) {
     deleteBtn := g.AddButton("xm y+4 w170 h26", "🗑 Delete Section")
     deleteBtn.OnEvent("Click", (*) => DeleteSectionUI(app, sectionName, g))
 
+    g.hideTick := (*) => AutoHideSectionMenu(app, g)
+    g.hideAfter := A_TickCount + 1200
+
     MouseGetPos(&x, &y)
-    g.Show("AutoSize x" (x + 8) " y" (y + 8) " NoActivate")
+    g.Show("AutoSize Hide")
+    g.GetPos(,, &w, &h)
+
+    mon := GetMonitorFromPoint(x, y)
+    MonitorGetWorkArea(mon, &L, &T, &R, &B)
+    xPos := Min(Max(L, x + 8), R - w)
+    yPos := Min(Max(T, y + 8), B - h)
+
+    g.Show("x" xPos " y" yPos " NoActivate")
     app.roleMenuGui := g
+    SetTimer(g.hideTick, 100)
+}
+
+AutoHideSectionMenu(app, g) {
+    if (app.roleMenuGui != g) {
+        try SetTimer(g.hideTick, 0)
+        return
+    }
+
+    hwnd := SafeGetGuiHwnd(g)
+    if !hwnd || !WinExist("ahk_id " hwnd) {
+        try SetTimer(g.hideTick, 0)
+        return
+    }
+
+    MouseGetPos(&mx, &my)
+    WinGetPos(&gx, &gy, &gw, &gh, "ahk_id " hwnd)
+
+    if (mx >= gx && mx <= gx + gw && my >= gy && my <= gy + gh) {
+        g.hideAfter := A_TickCount + 1200
+        return
+    }
+
+    if (A_TickCount < g.hideAfter)
+        return
+
+    try SetTimer(g.hideTick, 0)
+    try g.Hide()
+    if (app.roleMenuGui = g)
+        app.roleMenuGui := 0
 }
 
 RenameSectionUI(app, sectionName, menuGui) {
@@ -762,29 +818,41 @@ StopToast(app) {
         app.toast.gui.Hide()
 }
 
-HistoryClick(app, hex) {
-    Mutate(app, (p) => p.selectedHex := hex)
+HistoryClick(app, token) {
+    item := GetItemByToken(app, token)
+    if !item
+        return
+
+    Mutate(app, (p) => (
+        p.selectedHex := item.hex,
+        p.highlightToken := token
+    ))
     Commit(app)
 
-    rgb := GetRGBFromHex(hex)
+    rgb := GetRGBFromHex(item.hex)
 
     A_Clipboard := GetKeyState("Ctrl")
         ? rgb
-        : hex
+        : item.hex
 
     app.lastCopyType := GetKeyState("Ctrl") ? "rgb" : "hex"
 
-    ShowToast(app, "✔ COPIED " (app.lastCopyType = "rgb" ? "RGB: " rgb : "HEX: #" hex ))
-    ApplyHighlight(app, hex)
+    ShowToast(app, "✔ COPIED " (app.lastCopyType = "rgb" ? "RGB: " rgb : "HEX: #" item.hex ))
+    ApplyHighlight(app, token)
     SetTimer(() => (
         app.historyVisible ? Emit(app, "history_changed") : ""
     ), -900)
 }
 
-OpenRoleMenu(app, hex) {
-    app.activePalette.selectedHex := hex
+OpenRoleMenu(app, token) {
+    item := GetItemByToken(app, token)
+    if !item
+        return
 
-    ApplyHighlight(app, hex)
+    app.activePalette.selectedHex := item.hex
+    app.activePalette.highlightToken := token
+
+    ApplyHighlight(app, token)
     Emit(app, "history_changed")
 
     if app.historyVisible
@@ -799,30 +867,33 @@ OpenRoleMenu(app, hex) {
 
     g.AddText("cFFFFFF", "Set Role:")
 
-    roles := ["⚫ Base","✨ Highlight","⬛ Shadow","♻️ 2 Shadow","💞 Hi Shadow"]
+    roles := app.activePalette.HasOwnProp("roleOrder")
+        ? app.activePalette.roleOrder
+        : DefaultRoleOrder()
 
     for role in roles {
-        btn := g.AddButton("w160", role)
-        btn.OnEvent("Click", RoleClick.Bind(app, role, hex))
+        role := NormalizeRoleName(role)
+        btn := g.AddButton("w160", GetRoleButtonLabel(role))
+        btn.OnEvent("Click", RoleClick.Bind(app, role, token))
     }
 
     g.AddButton("w160", "📌 Pin/Unpin")
-        .OnEvent("Click", (*) => TogglePin(app, hex))
+        .OnEvent("Click", (*) => TogglePin(app, token))
 
     g.AddButton("w160", "◀📌 Move Pinned Left")
-        .OnEvent("Click", (*) => MovePinnedColorFromMenu(app, hex, -1))
+        .OnEvent("Click", (*) => MovePinnedColorFromMenu(app, token, -1))
 
     g.AddButton("w160", "📌▶ Move Pinned Right")
-        .OnEvent("Click", (*) => MovePinnedColorFromMenu(app, hex, 1))
+        .OnEvent("Click", (*) => MovePinnedColorFromMenu(app, token, 1))
 
     g.AddButton("w160", "🗑 Delete Color")
-        .OnEvent("Click", (*) => DeleteColorFromMenu(app, hex))
+        .OnEvent("Click", (*) => DeleteColorFromMenu(app, token))
 
     g.AddButton("w160", "📦 Move To Palette...")
-        .OnEvent("Click", (*) => OpenMoveColorDialog(app, hex))
+        .OnEvent("Click", (*) => OpenMoveColorDialog(app, token))
 
     g.AddButton("w160", "🧩 Move To Section...")
-        .OnEvent("Click", (*) => OpenMoveSectionDialog(app, hex))
+        .OnEvent("Click", (*) => OpenMoveSectionDialog(app, token))
 
 
     GetCursorPosForCapture(app, &x, &y)
@@ -845,25 +916,25 @@ OpenRoleMenu(app, hex) {
     ), -2500)
 }
 
-RoleClick(app, role, hex, *) {
-    ApplyRole(app, role, hex)
+RoleClick(app, role, token, *) {
+    ApplyRole(app, role, token)
 }
 
-MovePinnedColorFromMenu(app, hex, dir) {
+MovePinnedColorFromMenu(app, token, dir) {
     if SafeGetGuiHwnd(app.roleMenuGui)
         app.roleMenuGui.Hide()
 
-    MovePinnedColor(app, hex, dir)
+    MovePinnedColor(app, token, dir)
 }
 
-DeleteColorFromMenu(app, hex) {
+DeleteColorFromMenu(app, token) {
     if SafeGetGuiHwnd(app.roleMenuGui)
         app.roleMenuGui.Hide()
 
-    DeleteColor(app, hex)
+    DeleteColor(app, token)
 }
 
-OpenMoveColorDialog(app, hex) {
+OpenMoveColorDialog(app, token) {
     if SafeGetGuiHwnd(app.roleMenuGui)
         app.roleMenuGui.Hide()
 
@@ -878,57 +949,65 @@ OpenMoveColorDialog(app, hex) {
         return
     }
 
+    item := GetItemByToken(app, token)
+    if !item
+        return
+
     g := Gui("+AlwaysOnTop +ToolWindow", "Move Color")
     g.BackColor := "202020"
     g.SetFont("s10", "Consolas")
-    g.AddText("cFFFFFF", "Move #" hex " to:")
+    g.AddText("cFFFFFF", "Move #" item.hex " to:")
     g.list := g.AddListBox("w220 h120", names)
     g.list.Value := 1
 
     btn := g.AddButton("w220", "Move")
-    btn.OnEvent("Click", (*) => ConfirmMoveColor(app, hex, g))
+    btn.OnEvent("Click", (*) => ConfirmMoveColor(app, token, g))
 
     g.Show("AutoSize Center")
 }
 
-ConfirmMoveColor(app, hex, g) {
+ConfirmMoveColor(app, token, g) {
     sel := g.list.Value
     if !sel
         return
 
     targetName := g.list.Text
-    moved := MoveColorToPalette(app, hex, targetName)
+    moved := MoveColorToPalette(app, token, targetName)
 
     if moved
         g.Destroy()
 }
 
-OpenMoveSectionDialog(app, hex) {
+OpenMoveSectionDialog(app, token) {
     if SafeGetGuiHwnd(app.roleMenuGui)
         app.roleMenuGui.Hide()
 
     EnsureDefaultSection(app.activePalette)
 
+    item := GetItemByToken(app, token)
+    if !item
+        return
+
     g := Gui("+AlwaysOnTop +ToolWindow", "Move To Section")
     g.BackColor := "202020"
     g.SetFont("s10", "Consolas")
-    g.AddText("cFFFFFF", "Move #" hex " to section:")
+    g.AddText("cFFFFFF", "Move #" item.hex " to section:")
     g.list := g.AddListBox("w220 h140", app.activePalette.sections)
     g.list.Value := 1
 
     btn := g.AddButton("w220", "Move")
-    btn.OnEvent("Click", (*) => ConfirmMoveSection(app, hex, g))
+    btn.OnEvent("Click", (*) => ConfirmMoveSection(app, token, g))
 
     g.Show("AutoSize Center")
 }
 
-ConfirmMoveSection(app, hex, g) {
+ConfirmMoveSection(app, token, g) {
     sel := g.list.Value
     if !sel
         return
 
     sectionName := g.list.Text
-    moved := MoveColorToSection(app, hex, sectionName)
+    moved := MoveColorToSection(app, token, sectionName)
 
     if moved
         g.Destroy()
@@ -1005,16 +1084,16 @@ HistoryDragMouseDown(app, wParam, lParam, msg, hwnd) {
         return
     }
 
-    hex := GetHistoryHexFromHwnd(app, hwnd)
-    if (hex = "")
+    token := GetHistoryTokenFromHwnd(app, hwnd)
+    if (token = "")
         return
 
-    item := GetItemByHex(app, hex)
+    item := GetItemByToken(app, token)
     if !item || !item.pinned
         return
 
     app.ui.drag.active := true
-    app.ui.drag.hex := hex
+    app.ui.drag.hex := token
     app.ui.drag.targetHex := ""
     SetCursor("SizeAll")
     RefreshHistoryUI(app)
@@ -1033,16 +1112,16 @@ HistoryMouseMove(app, wParam, lParam, msg, hwnd) {
     if !app.ui.drag.active
         return
 
-    targetHex := GetHistoryHexFromHwnd(app, hwnd)
-    if (targetHex = app.ui.drag.hex)
-        targetHex := ""
+    targetToken := GetHistoryTokenFromHwnd(app, hwnd)
+    if (targetToken = app.ui.drag.hex)
+        targetToken := ""
 
-    if (targetHex != app.ui.drag.targetHex) {
-        app.ui.drag.targetHex := targetHex
+    if (targetToken != app.ui.drag.targetHex) {
+        app.ui.drag.targetHex := targetToken
         RefreshHistoryUI(app)
     }
 
-    SetCursor(targetHex = "" ? "SizeAll" : "Hand")
+    SetCursor(targetToken = "" ? "SizeAll" : "Hand")
 }
 
 HistoryDragMouseUp(app, wParam, lParam, msg, hwnd) {
@@ -1054,32 +1133,32 @@ HistoryDragMouseUp(app, wParam, lParam, msg, hwnd) {
     if !app.ui.drag.active
         return
 
-    sourceHex := app.ui.drag.hex
+    sourceToken := app.ui.drag.hex
     app.ui.drag.active := false
     app.ui.drag.hex := ""
     app.ui.drag.targetHex := ""
     SetCursor("Arrow")
     RefreshHistoryUI(app)
 
-    targetHex := GetHistoryHexFromHwnd(app, hwnd)
-    if (targetHex = "" || targetHex = sourceHex)
+    targetToken := GetHistoryTokenFromHwnd(app, hwnd)
+    if (targetToken = "" || targetToken = sourceToken)
         return
 
-    ReorderPinnedColorToTarget(app, sourceHex, targetHex)
+    ReorderPinnedColorToTarget(app, sourceToken, targetToken)
 }
 
-GetHistoryHexFromHwnd(app, hwnd) {
+GetHistoryTokenFromHwnd(app, hwnd) {
     if !hwnd
         return ""
 
     if !app.ui.controlHexByHwnd.Has(hwnd)
         return ""
 
-    hex := app.ui.controlHexByHwnd[hwnd]
-    if !app.activePalette.map.Has(hex)
+    token := app.ui.controlHexByHwnd[hwnd]
+    if !GetItemByToken(app, token)
         return ""
 
-    return hex
+    return token
 }
 
 StartSectionPanelMove(app, panelHwnd) {

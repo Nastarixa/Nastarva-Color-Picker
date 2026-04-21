@@ -1,4 +1,4 @@
-AddColor(p, item) {
+﻿AddColor(p, item) {
     if p.map.Has(item.hex)
         return
 
@@ -7,16 +7,44 @@ AddColor(p, item) {
     p.colors.InsertAt(1, item)
     p.map[item.hex] := item
 
-    if (p.colors.Length > p.historyMax) {
-        removed := p.colors.Pop()
-        if p.map.Has(removed.hex)
-            p.map.Delete(removed.hex)
-    }
+    TrimSectionToMax(p, GetItemSectionNameForState(item))
 }
 
 Mutate(app, fn) {
     fn(app.activePalette)
     Normalize(app.activePalette)
+}
+
+TrimSectionToMax(p, sectionName) {
+    limit := p.HasOwnProp("historyMax") ? p.historyMax : 20
+    if (limit < 1)
+        limit := 1
+
+    sectionName := (sectionName = "") ? "Default" : sectionName
+    sectionItems := []
+
+    for item in p.colors {
+        if GetItemSectionNameForState(item) = sectionName
+            sectionItems.Push(item)
+    }
+
+    while (sectionItems.Length > limit) {
+        removed := sectionItems.Pop()
+
+        Loop p.colors.Length {
+            idx := p.colors.Length - A_Index + 1
+            if (GetItemToken(p.colors[idx]) = GetItemToken(removed)) {
+                p.colors.RemoveAt(idx)
+                break
+            }
+        }
+    }
+}
+
+TrimAllSectionsToMax(p) {
+    EnsureDefaultSection(p)
+    for _, sectionName in p.sections
+        TrimSectionToMax(p, sectionName)
 }
 
 Commit(app) {
@@ -31,6 +59,8 @@ Normalize(p) {
     nextPinOrder := 1
 
     for item in p.colors {
+        if !item.HasOwnProp("id") || item.id = ""
+            item.id := GenerateItemId()
         if !item.HasOwnProp("pinOrder")
             item.pinOrder := 0
         if !item.HasOwnProp("section") || item.section = ""
@@ -54,10 +84,23 @@ Normalize(p) {
         p.colors.Push(item)
 
     p.map := Map()
-    for item in p.colors
-        p.map[item.hex] := item
+    p.idMap := Map()
+    for item in p.colors {
+        if !p.map.Has(item.hex)
+            p.map[item.hex] := item
+        p.idMap[item.id] := item
+    }
 
     EnsureDefaultSection(p)
+    TrimAllSectionsToMax(p)
+
+    p.map := Map()
+    p.idMap := Map()
+    for item in p.colors {
+        if !p.map.Has(item.hex)
+            p.map[item.hex] := item
+        p.idMap[item.id] := item
+    }
 }
 
 EnsureDefaultSection(p) {
@@ -126,18 +169,38 @@ NormalizeColorInput(val) {
 }
 
 GetOrCreateCtrl(app, item) {
-    if !app.ui.controls.Has(item.hex)
+    token := GetItemToken(item)
+    if !app.ui.controls.Has(token)
         CreateCell(app, item)
 
-    return app.ui.controls.Has(item.hex)
-        ? app.ui.controls[item.hex]
+    return app.ui.controls.Has(token)
+        ? app.ui.controls[token]
+        : 0
+}
+
+GetItemByToken(app, token) {
+    p := app.activePalette
+
+    if p.HasOwnProp("idMap") && p.idMap.Has(token)
+        return p.idMap[token]
+
+    return p.map.Has(token)
+        ? p.map[token]
         : 0
 }
 
 GetItemByHex(app, hex) {
-    return app.activePalette.map.Has(hex)
-        ? app.activePalette.map[hex]
-        : 0
+    return GetItemByToken(app, hex)
+}
+
+GetItemToken(item) {
+    return item.HasOwnProp("id") && item.id != ""
+        ? item.id
+        : item.hex
+}
+
+ItemMatchesToken(item, token) {
+    return GetItemToken(item) = token || item.hex = token
 }
 
 HasColor(colors, hex) {
@@ -147,27 +210,34 @@ HasColor(colors, hex) {
     return false
 }
 
-ApplyHighlight(app, hex) {
-    if (hex = "")
+ApplyHighlight(app, token) {
+    if (token = "")
         return
 
     p := app.activePalette
-
-    if (p.highlightHex = hex)
+    item := GetItemByToken(app, token)
+    if !item
         return
 
-    p.selectedHex := hex
-    p.highlightHex := hex
+    actualToken := GetItemToken(item)
+
+    if (p.highlightToken = actualToken)
+        return
+
+    p.selectedHex := item.hex
+    p.highlightHex := item.hex
+    p.highlightToken := actualToken
 }
 
-ApplyRole(app, role, hex) {
-    Mutate(app, (p) => ApplyRoleMutation(p, role, hex))
+ApplyRole(app, role, token) {
+    role := NormalizeRoleName(role)
+    Mutate(app, (p) => ApplyRoleMutation(p, role, token))
     Commit(app)
 }
 
-ApplyRoleMutation(p, role, hex) {
+ApplyRoleMutation(p, role, token) {
     for item in p.colors {
-        if (item.hex = hex) {
+        if ItemMatchesToken(item, token) {
             item.role := role
             break
         }
@@ -244,11 +314,11 @@ RenameSectionMutation(p, oldName, newName) {
 
 DuplicateSection(app, sourceName) {
     newName := GetSectionCopyName(app.activePalette, sourceName)
-    added := false
+    duplicated := false
 
-    Mutate(app, (p) => added := AddSectionName(p, newName))
+    Mutate(app, (p) => duplicated := DuplicateSectionMutation(p, sourceName, newName))
 
-    if !added {
+    if !duplicated {
         ShowToast(app, "Could not duplicate section")
         return false
     }
@@ -259,7 +329,41 @@ DuplicateSection(app, sourceName) {
         DebouncedRefresh(app)
     }
 
-    ShowToast(app, "Created section: " newName)
+    ShowToast(app, "Duplicated section: " newName)
+    return true
+}
+
+DuplicateSectionMutation(p, sourceName, newName) {
+    sourceName := Trim(sourceName)
+    newName := Trim(newName)
+
+    if (sourceName = "" || newName = "" || !HasSectionName(p, sourceName) || HasSectionName(p, newName))
+        return false
+
+    AddSectionName(p, newName)
+
+    clones := []
+    nextOrder := GetMaxPinOrder(p)
+
+    for item in p.colors {
+        if GetItemSectionNameForState(item) != sourceName
+            continue
+
+        clone := CloneItem(item)
+        clone.section := newName
+        if clone.pinned {
+            nextOrder += 1
+            clone.pinOrder := nextOrder
+        }
+        clones.Push(clone)
+    }
+
+    if (clones.Length = 0)
+        return true
+
+    for _, clone in clones
+        p.colors.Push(clone)
+
     return true
 }
 
@@ -329,10 +433,10 @@ DeleteSectionMutation(p, sectionName) {
     return true
 }
 
-MoveColorToSection(app, hex, sectionName) {
+MoveColorToSection(app, token, sectionName) {
     moved := false
 
-    Mutate(app, (p) => moved := MoveColorToSectionMutation(p, hex, sectionName))
+    Mutate(app, (p) => moved := MoveColorToSectionMutation(p, token, sectionName))
 
     if !moved {
         ShowToast(app, "Could not move color")
@@ -345,11 +449,12 @@ MoveColorToSection(app, hex, sectionName) {
         DebouncedRefresh(app)
     }
 
-    ShowToast(app, "Moved #" hex " -> " sectionName)
+    item := GetItemByToken(app, token)
+    ShowToast(app, "Moved #" (item ? item.hex : token) " -> " sectionName)
     return true
 }
 
-MoveColorToSectionMutation(p, hex, sectionName) {
+MoveColorToSectionMutation(p, token, sectionName) {
     sectionName := Trim(sectionName)
     if (sectionName = "")
         return false
@@ -357,7 +462,7 @@ MoveColorToSectionMutation(p, hex, sectionName) {
     AddSectionName(p, sectionName)
 
     for item in p.colors {
-        if (item.hex = hex) {
+        if ItemMatchesToken(item, token) {
             item.section := sectionName
             return true
         }
@@ -366,16 +471,16 @@ MoveColorToSectionMutation(p, hex, sectionName) {
     return false
 }
 
-TogglePin(app, hex) {
-    Mutate(app, (p) => TogglePinMutation(p, hex))
+TogglePin(app, token) {
+    Mutate(app, (p) => TogglePinMutation(p, token))
     Commit(app)
 }
 
-TogglePinMutation(p, hex) {
+TogglePinMutation(p, token) {
     maxOrder := GetMaxPinOrder(p)
 
     for item in p.colors {
-        if (item.hex = hex) {
+        if ItemMatchesToken(item, token) {
             item.pinned := !item.pinned
             item.pinOrder := item.pinned ? maxOrder + 1 : 0
             break
@@ -392,10 +497,10 @@ GetMaxPinOrder(p) {
     return maxOrder
 }
 
-MovePinnedColor(app, hex, dir) {
+MovePinnedColor(app, token, dir) {
     moved := false
 
-    Mutate(app, (p) => moved := MovePinnedColorMutation(p, hex, dir))
+    Mutate(app, (p) => moved := MovePinnedColorMutation(p, token, dir))
 
     if !moved {
         ShowToast(app, "Pin the color first")
@@ -409,7 +514,7 @@ MovePinnedColor(app, hex, dir) {
     }
 }
 
-MovePinnedColorMutation(p, hex, dir) {
+MovePinnedColorMutation(p, token, dir) {
     Normalize(p)
 
     pinned := []
@@ -418,7 +523,7 @@ MovePinnedColorMutation(p, hex, dir) {
     for item in p.colors {
         if item.pinned {
             pinned.Push(item)
-            if (item.hex = hex)
+            if ItemMatchesToken(item, token)
                 targetIndex := pinned.Length
         }
     }
@@ -437,10 +542,10 @@ MovePinnedColorMutation(p, hex, dir) {
     return true
 }
 
-ReorderPinnedColorToTarget(app, sourceHex, targetHex) {
+ReorderPinnedColorToTarget(app, sourceToken, targetToken) {
     moved := false
 
-    Mutate(app, (p) => moved := ReorderPinnedColorToTargetMutation(p, sourceHex, targetHex))
+    Mutate(app, (p) => moved := ReorderPinnedColorToTargetMutation(p, sourceToken, targetToken))
 
     if !moved {
         ShowToast(app, "Pin the dragged color first")
@@ -454,7 +559,7 @@ ReorderPinnedColorToTarget(app, sourceHex, targetHex) {
     }
 }
 
-ReorderPinnedColorToTargetMutation(p, sourceHex, targetHex) {
+ReorderPinnedColorToTargetMutation(p, sourceToken, targetToken) {
     Normalize(p)
 
     pinned := []
@@ -464,21 +569,21 @@ ReorderPinnedColorToTargetMutation(p, sourceHex, targetHex) {
     target := 0
 
     for item in p.colors {
-        if (item.hex = sourceHex)
+        if ItemMatchesToken(item, sourceToken)
             source := item
-        if (item.hex = targetHex)
+        if ItemMatchesToken(item, targetToken)
             target := item
 
         if item.pinned {
             pinned.Push(item)
-            if (item.hex = sourceHex)
+            if ItemMatchesToken(item, sourceToken)
                 sourceIndex := pinned.Length
-            if (item.hex = targetHex)
+            if ItemMatchesToken(item, targetToken)
                 targetIndex := pinned.Length
         }
     }
 
-    if !source || !target || !source.pinned || (sourceHex = targetHex)
+    if !source || !target || !source.pinned || (sourceToken = targetToken)
         return false
 
     source.section := target.HasOwnProp("section") && target.section != ""
@@ -518,7 +623,7 @@ GetPinnedInsertIndexForSection(pinned, source, sectionName) {
     insertIndex := pinned.Length + 1
 
     for index, item in pinned {
-        if (item.hex = source.hex)
+        if (GetItemToken(item) = GetItemToken(source))
             continue
 
         if GetItemSectionNameForState(item) = sectionName
@@ -551,10 +656,10 @@ RemoveColorByHex(p, hex) {
     return removed
 }
 
-DeleteColor(app, hex) {
+DeleteColor(app, token) {
     removed := 0
 
-    Mutate(app, (p) => removed := RemoveColorByHex(p, hex))
+    Mutate(app, (p) => removed := RemoveColorByToken(p, token))
 
     if !removed
         return
@@ -565,10 +670,39 @@ DeleteColor(app, hex) {
         DebouncedRefresh(app)
     }
 
-    ShowToast(app, "Deleted #" hex)
+    ShowToast(app, "Deleted #" removed.hex)
 }
 
-MoveColorToPalette(app, hex, targetName) {
+RemoveColorByToken(p, token) {
+    removed := 0
+
+    Loop p.colors.Length {
+        if ItemMatchesToken(p.colors[A_Index], token) {
+            removed := p.colors[A_Index]
+            p.colors.RemoveAt(A_Index)
+            break
+        }
+    }
+
+    if !removed
+        return 0
+
+    if p.idMap.Has(removed.id)
+        p.idMap.Delete(removed.id)
+
+    if (p.selectedHex = removed.hex || p.highlightHex = removed.hex) {
+        if p.selectedHex = removed.hex
+            p.selectedHex := ""
+        if p.highlightHex = removed.hex
+            p.highlightHex := ""
+    }
+    if (p.highlightToken = token)
+        p.highlightToken := 0
+
+    return removed
+}
+
+MoveColorToPalette(app, token, targetName) {
     source := app.activePalette
 
     if (targetName = "") || (targetName = source.name)
@@ -579,25 +713,20 @@ MoveColorToPalette(app, hex, targetName) {
 
     target := app.palettes[targetName]
 
-    if !source.map.Has(hex) {
-        ShowToast(app, "Color not found: #" hex)
+    item := GetItemByToken(app, token)
+    if !item {
+        ShowToast(app, "Color not found")
         return false
     }
 
-    if target.map.Has(hex) {
-        ShowToast(app, targetName " already has #" hex)
+    if target.map.Has(item.hex) {
+        ShowToast(app, targetName " already has #" item.hex)
         return false
     }
 
-    item := source.map[hex]
-    clone := CreateItem(item.hex, item.rgb, item.name, item.role)
-    clone.pinned := item.pinned
-    clone.pinOrder := item.pinOrder
-    clone.section := item.section
-    clone.isSaved := item.isSaved
-    clone.copiedUntil := item.copiedUntil
+    clone := CloneItem(item)
 
-    Mutate(app, (p) => RemoveColorByHex(p, hex))
+    Mutate(app, (p) => RemoveColorByToken(p, token))
     AddColor(target, clone)
     Normalize(target)
 
@@ -609,6 +738,17 @@ MoveColorToPalette(app, hex, targetName) {
         DebouncedRefresh(app)
     }
 
-    ShowToast(app, "Moved #" hex " -> " targetName)
+    ShowToast(app, "Moved #" item.hex " -> " targetName)
     return true
 }
+
+CloneItem(item) {
+    clone := CreateItem(item.hex, item.rgb, item.name, item.role)
+    clone.pinned := item.pinned
+    clone.pinOrder := item.pinOrder
+    clone.section := item.section
+    clone.isSaved := item.isSaved
+    clone.copiedUntil := item.copiedUntil
+    return clone
+}
+

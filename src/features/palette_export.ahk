@@ -93,6 +93,7 @@ BuildPaletteJson(p, version) {
     json.Push('  "version": "' JsonEscape(version) '",')
     json.Push('  "historyMax": ' p.historyMax ',')
     json.Push('  "maxCols": ' p.maxCols ',')
+    json.Push('  "sections": [' JoinJsonStringArray(p.sections) '],')
     json.Push('  "colors": [')
 
     for index, item in p.colors {
@@ -102,6 +103,7 @@ BuildPaletteJson(p, version) {
         json.Push('      "rgb": "' JsonEscape(item.rgb) '",')
         json.Push('      "name": "' JsonEscape(item.name) '",')
         json.Push('      "role": "' JsonEscape(item.role) '",')
+        json.Push('      "section": "' JsonEscape(item.section) '",')
         json.Push('      "pinned": ' (item.pinned ? "true" : "false"))
         json.Push("    }" suffix)
     }
@@ -169,6 +171,13 @@ JsonEscape(value) {
     value := StrReplace(value, "`n", "\n")
     value := StrReplace(value, "`t", "\t")
     return value
+}
+
+JoinJsonStringArray(items) {
+    text := ""
+    for index, item in items
+        text .= (index > 1 ? "," : "") '"' JsonEscape(item) '"'
+    return text
 }
 
 CsvEscape(value) {

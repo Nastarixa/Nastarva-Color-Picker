@@ -43,11 +43,14 @@ OpenPaletteManager(app) {
 
     g.AddText("xm y+10 cAAAAAA", "⚙️ Settings")
 
-    g.AddText("xm y+5 cFFFFFF", "Max:")
+    g.AddText("xm y+5 cFFFFFF", "Per Section:")
     g.inputMax := g.AddEdit("w60 Number x+5 yp-2")
 
     g.AddText("x+15 yp+2 cFFFFFF", "Cols:")
     g.inputCols := g.AddEdit("w60 Number x+5 yp-2")
+
+    g.AddText("x+15 yp+2 cFFFFFF", "GUI:")
+    g.inputGuiMode := g.AddDropDownList("w110 x+5 yp-2 Choose1", ["Undocked", "Docked"])
 
     g.AddButton("x+15 yp w80 h25", "✅ Apply")
         .OnEvent("Click", (*) => ApplyPaletteSettings(app))
@@ -107,6 +110,7 @@ OpenPaletteManager(app) {
 
     g.inputMax.Value := app.activePalette.historyMax
     g.inputCols.Value := app.activePalette.maxCols
+    g.inputGuiMode.Text := GetPaletteGuiModeLabel(app.activePalette)
     g.inputRoleOrder.Value := GetPaletteRoleOrderText(app.activePalette)
 
     g.Show("Center")
@@ -148,9 +152,7 @@ ApplyPaletteSettings(app) {
     max := Integer(g.inputMax.Value)
     if (max >= 1) {
         p.historyMax := max
-
-        while (p.colors.Length > max)
-            p.colors.Pop()
+        Normalize(p)
     }
 
     cols := Integer(g.inputCols.Value)
@@ -158,6 +160,9 @@ ApplyPaletteSettings(app) {
         p.maxCols := cols
         app.ui.cols := cols
     }
+
+    if g.HasOwnProp("inputGuiMode")
+        p.guiMode := ParsePaletteGuiMode(g.inputGuiMode.Text)
 
     if g.HasOwnProp("inputRoleOrder") {
         roleOrder := ParseRoleOrder(g.inputRoleOrder.Value)
@@ -184,9 +189,7 @@ ApplyHistoryMaxUI(app, g) {
 
     p := app.activePalette
     p.historyMax := val
-
-    while (p.colors.Length > val)
-        p.colors.Pop()
+    Normalize(p)
 
     SaveHistory(app)
 
@@ -228,12 +231,22 @@ GetPaletteRoleOrderText(p) {
     return JoinRoleOrder(p.roleOrder)
 }
 
+GetPaletteGuiModeLabel(p) {
+    mode := p.HasOwnProp("guiMode") ? StrLower(p.guiMode) : "undocked"
+    return (mode = "docked") ? "Docked" : "Undocked"
+}
+
+ParsePaletteGuiMode(text) {
+    text := StrLower(Trim(text))
+    return (text = "docked") ? "docked" : "undocked"
+}
+
 ParseRoleOrder(text) {
     roles := []
     seen := Map()
 
     for _, role in StrSplit(text, ",") {
-        role := Trim(role)
+        role := NormalizeRoleName(role)
         if (role = "" || seen.Has(role))
             continue
 
@@ -273,6 +286,8 @@ PaletteSwitchUI(app, g) {
 
     g.inputMax.Value := app.activePalette.historyMax
     g.inputCols.Value := app.activePalette.maxCols
+    if g.HasOwnProp("inputGuiMode")
+        g.inputGuiMode.Text := GetPaletteGuiModeLabel(app.activePalette)
     if g.HasOwnProp("inputRoleOrder")
         g.inputRoleOrder.Value := GetPaletteRoleOrderText(app.activePalette)
 
@@ -334,6 +349,8 @@ DeletePaletteUI(app, g) {
     RefreshPaletteList(app, g)
     g.inputMax.Value := app.activePalette.historyMax
     g.inputCols.Value := app.activePalette.maxCols
+    if g.HasOwnProp("inputGuiMode")
+        g.inputGuiMode.Text := GetPaletteGuiModeLabel(app.activePalette)
     if g.HasOwnProp("inputRoleOrder")
         g.inputRoleOrder.Value := GetPaletteRoleOrderText(app.activePalette)
     SavePaletteList(app)
@@ -362,14 +379,19 @@ DuplicatePaletteUI(app, g) {
     for item in src.colors {
         clone := CreateItem(item.hex, item.rgb, item.name, item.role)
         clone.pinned := item.pinned
+        clone.pinOrder := item.pinOrder
+        clone.section := item.section
         clone.isSaved := true
 
         p.colors.Push(clone)
-        p.map[clone.hex] := clone
+        if !p.map.Has(clone.hex)
+            p.map[clone.hex] := clone
+        p.idMap[clone.id] := clone
     }
 
     p.historyMax := src.historyMax
     p.maxCols := src.maxCols
+    p.guiMode := src.HasOwnProp("guiMode") ? src.guiMode : "undocked"
 
     app.palettes[newName] := p
     app.paletteOrder.Push(newName)

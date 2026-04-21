@@ -39,11 +39,13 @@ CreatePalette(name, file) {
         file: file,
         colors: [],
         map: Map(),
+        idMap: Map(),
         selectedHex: "",
         highlightHex: "",
         highlightToken: 0,
         sections: ["Default"],
         roleOrder: DefaultRoleOrder(),
+        guiMode: "undocked",
         historyMax: 20,
         maxCols: 10
     }
@@ -70,6 +72,7 @@ CreateItem(hex, rgb, name := "", role := "Base") {
         name := GetColorName(hex)
 
     return {
+        id: GenerateItemId(),
         hex: hex,
         rgb: rgb,
         name: name,
@@ -91,6 +94,7 @@ LoadHistory(app) {
 
     p.colors := []
     p.map := Map()
+    p.idMap := Map()
     p.sections := []
     if !p.HasOwnProp("historyMax") || p.historyMax < 1
         p.historyMax := 30
@@ -110,6 +114,8 @@ LoadHistory(app) {
                 p.historyMax := Integer(m1[1])
             if RegExMatch(line, "maxCols=(\d+)", &m2)
                 p.maxCols := Integer(m2[1])
+            if RegExMatch(line, "guiMode=([A-Za-z]+)", &m3)
+                p.guiMode := StrLower(m3[1])
             continue
         }
 
@@ -133,15 +139,19 @@ LoadHistory(app) {
             continue
 
         item := CreateItem(part[1], part[2], part[3], part[4])
+        item.role := NormalizeRoleName(item.role)
         item.pinned := (part.Length >= 5 && part[5] = "1")
         item.pinOrder := (part.Length >= 6) ? Integer(part[6]) : 0
         item.section := (part.Length >= 7 && part[7] != "") ? part[7] : "Default"
+        item.id := (part.Length >= 8 && part[8] != "") ? part[8] : GenerateItemId()
         item.isSaved := true
         item.copiedUntil := 0
 
         AddSectionName(p, item.section)
         p.colors.Push(item)
-        p.map[item.hex] := item
+        if !p.map.Has(item.hex)
+            p.map[item.hex] := item
+        p.idMap[item.id] := item
     }
 
     EnsureDefaultSection(p)
@@ -159,7 +169,8 @@ SavePalette(p, version) {
     DirCreate(A_ScriptDir "\color")
 
     f := FileOpen(p.file, "w")
-    f.WriteLine("#META|version=" version "|historyMax=" p.historyMax "|maxCols=" p.maxCols)
+    guiMode := p.HasOwnProp("guiMode") ? p.guiMode : "undocked"
+    f.WriteLine("#META|version=" version "|historyMax=" p.historyMax "|maxCols=" p.maxCols "|guiMode=" guiMode)
 
     if !p.HasOwnProp("roleOrder")
         p.roleOrder := DefaultRoleOrder()
@@ -170,7 +181,7 @@ SavePalette(p, version) {
         f.WriteLine("#SECTION|" section)
 
     for item in p.colors
-        f.WriteLine(item.hex "|" item.rgb "|" item.name "|" item.role "|" item.pinned "|" item.pinOrder "|" item.section)
+        f.WriteLine(item.hex "|" item.rgb "|" item.name "|" item.role "|" item.pinned "|" item.pinOrder "|" item.section "|" item.id)
     f.Close()
 }
 
@@ -187,5 +198,11 @@ JoinRoleOrder(roleOrder) {
 }
 
 DefaultRoleOrder() {
-    return ["Base", "Highlight", "Shadow", "Hi Shadow", "2 Shadow"]
+    return ["Base ⚫", "Highlight ✨", "Shadow ⬛", "Hi Shadow ♻️", "2 Shadow 💞"]
+}
+
+GenerateItemId() {
+    static seq := 0
+    seq += 1
+    return A_TickCount "-" seq "-" Random(1000, 9999)
 }

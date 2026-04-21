@@ -629,7 +629,9 @@ ShowToast(app, text, duration := 2000, speed := 0.8) {
     if !IsObject(app.historyGui)
         return
 
-    WinGetPos(&hx, &hy, &hw, &hh, app.historyGui.Hwnd)
+    if IsObject(app.historyGui) && app.historyGui.Hwnd && WinExist("ahk_id " app.historyGui.Hwnd) {
+        WinGetPos(&hx, &hy, &hw, &hh, app.historyGui.Hwnd)
+    }
 
     app.toast.x := hx + 10
     app.toast.curY := hy - 50

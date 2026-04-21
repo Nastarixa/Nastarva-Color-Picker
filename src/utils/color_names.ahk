@@ -55,20 +55,20 @@ GetSmartColorName(hex) {
 RGBtoHSL(r, g, b) {
     r /= 255, g /= 255, b /= 255
 
-    max := Max(r, g, b)
-    min := Min(r, g, b)
-    l := (max + min) / 2
+    maxVal := Max(r, g, b)
+    minVal := Min(r, g, b)
+    l := (maxVal + minVal) / 2
 
-    if (max = min) {
+    if (maxVal = minVal) {
         h := 0
         s := 0
     } else {
-        d := max - min
-        s := l > 0.5 ? d / (2 - max - min) : d / (max + min)
+        d := maxVal - minVal
+        s := l > 0.5 ? d / (2 - maxVal - minVal) : d / (maxVal + minVal)
 
-        if (max = r)
+        if (maxVal = r)
             h := (g - b) / d + (g < b ? 6 : 0)
-        else if (max = g)
+        else if (maxVal = g)
             h := (b - r) / d + 2
         else
             h := (r - g) / d + 4

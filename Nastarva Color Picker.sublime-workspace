@@ -1,1 +1,624 @@
-{}
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+		]
+	},
+	"buffers":
+	[
+		{
+			"file": "src/features/history_gui.ahk",
+			"settings":
+			{
+				"buffer_size": 34013,
+				"encoding": "UTF-8 with BOM",
+				"line_ending": "Windows"
+			},
+			"undo_stack":
+			[
+			]
+		},
+		{
+			"file": "README.md",
+			"redo_stack":
+			[
+				[
+					41,
+					1,
+					"paste",
+					null,
+					"AQAAAAAAAAAAAAAAWhYAAAAAAADaEAAAIyDwn46oIE5hc3RhcnZhIENvbG9yIFBpY2tlcgoKTmFzdGFydmEgQ29sb3IgUGlja2VyIGlzIGFuIEF1dG9Ib3RrZXkgdjIgdG9vbCBmb3IgcGlja2luZywgb3JnYW5pemluZywKYW5kIGV4cG9ydGluZyBjb2xvcnMuCgpJdCBpcyBkZXNpZ25lZCBmb3IgY2hhcmFjdGVyLXNoZWV0IHdvcmtmbG93cywgYXJ0IHJlZmVyZW5jZXMsIGFuZApwYWxldHRlIHN5c3RlbXMsIHdoZXJlIGNvbG9ycyBhcmUgc3RydWN0dXJlZCBpbnRvIHBhbGV0dGVzLCBzZWN0aW9ucywKYW5kIHJvbGUtYmFzZWQgc2hhZGluZyBzeXN0ZW1zIGxpa2U6CgotICAgQmFzZQotICAgSGlnaGxpZ2h0Ci0gICBTaGFkb3cKLSAgIEhpIFNoYWRvdwotICAgMiBTaGFkb3cKCi0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQoKIyMg4pyoIEZlYXR1cmVzCgojIyMg8J+OryBDb2xvciBQaWNraW5nCgotICAgTGl2ZSBzY3JlZW4gY29sb3IgcGlja2VyCi0gICBIRVggJiBSR0IgY29weSBzdXBwb3J0Ci0gICBNaWRkbGUgY2xpY2sgdG8gc2F2ZSBjb2xvcgotICAgQ3RybCArIE1pZGRsZSBjbGljayB0byBjb3B5IFJHQgoKIyMjIPCfl4IgUGFsZXR0ZSBTeXN0ZW0KCi0gICBNdWx0aXBsZSBwYWxldHRlcyBzdG9yZWQgaW4gdGV4dCBmb3JtYXQKLSAgIFJvbGUtYmFzZWQgY29sb3Igb3JnYW5pemF0aW9uCi0gICBTZWN0aW9uLWJhc2VkIG1pY3JvIHBhbGV0dGVzCi0gICBQaW5uZWQgY29sb3JzIHdpdGggb3JkZXJpbmcgc3lzdGVtCgojIyMg8J+qnyBVSSBTeXN0ZW0KCi0gICBEb2NrZWQgLyBVbmRvY2tlZCBzZWN0aW9uIHdpbmRvd3MKLSAgIEZsb2F0aW5nIHNlY3Rpb24gcGFuZWxzCi0gICBEcmFnICYgZHJvcCBwaW5uZWQgY29sb3JzIGJldHdlZW4gc2VjdGlvbnMKLSAgIFBlcnNpc3RlbnQgcGFuZWwgcG9zaXRpb25zIHBlciBwYWxldHRlCgojIyMg8J+WvCBJbWFnZS1CYXNlZCBXb3JrZmxvdwoKLSAgIEltcG9ydCBwYWxldHRlIGZyb20gaW1hZ2UgZmlsZQotICAgSW1wb3J0IHBhbGV0dGUgZnJvbSBzY3JlZW5zaG90IHNuaXAKLSAgIEF1dG8tZGV0ZWN0IGNvbG9yIGJsb2NrcwotICAgQmVzdC1lZmZvcnQgT0NSIHNlY3Rpb24gbmFtaW5nCi0gICBBdXRvLXJvbGUgYXNzaWdubWVudCAoaGV1cmlzdGljKQoKIyMjIPCfk6QgRXhwb3J0IEZvcm1hdHMKCi0gICBUWFQKLSAgIEpTT04KLSAgIElOSQotICAgQ1NWCi0gICBQTkcgKHdpdGggbGF5b3V0ICsgbGFiZWxzKQoKLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCgojIyDwn5a8IEltYWdlIFByZXZpZXcKClBsYWNlIHlvdXIgc2NyZWVuc2hvdHMgaW4gYGRvY3MvaW1hZ2VzL2AKCkV4YW1wbGU6IC0gZG9jcy9pbWFnZXMvcGFsZXR0ZV9tYW5hZ2VyLnBuZyAtCmRvY3MvaW1hZ2VzL2NvbG9yX3BpY2tlci5wbmcgLSBkb2NzL2ltYWdlcy9zZWN0aW9uX2xheW91dC5wbmcKCi0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQoKIyMg4pqZ77iPIFJlcXVpcmVtZW50cwoKLSAgIFdpbmRvd3MgT1MKLSAgIEF1dG9Ib3RrZXkgdjIKLSAgIFBvd2VyU2hlbGwKLSAgIFdpbmRvd3MgU25pcHBpbmcgVG9vbCAobXMtc2NyZWVuY2xpcCBzdXBwb3J0KQoKLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCgojIyDijKjvuI8gTWFpbiBIb3RrZXlzCgogIEhvdGtleSAgICAgICAgICAgICAgQWN0aW9uCiAgLS0tLS0tLS0tLS0tLS0tLS0tLSAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KICBDdHJsICsgQWx0ICsgUCAgICAgIFRvZ2dsZSBjb2xvciBwaWNrZXIKICBDdHJsICsgQWx0ICsgTyAgICAgIFRvZ2dsZSBjb2xvciBwYWxldHRlCiAgQ3RybCArIEFsdCArIEkgICAgICBUb2dnbGUgcGFsZXR0ZSBtYW5hZ2VyCiAgQ3RybCArIEFsdCArIFUgICAgICBTY3JlZW5zaG90IGltcG9ydAogIEN0cmwgKyBBbHQgKyAxLS05ICAgU3dpdGNoIHBhbGV0dGVzCgotLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KCiMjIPCfjpsgQ29sb3IgUGlja2VyCgogIElucHV0ICAgICAgICAgICAgICAgICBBY3Rpb24KICAtLS0tLS0tLS0tLS0tLS0tLS0tLS0gLS0tLS0tLS0tLS0tLS0tLS0KICBNaWRkbGUgQ2xpY2sgICAgICAgICAgU2F2ZSArIENvcHkgSEVYCiAgQ3RybCArIE1pZGRsZSBDbGljayAgIENvcHkgUkdCCgotLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KCiMjIPCfjqggQ29sb3IgUGFsZXR0ZQoKICBJbnB1dCAgICAgICAgICAgICAgIEFjdGlvbgogIC0tLS0tLS0tLS0tLS0tLS0tLS0gLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KICBMZWZ0IENsaWNrICAgICAgICAgIENvcHkgSEVYCiAgQ3RybCArIExlZnQgQ2xpY2sgICBDb3B5IFJHQgogIFJpZ2h0IENsaWNrICAgICAgICAgT3BlbiBtZW51CiAgRHJhZyAgICAgICAgICAgICAgICBSZW9yZGVyIHBpbm5lZCBjb2xvcnMKCi0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQoKIyMg8J+UhCBXb3JrZmxvdwoKMS4gIFBpY2sgY29sb3JzIGxpdmUKMi4gIE9yZ2FuaXplIGludG8gc2VjdGlvbnMKMy4gIEFzc2lnbiByb2xlcwo0LiAgUGluIGltcG9ydGFudCBjb2xvcnMKNS4gIEV4cG9ydCBwYWxldHRlCgotLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KCiMjIPCfqp8gR1VJIE1vZGVzCgojIyMgRG9ja2VkCgotICAgU3RhY2tlZCBzZWN0aW9ucwotICAgRml4ZWQgbGF5b3V0CgojIyMgVW5kb2NrZWQKCi0gICBGbG9hdGluZyBwYW5lbHMKLSAgIERyYWdnYWJsZSB3aW5kb3dzCgotLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KCiMjIPCfk6YgRXhwb3J0IEZvcm1hdHMKClRYVCwgSlNPTiwgSU5JLCBDU1YsIFBORwoKUE5HIGluY2x1ZGVzOiAtIFBhbGV0dGUgbmFtZSAtIFNlY3Rpb25zIC0gU3dhdGNoZXMgLSBSR0IgLSBSb2xlcwoKLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCgojIyDwn5OBIEZpbGUgU3RydWN0dXJlCgpzcmMvY29yZS8gLSBhcHBfY29yZS5haGsgLSBoaXN0b3J5X3N0YXRlLmFoayAtIHBlcnNpc3RlbmNlLmFoawoKc3JjL2ZlYXR1cmVzLyAtIHBpY2tlci5haGsgLSBoaXN0b3J5X2d1aS5haGsgLSBwYWxldHRlX21hbmFnZXIuYWhrIC0KcGFsZXR0ZV9leHBvcnQuYWhrIC0gcGFsZXR0ZV9pbWFnZV9pbXBvcnQucHMxIC0gcGFsZXR0ZV9wbmdfZXhwb3J0LnBzMQoKY29sb3IvIC0gcGFsZXR0ZXMudHh0CgotLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KCiMjIPCfk5wgUGFsZXR0ZSBGb3JtYXQKCiNNRVRBXHx2ZXJzaW9uPTMuMFx8aGlzdG9yeU1heD0yMFx8bWF4Q29scz00XHxndWlNb2RlPXVuZG9ja2VkCiNST0xFT1JERVJcfEJhc2UsSGlnaGxpZ2h0LFNoYWRvdyxIaSBTaGFkb3csMiBTaGFkb3cgI1NFQ1RJT05cfERlZmF1bHQKCkZGQ0NBQVx8MjU1LDIwNCwxNzBcfEhhaXIgQmFzZVx8QmFzZVx8MVx8MVx8SGFpclx8aWQKQ0M5OTY2XHwyMDQsMTUzLDEwMlx8SGFpciBTaGFkb3dcfFNoYWRvd1x8MVx8Mlx8SGFpclx8aWQKCi0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQoKIyMg4pqg77iPIE5vdGVzCgotICAgT0NSIGlzIGJlc3QtZWZmb3J0Ci0gICBJbWFnZSBpbXBvcnQgaXMgaGV1cmlzdGljCi0gICBNaW5vciBSR0IgZGlmZmVyZW5jZXMgbWF5IG9jY3VyCgotLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KCiMjIOKWtu+4jyBSdW4KCkF1dG9Ib3RrZXk2NC5leGUgIk5hc3RhcnZhIENvbG9yIFBpY2tlci5haGsiCgotLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KCiMjIPCfk5wgTGljZW5zZQoKU2VlIExJQ0VOU0UK",
+					"AQAAAAAAAAABAAAAmxAAAAAAAACbEAAAAAAAAAAAAAAAAPC/"
+				]
+			],
+			"settings":
+			{
+				"buffer_size": 5722,
+				"line_ending": "Unix"
+			},
+			"undo_stack":
+			[
+			]
+		},
+		{
+			"contents": "# 🎨 Nastarva Color Picker\n\nNastarva Color Picker is an AutoHotkey v2 tool for picking, organizing,\nand exporting colors.\n\nIt is designed for character-sheet workflows, art references, and\npalette systems, where colors are structured into palettes, sections,\nand role-based shading systems like:\n\n-   Base\n-   Highlight\n-   Shadow\n-   Hi Shadow\n-   2 Shadow\n\n------------------------------------------------------------------------\n\n## ✨ Features\n\n### 🎯 Color Picking\n\n-   Live screen color picker\n-   HEX & RGB copy support\n-   Middle click to save color\n-   Ctrl + Middle click to copy RGB\n\n### 🗂 Palette System\n\n-   Multiple palettes stored in text format\n-   Role-based color organization\n-   Section-based micro palettes\n-   Pinned colors with ordering system\n\n### 🪟 UI System\n\n-   Docked / Undocked section windows\n-   Floating section panels\n-   Drag & drop pinned colors between sections\n-   Persistent panel positions per palette\n\n### 🖼 Image-Based Workflow\n\n-   Import palette from image file\n-   Import palette from screenshot snip\n-   Auto-detect color blocks\n-   Best-effort OCR section naming\n-   Auto-role assignment (heuristic)\n\n### 📤 Export Formats\n\n-   TXT\n-   JSON\n-   INI\n-   CSV\n-   PNG (with layout + labels)\n\n------------------------------------------------------------------------\n\n## 🖼 Image Preview\n\nPlace your screenshots in `docs/images/`\n\nExample: - docs/images/palette_manager.png -\ndocs/images/color_picker.png - docs/images/section_layout.png\n\n------------------------------------------------------------------------\n\n## ⚙️ Requirements\n\n-   Windows OS\n-   AutoHotkey v2\n-   PowerShell\n-   Windows Snipping Tool (ms-screenclip support)\n\n------------------------------------------------------------------------\n\n## ⌨️ Main Hotkeys\n\n  Hotkey              Action\n  ------------------- ------------------------\n  Ctrl + Alt + P      Toggle color picker\n  Ctrl + Alt + O      Toggle color palette\n  Ctrl + Alt + I      Toggle palette manager\n  Ctrl + Alt + U      Screenshot import\n  Ctrl + Alt + 1--9   Switch palettes\n\n------------------------------------------------------------------------\n\n## 🎛 Color Picker\n\n  Input                 Action\n  --------------------- -----------------\n  Middle Click          Save + Copy HEX\n  Ctrl + Middle Click   Copy RGB\n\n------------------------------------------------------------------------\n\n## 🎨 Color Palette\n\n  Input               Action\n  ------------------- -----------------------\n  Left Click          Copy HEX\n  Ctrl + Left Click   Copy RGB\n  Right Click         Open menu\n  Drag                Reorder pinned colors\n\n------------------------------------------------------------------------\n\n## 🔄 Workflow\n\n1.  Pick colors live\n2.  Organize into sections\n3.  Assign roles\n4.  Pin important colors\n5.  Export palette\n\n------------------------------------------------------------------------\n\n## 🪟 GUI Modes\n\n### Docked\n\n-   Stacked sections\n-   Fixed layout\n\n### Undocked\n\n-   Floating panels\n-   Draggable windows\n\n------------------------------------------------------------------------\n\n## 📦 Export Formats\n\nTXT, JSON, INI, CSV, PNG\n\nPNG includes: - Palette name - Sections - Swatches - RGB - Roles\n\n------------------------------------------------------------------------\n\n## 📁 File Structure\n\nMain script:\n\n- [Nastarva Color Picker.ahk](D:/Github/Nastarva-Color-Picker/Nastarva%20Color%20Picker.ahk)\n\nCore modules:\n\n- [app_core.ahk](D:/Github/Nastarva-Color-Picker/src/core/app_core.ahk)\n- [history_state.ahk](D:/Github/Nastarva-Color-Picker/src/core/history_state.ahk)\n- [persistence.ahk](D:/Github/Nastarva-Color-Picker/src/core/persistence.ahk)\n\nFeature modules:\n\n- [picker.ahk](D:/Github/Nastarva-Color-Picker/src/features/picker.ahk)\n- [history_gui.ahk](D:/Github/Nastarva-Color-Picker/src/features/history_gui.ahk)\n- [palette_manager.ahk](D:/Github/Nastarva-Color-Picker/src/features/palette_manager.ahk)\n- [palette_export.ahk](D:/Github/Nastarva-Color-Picker/src/features/palette_export.ahk)\n- [palette_image_import.ps1](D:/Github/Nastarva-Color-Picker/src/features/palette_image_import.ps1)\n- [palette_png_export.ps1](D:/Github/Nastarva-Color-Picker/src/features/palette_png_export.ps1)\n\nData:\n\n- palette files are stored in `color\\`\n- palette order is stored in `color\\palettes.txt`\n\n------------------------------------------------------------------------\n\n## 📜 Palette Format\n\nExample:\n\n```txt\n#META|version=3.0|historyMax=20|maxCols=4|guiMode=undocked\n#ROLEORDER|Base,Highlight,Shadow,Hi Shadow,2 Shadow\n#SECTION|Default\n#SECTION|Hair\nFFCCAA|255,204,170|Hair Base|Base|1|1|Hair|171369999-1-1234\nCC9966|204,153,102|Hair Shadow|Shadow|1|2|Hair|171369999-2-5678\n```\n\nColor row fields:\n\n1. `hex`\n2. `rgb`\n3. `name`\n4. `role`\n5. `pinned`\n6. `pinOrder`\n7. `section`\n8. `item id`\n\n------------------------------------------------------------------------\n\n## ⚠️ Notes\n\n- Image role assignment is heuristic, not guaranteed\n- OCR section naming is best-effort and depends on Windows OCR quality\n- Imported palette layouts with unusual shapes may still need manual cleanup\n- A screenshot import can differ by 1 RGB value from live picker if the captured image is slightly different from the exact on-screen pixel\n\n------------------------------------------------------------------------\n\n## ⚠️ Disclaimer\n\nThis project was developed with the assistance of AI tools.\nAI was used to support code writing, refactoring, and documentation, while the design direction, features, and final implementation were guided and reviewed by the author.\n\n------------------------------------------------------------------------\n\n## ▶️ Running The Script\n\nRun:\n\n```powershell\nAutoHotkey64.exe \"D:\\Github\\Nastarva-Color-Picker\\Nastarva Color Picker.ahk\"\n```\n------------------------------------------------------------------------\n\n## 📜 License\n\nSee [LICENSE](D:/Github/Nastarva-Color-Picker/LICENSE).\n",
+			"file": "/C/Users/Nastar/Pictures/Nastarva_Color_Picker_README.md",
+			"file_size": 4909,
+			"file_write_time": 134212492595150071,
+			"redo_stack":
+			[
+				[
+					133,
+					1,
+					"paste",
+					null,
+					"AQAAADYMAAAAAAAAaQwAAAAAAABJAAAACgotIHBhbGV0dGUgbmFtZQotIHNlY3Rpb24gZ3JvdXBpbmcKLSBzd2F0Y2hlcwotIFJHQiB2YWx1ZXMKLSByb2xlIGxhYmVscw",
+					"AQAAAAAAAAABAAAAfwwAAAAAAAB/DAAAAAAAAAAAAAAAAPC/"
+				]
+			],
+			"settings":
+			{
+				"buffer_size": 5866,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			},
+			"undo_stack":
+			[
+				[
+					17,
+					1,
+					"paste",
+					null,
+					"AQAAAAgQAAAAAAAAbBAAAAAAAAAuAAAACkF1dG9Ib3RrZXk2NC5leGUgIk5hc3RhcnZhIENvbG9yIFBpY2tlci5haGsiCg",
+					"AQAAAAAAAAABAAAANhAAAAAAAAAIEAAAAAAAAAAAAAAAAPC/"
+				],
+				[
+					20,
+					1,
+					"insert",
+					{
+						"characters": "\\"
+					},
+					"AQAAAAcQAAAAAAAACBAAAAAAAAAAAAAA",
+					"AQAAAAAAAAABAAAABxAAAAAAAAAHEAAAAAAAAAAAAAAAAPC/"
+				],
+				[
+					21,
+					1,
+					"left_delete",
+					null,
+					"AQAAAAcQAAAAAAAABxAAAAAAAAABAAAAXA",
+					"AQAAAAAAAAABAAAACBAAAAAAAAAIEAAAAAAAAAAAAAAAAPC/"
+				],
+				[
+					22,
+					1,
+					"insert",
+					{
+						"characters": "\n"
+					},
+					"AQAAAAcQAAAAAAAACBAAAAAAAAAAAAAA",
+					"AQAAAAAAAAABAAAABxAAAAAAAAAHEAAAAAAAAAAAAAAAAPC/"
+				],
+				[
+					28,
+					1,
+					"paste",
+					null,
+					"AQAAAAQQAAAAAAAAFhAAAAAAAAADAAAAUnVu",
+					"AQAAAAAAAAABAAAABxAAAAAAAAAEEAAAAAAAAAAAAAAAAPC/"
+				],
+				[
+					34,
+					1,
+					"paste",
+					null,
+					"AQAAANUQAAAAAAAADBEAAAAAAAAMAAAAU2VlIExJQ0VOU0UK",
+					"AQAAAAAAAAABAAAA4RAAAAAAAADVEAAAAAAAAAAAAAAAAPC/"
+				],
+				[
+					48,
+					1,
+					"paste",
+					null,
+					"AQAAALMPAAAAAAAArhAAAAAAAAAAAAAA",
+					"AQAAAAAAAAABAAAAsw8AAAAAAACzDwAAAAAAAAAAAAAAAPC/"
+				],
+				[
+					53,
+					1,
+					"insert",
+					{
+						"characters": "\n"
+					},
+					"AQAAALIPAAAAAAAAsw8AAAAAAAAAAAAA",
+					"AQAAAAAAAAABAAAAsg8AAAAAAACyDwAAAAAAAAAAAAAAAPC/"
+				],
+				[
+					56,
+					1,
+					"insert",
+					{
+						"characters": "\n"
+					},
+					"AQAAAK8QAAAAAAAAsBAAAAAAAAAAAAAA",
+					"AQAAAAAAAAABAAAArxAAAAAAAACvEAAAAAAAAAAAAAAAAPC/"
+				],
+				[
+					64,
+					1,
+					"paste",
+					null,
+					"AQAAALMPAAAAAAAA/Q8AAAAAAAAAAAAA",
+					"AQAAAAAAAAABAAAAsw8AAAAAAACzDwAAAAAAAAAAAAAAAPC/"
+				],
+				[
+					65,
+					1,
+					"insert",
+					{
+						"characters": "\n"
+					},
+					"AQAAAP0PAAAAAAAA/g8AAAAAAAAAAAAA",
+					"AQAAAAAAAAABAAAA/Q8AAAAAAAD9DwAAAAAAAAAAAAAAAPC/"
+				],
+				[
+					68,
+					1,
+					"left_delete",
+					null,
+					"AQAAALMPAAAAAAAAsw8AAAAAAAABAAAACg",
+					"AQAAAAAAAAABAAAAtA8AAAAAAAC0DwAAAAAAAAAAAAAAAPC/"
+				],
+				[
+					71,
+					1,
+					"trim_trailing_white_space",
+					null,
+					"AQAAAEsQAAAAAAAASxAAAAAAAAACAAAAICA",
+					"AQAAAAAAAAABAAAAxgsAAAAAAADGCwAAAAAAAAAAAAAAAPC/"
+				],
+				[
+					72,
+					1,
+					"ensure_newline_at_eof",
+					null,
+					"AQAAAFESAAAAAAAAUhIAAAAAAAAAAAAA",
+					"AQAAAAAAAAABAAAAxgsAAAAAAADGCwAAAAAAAAAAAAAAAPC/"
+				],
+				[
+					83,
+					1,
+					"paste",
+					null,
+					"AQAAAAEPAAAAAAAAcw8AAAAAAAAAAAAA",
+					"AQAAAAAAAAABAAAAAQ8AAAAAAAABDwAAAAAAAAAAAAAAAPC/"
+				],
+				[
+					104,
+					1,
+					"paste",
+					null,
+					"AQAAAA0OAAAAAAAAKw8AAAAAAAD4AAAAI01FVEFcfHZlcnNpb249My4wXHxoaXN0b3J5TWF4PTIwXHxtYXhDb2xzPTRcfGd1aU1vZGU9dW5kb2NrZWQKI1JPTEVPUkRFUlx8QmFzZSxIaWdobGlnaHQsU2hhZG93LEhpIFNoYWRvdywyIFNoYWRvdyAjU0VDVElPTlx8RGVmYXVsdAoKRkZDQ0FBXHwyNTUsMjA0LDE3MFx8SGFpciBCYXNlXHxCYXNlXHwxXHwxXHxIYWlyXHxpZApDQzk5NjZcfDIwNCwxNTMsMTAyXHxIYWlyIFNoYWRvd1x8U2hhZG93XHwxXHwyXHxIYWlyXHxpZApgYGA",
+					"AQAAAAAAAAABAAAABQ8AAAAAAAANDgAAAAAAAAAAAAAAAPC/"
+				],
+				[
+					118,
+					1,
+					"paste",
+					null,
+					"AQAAAPIPAAAAAAAARhEAAAAAAABYAAAALSAgIE9DUiBpcyBiZXN0LWVmZm9ydAotICAgSW1hZ2UgaW1wb3J0IGlzIGhldXJpc3RpYwotICAgTWlub3IgUkdCIGRpZmZlcmVuY2VzIG1heSBvY2N1cg",
+					"AQAAAAAAAAABAAAAShAAAAAAAADyDwAAAAAAAAAAAAAAAPC/"
+				],
+				[
+					124,
+					1,
+					"paste",
+					null,
+					"AQAAAMoMAAAAAAAAsBAAAAAAAADiAAAAc3JjL2NvcmUvIC0gYXBwX2NvcmUuYWhrIC0gaGlzdG9yeV9zdGF0ZS5haGsgLSBwZXJzaXN0ZW5jZS5haGsKCnNyYy9mZWF0dXJlcy8gLSBwaWNrZXIuYWhrIC0gaGlzdG9yeV9ndWkuYWhrIC0gcGFsZXR0ZV9tYW5hZ2VyLmFoayAtCnBhbGV0dGVfZXhwb3J0LmFoayAtIHBhbGV0dGVfaW1hZ2VfaW1wb3J0LnBzMSAtIHBhbGV0dGVfcG5nX2V4cG9ydC5wczEKCmNvbG9yLyAtIHBhbGV0dGVzLnR4dA",
+					"AQAAAAAAAAABAAAArA0AAAAAAADKDAAAAAAAAAAAAAAAAPC/"
+				]
+			]
+		}
+	],
+	"build_system": "",
+	"build_system_choices":
+	[
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"sublim",
+				"Sublime Merge: Open Repository"
+			],
+			[
+				"instal",
+				"Package Control: Install Package"
+			],
+			[
+				"auto",
+				"Set Syntax: AutoHotkey"
+			],
+			[
+				"sy aut",
+				"Set Syntax: AutoHotkey"
+			],
+			[
+				"a",
+				"AutoHotkey - Run"
+			]
+		],
+		"width": 0.0
+	},
+	"console":
+	{
+		"height": 63.2,
+		"history":
+		[
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"expanded_folders":
+	[
+		"/D/Github/Nastarva-Color-Picker",
+		"/D/Github/Nastarva-Color-Picker/src",
+		"/D/Github/Nastarva-Color-Picker/src/core",
+		"/D/Github/Nastarva-Color-Picker/src/features",
+		"/D/Github/Nastarva-Color-Picker/src/utils"
+	],
+	"file_history":
+	[
+		"/D/Github/Nastarva-Color-Picker/src/features/history_gui.ahk",
+		"/D/Github/Nastarva-Color-Picker/README.md",
+		"/D/Github/Nastarva-Color-Picker/src/core/app_core.ahk",
+		"/D/Github/Nastarva-Color-Picker/Nastarva Color Picker.ahk",
+		"/D/Github/Nastarva-Color-Picker/src/core/history_state.ahk",
+		"/D/Github/Nastarva-Color-Picker/src/core/persistence.ahk",
+		"/D/Github/Nastarva-Color-Picker/src/utils/color_format.ahk",
+		"/D/Github/Nastarva-Color-Picker/src/features/picker.ahk",
+		"/D/Github/Nastarva-Color-Picker/src/features/palette_manager.ahk",
+		"/C/Users/Nastar/OneDrive/Documents/ToggleHistory(app) {.ahk",
+		"/C/Users/Nastar/OneDrive/Documents/AutoHotkey/Nastarva Color Picker..ahk",
+		"/C/Users/Nastar/OneDrive/Documents/TogglePaletteManager(app) {.ahk",
+		"/D/Github/Nastarva-Color-Picker/src/features/palette_export.ahk",
+		"/C/Users/Nastar/Music/Default.csv",
+		"/C/Users/Nastar/Music/Default.ini",
+		"/C/Users/Nastar/Music/Default.txt",
+		"/C/Users/Nastar/Music/Default.json",
+		"/D/Github/Nastarva-Color-Picker/src/utils/color_names.ahk",
+		"/C/Users/Nastar/OneDrive/Documents/AutoHotkey/src/utils/color_names.ahk",
+		"/D/Github/Nastarva-Color-Picker/color/Default.txt",
+		"/C/Users/Nastar/OneDrive/Documents/AutoHotkey/CSP.ahk",
+		"/C/Users/Nastar/OneDrive/Documents/AutoHotkey/Nastarva Color Picker",
+		"/C/Users/Nastar/OneDrive/Documents/AutoHotkey/color/Default.txt",
+		"/C/Users/Nastar/OneDrive/Documents/AutoHotkey/Color Checker V2.ahk",
+		"/C/Users/Nastar/OneDrive/Documents/AutoHotkey/Color Checker V3.ahk",
+		"/C/Users/Nastar/OneDrive/Documents/AutoHotkey/Color Checker V1.ahk",
+		"/C/Users/Nastar/OneDrive/Documents/AutoHotkey/color/colorpalette_history.txt",
+		"/C/Users/Nastar/OneDrive/Documents/AutoHotkey/color/UI.txt",
+		"/C/Users/Nastar/OneDrive/Documents/AutoHotkey/color/Shadow.txt",
+		"/C/Users/Nastar/OneDrive/Documents/AutoHotkey/color/palettes.txt",
+		"/C/Users/Nastar/OneDrive/Documents/AutoHotkey/Color Checker V2 - Copy (7).ahk",
+		"/C/Users/Nastar/OneDrive/Documents/AutoHotkey/Color Checker V2 - Copy (6).ahk",
+		"/C/Users/Nastar/OneDrive/Documents/AutoHotkey/Color Checker V2 - Copy (4).ahk",
+		"/C/Users/Nastar/OneDrive/Documents/AutoHotkey/Color Checker V2 - Copy.ahk",
+		"/C/Users/Nastar/OneDrive/Documents/AutoHotkey/Color Checker V1 - Copy (2).ahk",
+		"/C/Users/Nastar/OneDrive/Documents/AutoHotkey/Color Checker V1 - Copy.ahk",
+		"/C/Users/Nastar/OneDrive/Documents/AutoHotkey/Loupe Magnifying.ahk",
+		"/C/Users/Nastar/Pictures/Untitled (8).ahk",
+		"/C/Users/Nastar/OneDrive/Documents/AutoHotkey/XPPenSwitch",
+		"/C/Users/Nastar/AppData/Local/Temp/Decoders.txt",
+		"/C/Users/Nastar/OneDrive/Documents/catatan",
+		"/C/Users/Nastar/OneDrive/Documents/AutoHotkey/Disable F1 Help.ahk",
+		"/C/Users/Nastar/AppData/Roaming/mpv.net/mpv.conf",
+		"/C/Users/Nastar/OneDrive/Documents/AutoHotkey/Color Chencker.ahk",
+		"/C/Users/Nastar/OneDrive/Documents/AutoHotkey/Color Checker with crosshair.ahk",
+		"/C/Users/Nastar/OneDrive/Documents/AutoHotkey/Color Checker.ahk",
+		"/C/Users/Nastar/OneDrive/Documents/AutoHotkey/color checker.ahk",
+		"/C/Users/Nastar/AppData/Roaming/Sublime Text/Packages/AutoHotkey/AutoHotkey.sublime-settings",
+		"/C/Users/Nastar/AppData/Roaming/Sublime Text/Packages/SublimeAutoHotkey-1.7.7/AutoHotkey.sublime-settings",
+		"/C/Users/Nastar/Pictures/Package Control.sublime-package",
+		"/D/0 Data/Lagu/takut gelap.txt",
+		"/D/0 Data/Lagu/tanpa jati diri.txt",
+		"/D/0 Data/Lagu/tempat yang salah.txt",
+		"/D/0 Data/Lagu/tunggu.txt",
+		"/D/0 Data/Lagu/hanya untukku....txt",
+		"/D/0 Data/Lagu/Ilusi/sebuah tempat.txt",
+		"/D/0 Data/Lagu/Ilusi/ini revolusi.txt",
+		"/D/0 Data/Lagu/Ilusi/ilusi.txt",
+		"/D/0 Data/Lagu/Ilusi/ku ingin tau.txt",
+		"/C/tmp/file.txt",
+		"/D/0 Data/Lagu/program ulang.txt",
+		"/D/0 Data/Lagu/mawar.txt",
+		"/D/0 Data/Lagu/Ilusi/Mari berpesta.txt",
+		"/D/0 Data/Lagu/alasanku ingin mati, alasanku tetap hidup.txt",
+		"/C/Users/Nastar/AppData/Roaming/ExplorerPatcher/StartUI.pdb",
+		"/C/Users/Nastar/OneDrive/Documents/AutoHotkey/Notify.ahk",
+		"/D/0 Data/seven sins.txt",
+		"/D/All_Assets/CSP_Materials/Clip Studio Paint EX New Material/Readme.txt",
+		"/C/Users/Nastar/Downloads/CSP403f/Clip Studio Paint v4.0.3/How to Install.txt"
+	],
+	"find":
+	{
+		"height": 44.0
+	},
+	"find_in_files":
+	{
+		"height": 116.0,
+		"where_history":
+		[
+			""
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"GetPanelHeaderHeight",
+			"dock",
+			"SortSectionItems",
+			"txt",
+			" g.AddText(\"cFFFFFF",
+			"CreateCell",
+			"FormatColorInfo",
+			"NormalizeRoleName",
+			"Set Role",
+			"[",
+			"icon",
+			"role",
+			"confirmmovecolor",
+			"EnsureDefaultSection",
+			"drag",
+			"pin",
+			"Layout(app)",
+			"section",
+			"CheckHelpClose",
+			"destroy",
+			"nastarva",
+			"screenshot",
+			"screen",
+			"screensho",
+			"type",
+			"shownHints",
+			"ShowHistoryHelpToast",
+			"InitToast",
+			"toast",
+			"RebuildUI",
+			"section",
+			"ShowToast(app",
+			"toast",
+			"w1",
+			"w180",
+			"rgb",
+			"GetOrCreateSectionGui(app, sectionName)",
+			"g.SetFont(",
+			"txt",
+			"FormatColorInfo",
+			"DefaultRoleOrder",
+			"GetPaletteRoleOrderText",
+			"GetPaletteGuiModeLabel",
+			"^!S",
+			"DefaultRoleOrder()",
+			"DefaultRoleOrder",
+			"role",
+			"section",
+			"role",
+			"RefreshHistoryUI(app) {\n    if !IsObject(app.historyGui)",
+			"RefreshHistoryUI",
+			"pin",
+			"historygui",
+			"historymax",
+			"SetTimer(() => PickerTick(app),"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+		],
+		"reverse": false,
+		"scrollbar_highlights": true,
+		"show_context": true,
+		"use_buffer2": true,
+		"use_gitignore": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "src/features/history_gui.ahk",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 34013,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								7994,
+								7994
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/AutoHotkey/AutoHotkey.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 6042.4,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"stack_multiselect": false,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "README.md",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 5722,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								3288,
+								3215
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Markdown/Markdown.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 1252.8,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"stack_multiselect": false,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "/C/Users/Nastar/Pictures/Nastarva_Color_Picker_README.md",
+					"selected": true,
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 5866,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								3272,
+								3272
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Markdown/Markdown.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 528.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"stack_multiselect": false,
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 43.2
+	},
+	"input":
+	{
+		"height": 0.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.find_results":
+	{
+		"height": 0.0,
+		"history":
+		[
+		]
+	},
+	"pinned_build_system": "",
+	"project": "Nastarva Color Picker.sublime-project",
+	"replace":
+	{
+		"height": 59.2
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 354.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}

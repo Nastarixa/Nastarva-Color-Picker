@@ -81,7 +81,7 @@ CreateCell(app, item) {
     catch
         return
 
-    try txt := g.AddText("cFFFFFF w180 Center", item.hex)
+    try txt := g.AddText("cFFFFFF w190 Center", item.hex)
     catch {
         try bg.Destroy()
         return
@@ -290,7 +290,7 @@ Layout(app) {
                 continue
             }
 
-            try ctrl.txt.Move(x + 10, y + 2)
+            try ctrl.txt.Move(x + 2, y + 2)
             catch {
                 if app.ui.controls.Has(token)
                     app.ui.controls.Delete(token)

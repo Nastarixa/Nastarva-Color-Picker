@@ -2,6 +2,12 @@
 #ROLEORDER|Base,Highlight,Shadow,Hi Shadow,2 Shadow
 #SECTION|Default
 #SECTION|test
+A73F23|167,63,35|Deep Vivid Red|Base|0|0|Default|50026890-140-1563
+13120E|19,18,14|Dark Muted Yellow|Base|0|0|Default|50005187-139-4483
+E2A13C|226,161,60|Vivid Orange|Base|0|0|Default|50004031-138-3511
+CA8A1E|202,138,30|Vivid Orange|Base|0|0|Default|50000140-137-8328
+26262C|38,38,44|Dark Gray Gray|Base|0|0|Default|48713140-2014-9018
+555555|85,85,85|Granite|Base|0|0|Default|48494000-1902-4281
 3AA05E|58,160,94|Soft Green|Base|0|0|test|47480875-213-2529
 00FF5A|0,255,90|Vivid Green|Base|0|0|test|47480500-212-3690
 FF00B7|255,0,183|Vivid Magenta|Base|0|0|test|47479390-211-2258
@@ -21,9 +27,3 @@ F100FF|241,0,255|Vivid Magenta|Base|0|0|test|47478656-209-8949
 131E41|19,30,65|Dark Soft Blue|Base|0|0|Default|47237453-10-6126
 9EFF80|158,255,128|Light Vivid Green|Base|0|0|Default|47237187-9-8265
 7F7F7F|127,127,127|Gray Gray|Base|0|0|Default|47236937-8-2232
-05091C|5,9,28|Dark Vivid Blue|Base|0|0|Default|47236109-7-8120
-091636|9,22,54|Dark Vivid Blue|Base|0|0|Default|47235796-6-1132
-4E4E4E|78,78,78|Deep Gray Gray|Base|0|0|Default|47235234-5-1621
-CCCCCC|204,204,204|Soft Gray|Highlight|0|0|Default|47234687-4-5939
-4D6DAB|77,109,171|Soft Blue|Base|0|0|Default|47234421-3-1219
-C21F47|194,31,71|Vivid Red|Hi Shadow|0|0|Default|47234125-2-1757

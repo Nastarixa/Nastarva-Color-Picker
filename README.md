@@ -1,151 +1,176 @@
-# Nastarva Color Picker
+# 🎨 Nastarva Color Picker
 
-Nastarva Color Picker is an AutoHotkey v2 tool for picking, organizing, and exporting colors.
+Nastarva Color Picker is an AutoHotkey v2 tool for picking, organizing,
+and exporting colors.
 
-It is built for character-sheet and art-reference workflows where colors are not only saved, but also grouped into palettes, sections, and role-based shade sets such as `Base`, `Highlight`, `Shadow`, `Hi Shadow`, and `2 Shadow`.
+It is designed for character-sheet workflows, art references, and
+palette systems, where colors are structured into palettes, sections,
+and role-based shading systems like:
 
-## What It Does
+-   Base
+-   Highlight
+-   Shadow
+-   Hi Shadow
+-   2 Shadow
 
-- Live screen color picker with HEX and RGB copy
-- Multiple palettes stored as text files
-- Section-based micro palettes inside each palette
-- Docked or undocked section windows
-- Pinned colors with drag reorder and cross-section move
-- Palette import from image file
-- Palette import from screenshot snip
-- Export to `txt`, `json`, `ini`, `csv`, and `png`
+------------------------------------------------------------------------
 
-## Requirements
+## ✨ Features
 
-- Windows
-- AutoHotkey v2
-- PowerShell
-- Windows snipping support for `ms-screenclip:`
+### 🎯 Color Picking
 
-## Main Hotkeys
+-   Live screen color picker
+-   HEX & RGB copy support
+-   Middle click to save color
+-   Ctrl + Middle click to copy RGB
 
-| Hotkey | Action |
-| --- | --- |
-| `Ctrl + Alt + P` | Toggle live color picker |
-| `Ctrl + Alt + O` | Toggle color palette |
-| `Ctrl + Alt + I` | Toggle palette manager |
-| `Ctrl + Alt + U` | Start screenshot snip import |
-| `Ctrl + Alt + 1` to `Ctrl + Alt + 9` | Switch palettes by order |
-# After Toggle Color Picker
-| `Middle Click` | Save and copy Hex Color |
-| `Ctrl + Middle Click` | Save and copy RGB Color |
-# After Toggle Color Palette, in Color Palette
-| `Left Click` | Copy Hex Color |
-| `Ctrl + Left Click` | Copy RGB Color |
-| `Right Click` | Open Color Palette Menu |
-| `Drag` | Reorder Pinned Colors |
+### 🗂 Palette System
 
-## Core Workflow
+-   Multiple palettes stored in text format
+-   Role-based color organization
+-   Section-based micro palettes
+-   Pinned colors with ordering system
 
-### 1. Pick colors live
+### 🪟 UI System
 
-- Turn on the picker with `Ctrl + Alt + P`
-- Hover any pixel on screen
-- Middle click to save the current color
-- `Ctrl + Middle Click` copies RGB
+-   Docked / Undocked section windows
+-   Floating section panels
+-   Drag & drop pinned colors between sections
+-   Persistent panel positions per palette
 
-### 2. Organize colors
+### 🖼 Image-Based Workflow
 
-- Open history with `Ctrl + Alt + O`
-- Each section is its own small panel
-- Click the circle in a section header to make it the active target section
-- New picked colors go to the selected section
-- Right click a color to set role, pin, move, or delete
-- Toast notifications appear at the top-left of the current monitor for better visibility
+-   Import palette from image file
+-   Import palette from screenshot snip
+-   Auto-detect color blocks
+-   Best-effort OCR section naming
+-   Auto-role assignment (heuristic)
 
-### 3. Manage palettes
+### 📤 Export Formats
 
-- Open palette manager with `Ctrl + Alt + I`
-- Create, rename, duplicate, delete, and reorder palettes
-- Set per-palette:
-  - max items per section
-  - columns
-  - GUI mode: `Docked` or `Undocked`
-  - role order
+-   TXT
+-   JSON
+-   INI
+-   CSV
+-   PNG (with layout + labels)
 
-### 4. Import from screenshot or image
+------------------------------------------------------------------------
 
-- Use `Ctrl + Alt + S`, `Ctrl + Alt + U`, or the `Snip` button to capture a palette area
-- Or use `Import` to load a saved image file
-- The importer will try to:
-  - detect solid swatch blocks
-  - split them into sections
-  - assign likely shade roles
-  - pin imported colors automatically
-  - use nearby OCR text as section names when possible
+## 🖼 Image Preview
 
-## GUI Modes
+![Palette Manager](docs/images/1.png)
+![Bottom Palette](docs/images/2.png)
+![Palette on Side](docs/images/3.png)
+![Bottom Palette 100 Color](docs/images/4.png)
+![Split Undock Palett](docs/images/5.png)
+![Split Undock Palette](docs/images/6.png)
+![Information of the Color](docs/images/8.png)
+![Additional Color Palette for Drawing Software](docs/images/8.png)
+![Screenshot Import Result](docs/images/9.png)
+------------------------------------------------------------------------
+
+## ⚙️ Requirements
+
+-   Windows OS
+-   AutoHotkey v2
+-   PowerShell
+-   Windows Snipping Tool (ms-screenclip support)
+
+------------------------------------------------------------------------
+
+## ⌨️ Main Hotkeys
+
+  Hotkey              Action
+  ------------------- ------------------------
+  Ctrl + Alt + P      Toggle color picker
+  Ctrl + Alt + O      Toggle color palette
+  Ctrl + Alt + I      Toggle palette manager
+  Ctrl + Alt + U      Screenshot import
+  Ctrl + Alt + 1--9   Switch palettes
+
+------------------------------------------------------------------------
+
+## 🎛 Color Picker
+
+  Input                 Action
+  --------------------- -----------------
+  Middle Click          Save + Copy HEX
+  Ctrl + Middle Click   Copy RGB
+
+------------------------------------------------------------------------
+
+## 🎨 Color Palette
+
+  Input               Action
+  ------------------- -----------------------
+  Left Click          Copy HEX
+  Ctrl + Left Click   Copy RGB
+  Right Click         Open menu
+  Drag                Reorder pinned colors
+
+------------------------------------------------------------------------
+
+## 🔄 Workflow
+
+1.  Pick colors live
+2.  Organize into sections
+3.  Assign roles
+4.  Pin important colors
+5.  Export palette
+
+------------------------------------------------------------------------
+
+## 🪟 GUI Modes
 
 ### Docked
 
-- Section panels stack from the bottom-left area
-- Good for compact workflows
-- Panels are not draggable in this mode
+-   Stacked sections
+-   Fixed layout
 
 ### Undocked
 
-- Each section is a floating panel
-- Panels can be moved freely
-- Positions are remembered per palette and section
+-   Floating panels
+-   Draggable windows
 
-## Section Features
+------------------------------------------------------------------------
 
-- Create section
-- Rename section
-- Duplicate section
-- Delete section
-- Select target section for new picks
-- Drag pinned colors between sections
-- Drop pinned colors into empty sections
+## 📦 Export Formats
 
-## Export Formats
+TXT, JSON, INI, CSV, PNG
 
-- `TXT`
-- `JSON`
-- `INI`
-- `CSV`
-- `PNG`
+PNG includes: - Palette name - Sections - Swatches - RGB - Roles
 
-PNG export includes:
+------------------------------------------------------------------------
 
-- palette name
-- section grouping
-- swatches
-- RGB values
-- role labels
-
-## File Layout
+## 📁 File Structure
 
 Main script:
 
-- [Nastarva Color Picker.ahk](D:/Github/Nastarva-Color-Picker/Nastarva%20Color%20Picker.ahk)
+- [Nastarva Color Picker.ahk](Nastarva-Color-Picker/Nastarva%20Color%20Picker.ahk)
 
 Core modules:
 
-- [app_core.ahk](D:/Github/Nastarva-Color-Picker/src/core/app_core.ahk)
-- [history_state.ahk](D:/Github/Nastarva-Color-Picker/src/core/history_state.ahk)
-- [persistence.ahk](D:/Github/Nastarva-Color-Picker/src/core/persistence.ahk)
+- [app_core.ahk](Nastarva-Color-Picker/src/core/app_core.ahk)
+- [history_state.ahk](Nastarva-Color-Picker/src/core/history_state.ahk)
+- [persistence.ahk](Nastarva-Color-Picker/src/core/persistence.ahk)
 
 Feature modules:
 
-- [picker.ahk](D:/Github/Nastarva-Color-Picker/src/features/picker.ahk)
-- [history_gui.ahk](D:/Github/Nastarva-Color-Picker/src/features/history_gui.ahk)
-- [palette_manager.ahk](D:/Github/Nastarva-Color-Picker/src/features/palette_manager.ahk)
-- [palette_export.ahk](D:/Github/Nastarva-Color-Picker/src/features/palette_export.ahk)
-- [palette_image_import.ps1](D:/Github/Nastarva-Color-Picker/src/features/palette_image_import.ps1)
-- [palette_png_export.ps1](D:/Github/Nastarva-Color-Picker/src/features/palette_png_export.ps1)
+- [picker.ahk](Nastarva-Color-Picker/src/features/picker.ahk)
+- [history_gui.ahk](Nastarva-Color-Picker/src/features/history_gui.ahk)
+- [palette_manager.ahk](Nastarva-Color-Picker/src/features/palette_manager.ahk)
+- [palette_export.ahk](Nastarva-Color-Picker/src/features/palette_export.ahk)
+- [palette_image_import.ps1](Nastarva-Color-Picker/src/features/palette_image_import.ps1)
+- [palette_png_export.ps1](Nastarva-Color-Picker/src/features/palette_png_export.ps1)
 
 Data:
 
 - palette files are stored in `color\`
 - palette order is stored in `color\palettes.txt`
 
-## Palette Text Format
+------------------------------------------------------------------------
+
+## 📜 Palette Format
 
 Example:
 
@@ -169,34 +194,33 @@ Color row fields:
 7. `section`
 8. `item id`
 
-## Current Limits
+------------------------------------------------------------------------
+
+## ⚠️ Notes
 
 - Image role assignment is heuristic, not guaranteed
 - OCR section naming is best-effort and depends on Windows OCR quality
 - Imported palette layouts with unusual shapes may still need manual cleanup
 - A screenshot import can differ by 1 RGB value from live picker if the captured image is slightly different from the exact on-screen pixel
 
-## Limit Test Notes
+------------------------------------------------------------------------
 
-Checked in this final pass:
+## ⚠️ Disclaimer
 
-- AutoHotkey v2 validation passes for the main script
-- Screenshot/image import runs on multiple reference images
-- Docked and undocked section logic was reviewed
-- Pinned cross-section drag logic was reviewed and patched earlier in this thread
+This project was developed with the assistance of AI tools.
+AI was used to support code writing, refactoring, and documentation, while the design direction, features, and final implementation were guided and reviewed by the author.
 
-Known soft spot after testing:
+------------------------------------------------------------------------
 
-- Automatic role assignment from imported images is the least reliable part because palette layouts vary a lot
-
-## Running The Script
+## ▶️ Running The Script
 
 Run:
 
 ```powershell
 AutoHotkey64.exe "D:\Github\Nastarva-Color-Picker\Nastarva Color Picker.ahk"
 ```
+------------------------------------------------------------------------
 
-## License
+## 📜 License
 
 See [LICENSE](D:/Github/Nastarva-Color-Picker/LICENSE).

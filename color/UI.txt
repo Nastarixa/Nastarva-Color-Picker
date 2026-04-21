@@ -1,6 +1,10 @@
 #META|version=3.0|historyMax=100|maxCols=2|guiMode=docked
 #ROLEORDER|Base,Highlight,Shadow,Hi Shadow,2 Shadow
 #SECTION|Default
+2D70FD|45,112,253|Vivid Blue|Hi Shadow|0|0|Default|48412843-1656-6964
+0A1D3D|10,29,61|Dark Vivid Blue|Base|0|0|Default|48409531-1655-9139
+0C2043|12,32,67|Dark Vivid Blue|Base|0|0|Default|48408093-1654-5485
+091C3A|9,28,58|Dark Vivid Blue|Base|0|0|Default|48407359-1653-6301
 697B6B|105,123,107|Gray Gray|Base|0|0|Default|47514031-832-3431
 277B30|39,123,48|Deep Soft Green|Base|0|0|Default|47513359-831-1626
 4E4E4E|78,78,78|Deep Gray Gray|Base|0|0|Default|47428390-188-6587
@@ -97,7 +101,3 @@ E8FF00|232,255,0|Vivid Green|Base|0|0|Default|47377953-100-5800
 0097FF|0,151,255|Vivid Cyan|Base|0|0|Default|47377187-97-8310
 9100FF|145,0,255|Vivid Purple|Base|0|0|Default|47376921-96-3655
 FF0082|255,0,130|Vivid Magenta|Base|0|0|Default|47376031-95-6482
-FF00AE|255,0,174|Vivid Magenta|Base|0|0|Default|47375296-94-9882
-9A40A8|154,64,168|Soft Magenta|Base|0|0|Default|47375031-93-6048
-6E00FF|110,0,255|Vivid Purple|Base|0|0|Default|47374781-92-6096
-00FF8E|0,255,142|Vivid Cyan|Base|0|0|Default|47374296-91-2058

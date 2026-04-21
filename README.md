@@ -64,7 +64,7 @@ and role-based shading systems like:
 ![Bottom Palette 100 Color](docs/images/4.png)
 ![Split Undock Palett](docs/images/5.png)
 ![Split Undock Palette](docs/images/6.png)
-![Information of the Color](docs/images/8.png)
+![Information of the Color](docs/images/7.png)
 ![Additional Color Palette for Drawing Software](docs/images/8.png)
 ![Screenshot Import Result](docs/images/9.png)
 ------------------------------------------------------------------------

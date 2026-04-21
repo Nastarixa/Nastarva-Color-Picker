@@ -3,7 +3,7 @@
 #UseHook
 Persistent
 
-#Include "color_names.ahk"
+#Include "src/utils/color_names.ahk"
 
 ; =========================================================
 ; GLOBAL STATE

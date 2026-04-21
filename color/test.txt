@@ -1,0 +1,57 @@
+#META|version=3.0|historyMax=20|maxCols=10|guiMode=docked
+#ROLEORDER|Base,Highlight,Shadow,Hi Shadow,2 Shadow
+#SECTION|Default
+#SECTION|Section 1
+#SECTION|Section 2
+#SECTION|Section 3
+#SECTION|Section 4
+#SECTION|Section 5
+#SECTION|Section 6
+#SECTION|Section 7
+#SECTION|Section 8
+#SECTION|Section 9
+#SECTION|Section 10
+#SECTION|Section 11
+F0ECE3|240,236,227|Section 1 Base|Base|1|1|Section 1|48586828-1904-8570
+FFF6B3|255,246,179|Section 2 Highlight|Highlight|1|1|Section 2|48586828-1910-3110
+FFCC53|255,204,83|Section 3 Highlight|Highlight|1|1|Section 3|48586828-1918-6459
+FFE4E2|255,228,226|Section 4 Highlight|Highlight|1|1|Section 4|48586828-1926-9368
+585654|88,86,84|Section 5 Highlight|Highlight|1|1|Section 5|48586828-1934-7377
+FFF6B3|255,246,179|Section 6 Highlight|Highlight|1|1|Section 6|48586828-1942-4076
+B8522A|184,82,42|Section 7 Highlight|Highlight|1|1|Section 7|48586828-1950-7935
+FFAF93|255,175,147|Section 8 Highlight|Highlight|1|1|Section 8|48586828-1958-9612
+F99B5C|249,155,92|Section 9 Highlight|Highlight|1|1|Section 9|48586828-1966-3614
+EC9D49|236,157,73|Section 10 Highlight|Highlight|1|1|Section 10|48586828-1974-3516
+FFF47B|255,244,123|Section 11 Highlight|Highlight|1|1|Section 11|48586828-1982-8339
+C5C5C5|197,197,197|Section 1 Shadow|Shadow|1|2|Section 1|48586828-1906-9661
+FBC63C|251,198,60|Section 2 Base|Base|1|2|Section 2|48586828-1912-5492
+E89A30|232,154,48|Section 3 Base|Base|1|2|Section 3|48586828-1920-4971
+FFD1B9|255,209,185|Section 4 Base|Base|1|2|Section 4|48586828-1928-1719
+333231|51,50,49|Section 5 Base|Base|1|2|Section 5|48586828-1936-9260
+FEE536|254,229,54|Section 6 Base|Base|1|2|Section 6|48586828-1944-4088
+A2330D|162,51,13|Section 7 Base|Base|1|2|Section 7|48586828-1952-3309
+D84C1B|216,76,27|Section 8 Base|Base|1|2|Section 8|48586828-1960-9544
+F68B4F|246,139,79|Section 9 Base|Base|1|2|Section 9|48586828-1968-8819
+E18B39|225,139,57|Section 10 Base|Base|1|2|Section 10|48586828-1976-6045
+FDEE4E|253,238,78|Section 11 Base|Base|1|2|Section 11|48586828-1984-3308
+969696|150,150,150|Section 1 2 Shadow|2 Shadow|1|3|Section 1|48586828-1908-9155
+D48B43|212,139,67|Section 2 Hi Shadow|Hi Shadow|1|3|Section 2|48586828-1914-4954
+B34B1E|179,75,30|Section 3 Hi Shadow|Hi Shadow|1|3|Section 3|48586828-1922-4271
+BC886D|188,136,109|Section 4 Hi Shadow|Hi Shadow|1|3|Section 4|48586828-1930-9893
+1E1E1E|30,30,30|Section 5 Hi Shadow|Hi Shadow|1|3|Section 5|48586828-1938-6551
+DEB926|222,185,38|Section 6 Hi Shadow|Hi Shadow|1|3|Section 6|48586828-1946-7494
+682A14|104,42,20|Section 7 Hi Shadow|Hi Shadow|1|3|Section 7|48586828-1954-4007
+9C2D2D|156,45,45|Section 8 Hi Shadow|Hi Shadow|1|3|Section 8|48586828-1962-8668
+CF6429|207,100,41|Section 9 Hi Shadow|Hi Shadow|1|3|Section 9|48586828-1970-4047
+C36222|195,98,34|Section 10 Hi Shadow|Hi Shadow|1|3|Section 10|48586828-1978-9523
+E2BC23|226,188,35|Section 11 Hi Shadow|Hi Shadow|1|3|Section 11|48586828-1986-5653
+BB7237|187,114,55|Section 2 Shadow|Shadow|1|4|Section 2|48586828-1916-5092
+9B461B|155,70,27|Section 3 Shadow|Shadow|1|4|Section 3|48586828-1924-4480
+A06A4E|160,106,78|Section 4 Shadow|Shadow|1|4|Section 4|48586828-1932-5374
+171717|23,23,23|Section 5 Shadow|Shadow|1|4|Section 5|48586828-1940-5491
+B99214|185,146,20|Section 6 Shadow|Shadow|1|4|Section 6|48586828-1948-3617
+4B231B|75,35,27|Section 7 Shadow|Shadow|1|4|Section 7|48586828-1956-2621
+802626|128,38,38|Section 8 Shadow|Shadow|1|4|Section 8|48586828-1964-8028
+A95210|169,82,16|Section 9 Shadow|Shadow|1|4|Section 9|48586828-1972-2458
+974315|151,67,21|Section 10 Shadow|Shadow|1|4|Section 10|48586828-1980-8977
+BC9112|188,145,18|Section 11 Shadow|Shadow|1|4|Section 11|48586828-1988-6138

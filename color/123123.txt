@@ -1,0 +1,3 @@
+#META|version=3.0|historyMax=30|maxCols=10
+7F7F7F|127,127,127|Gray Gray|Base|0
+080D23|8,13,35|Dark Soft Blue|Base|0

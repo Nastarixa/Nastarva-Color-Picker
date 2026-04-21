@@ -1,0 +1,31 @@
+#META|version=3.0|historyMax=30|maxCols=10
+2B390D|43,57,13|Dark Soft Green|Base|0
+113914|17,57,20|Dark Soft Green|Base|0
+F1FF00|241,255,0|Vivid Yellow|Base|0
+FAFF00|250,255,0|Vivid Yellow|Base|0
+77FF00|119,255,0|Vivid Green|Base|0
+FF8200|255,130,0|Vivid Orange|Base|0
+00FF74|0,255,116|Vivid Green|Base|0
+00D4FF|0,212,255|Vivid Cyan|Base|0
+6E00FF|110,0,255|Vivid Purple|Base|0
+FF002B|255,0,43|Vivid Red|Base|0
+FF001A|255,0,26|Vivid Red|Base|0
+BD00FF|189,0,255|Vivid Purple|Base|0
+FFDA00|255,218,0|Vivid Yellow|Base|0
+0074FF|0,116,255|Vivid Blue|Base|0
+6EFF00|110,255,0|Vivid Green|Base|0
+5E81AC|94,129,172|Muted Blue|Base|0
+FAFAFA|250,250,250|Bright Gray Gray|Base|0
+9EFF80|158,255,128|Light Vivid Green|Base|0
+131E41|19,30,65|Dark Soft Blue|Base|0
+4D6DAB|77,109,171|Soft Blue|Base|0
+091636|9,22,54|Dark Vivid Blue|Base|0
+7F7F7F|127,127,127|Gray Gray|Base|0
+05091C|5,9,28|Dark Vivid Blue|Base|0
+4E4E4E|78,78,78|Deep Gray Gray|Base|0
+110C20|17,12,32|Dark Soft Blue|Base|0
+FFFFFF|255,255,255|White|Base|0
+3F3F3F|63,63,63|Deep Gray Gray|Base|0
+00F7FF|0,247,255|Vivid Cyan|Base|0
+00FF02|0,255,2|Vivid Green|Base|0
+000000|0,0,0|Black|Base|0

@@ -1,0 +1,2 @@
+#META|version=3.0|historyMax=20|maxCols=10
+00FFA8|0,255,168|Vivid Cyan|Base|0

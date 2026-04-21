@@ -1,0 +1,65 @@
+{
+	"folders":
+	[
+		{
+			"path": ".",
+			"folder_exclude_patterns":
+			[
+				".git"
+			],
+			"index_exclude_patterns":
+			[
+				"color/*.txt"
+			]
+		}
+	],
+	"settings":
+	{
+		"tab_size": 4,
+		"translate_tabs_to_spaces": true,
+		"detect_indentation": false,
+		"ensure_newline_at_eof_on_save": true,
+		"trim_trailing_white_space_on_save": true,
+		"word_wrap": false,
+		"rulers":
+		[
+			100
+		]
+	},
+	"build_systems":
+	[
+		{
+			"name": "AHK v2 - Run Main Script",
+			"target": "exec",
+			"cmd":
+			[
+				"C:\\Program Files\\AutoHotkey\\v2\\AutoHotkey64.exe",
+				"$project_path\\Nastarva Color Picker.ahk"
+			],
+			"working_dir": "$project_path",
+			"file_regex": "^(.*) \\((\\d+)\\) : ==> (.*)$"
+		},
+		{
+			"name": "AHK v2 - Run Current File",
+			"target": "exec",
+			"cmd":
+			[
+				"C:\\Program Files\\AutoHotkey\\v2\\AutoHotkey64.exe",
+				"$file"
+			],
+			"working_dir": "$file_path",
+			"file_regex": "^(.*) \\((\\d+)\\) : ==> (.*)$"
+		},
+		{
+			"name": "AHK v2 - Compile Main EXE",
+			"target": "exec",
+			"cmd":
+			[
+				"C:\\Program Files\\AutoHotkey\\Compiler\\Ahk2Exe.exe",
+				"/in",
+				"$project_path\\Nastarva Color Picker.ahk"
+			],
+			"working_dir": "$project_path"
+		}
+	]
+}

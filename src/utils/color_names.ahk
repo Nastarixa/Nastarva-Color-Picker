@@ -6,13 +6,13 @@ GetColorName(hexColor) {
     static colorMap := BuildColorMap()
 
     if colorMap.Has(hexColor)
-        return colorMap[hexColor]
+        return FormatColorName(colorMap[hexColor])
 
     nearest := FindNearestColor(hexColor, colorMap)
     if nearest != ""
-        return nearest
+        return FormatColorName(nearest)
 
-    return GetFallbackColorName(hexColor)
+    return FormatColorName(GetFallbackColorName(hexColor))
 }
 NormalizeHex(hex) {
     hex := RegExReplace(hex, "[^0-9A-Fa-f]")
@@ -56,21 +56,122 @@ GetFallbackColorName(hex) {
     if !IsObject(rgb)
         return "Unknown"
 
-    if (rgb.r > 200 && rgb.g < 120 && rgb.b < 120)
-        return "Red Tone"
+    hsl := RGBToHSL(rgb)
 
-    if (rgb.g > 200 && rgb.r < 120)
-        return "Green Tone"
+    h := hsl.h
+    s := hsl.s
+    l := hsl.l
 
-    if (rgb.b > 200 && rgb.r < 120)
-        return "Blue Tone"
+    ; =========================
+    ; GRAYS (low saturation)
+    ; =========================
+    if (s < 10) {
+        if (l < 10)
+            return "Near Black"
+        if (l < 25)
+            return "Dark Gray"
+        if (l < 60)
+            return "Gray"
+        if (l < 85)
+            return "Light Gray"
+        return "Near White"
+    }
 
-    if (Abs(rgb.r - rgb.g) < 20 && Abs(rgb.g - rgb.b) < 20)
-        return "Neutral Gray"
+    ; =========================
+    ; HUE → BASE COLOR
+    ; =========================
+    if (h < 15 || h >= 345)
+        base := "Red"
+    else if (h < 45)
+        base := "Orange"
+    else if (h < 65)
+        base := "Yellow"
+    else if (h < 150)
+        base := "Green"
+    else if (h < 200)
+        base := "Cyan"
+    else if (h < 260)
+        base := "Blue"
+    else if (h < 290)
+        base := "Purple"
+    else
+        base := "Pink"
 
-    return "Custom Color"
+    ; =========================
+    ; LIGHTNESS PREFIX
+    ; =========================
+    if (l < 20)
+        tone := "Dark"
+    else if (l > 80)
+        tone := "Light"
+    else
+        tone := ""
+
+    ; =========================
+    ; SATURATION MODIFIER
+    ; =========================
+    if (s > 80)
+        vivid := "Vivid"
+    else if (s < 25)
+        vivid := "Muted"
+    else
+        vivid := ""
+
+    ; =========================
+    ; BUILD NAME
+    ; =========================
+    name := ""
+
+    if (tone != "")
+        name .= tone " "
+
+    if (vivid != "")
+        name .= vivid " "
+
+    name .= base
+
+    return name
 }
+RGBToHSL(rgb) {
+    r := rgb.r / 255
+    g := rgb.g / 255
+    b := rgb.b / 255
 
+    max := Max(r, g, b)
+    min := Min(r, g, b)
+    l := (max + min) / 2
+
+    if (max = min) {
+        h := 0
+        s := 0
+    } else {
+        d := max - min
+        s := l > 0.5 ? d / (2 - max - min) : d / (max + min)
+
+        if (max = r)
+            h := (g - b) / d + (g < b ? 6 : 0)
+        else if (max = g)
+            h := (b - r) / d + 2
+        else
+            h := (r - g) / d + 4
+
+        h /= 6
+    }
+
+    return {
+        h: Round(h * 360),
+        s: Round(s * 100),
+        l: Round(l * 100)
+    }
+}
+FormatColorName(name) {
+    if InStr(name, " ")
+        return name
+
+    name := RegExReplace(name, "([A-Z]+)([A-Z][a-z])", "$1 $2")
+    name := RegExReplace(name, "([a-z])([A-Z])", "$1 $2")
+    return name
+}
 BuildColorMap() {
     static maps := Map()
     static initialized := false
@@ -80,170 +181,163 @@ BuildColorMap() {
 
     initialized := true
 
-    ; ================= FULL COLOR DATABASE =================
-        maps["000000"] := "Black"
-    maps["000080"] := "Navy"
-    maps["00008B"] := "DarkBlue"
-    maps["0000CD"] := "MediumBlue"
-    maps["0000FF"] := "Blue"
-    maps["006400"] := "DarkGreen"
-    maps["008000"] := "Green"
-    maps["008080"] := "Teal"
-    maps["008B8B"] := "DarkCyan"
-    maps["00BFFF"] := "DeepSkyBlue"
-    maps["00CED1"] := "DarkTurquoise"
-    maps["00FA9A"] := "MediumSpringGreen"
-    maps["00FF00"] := "Lime"
-    maps["00FF7F"] := "SpringGreen"
-    maps["00FFFF"] := "Cyan"
-
-    maps["191970"] := "MidnightBlue"
-    maps["1E90FF"] := "DodgerBlue"
-    maps["20B2AA"] := "LightSeaGreen"
-    maps["228B22"] := "ForestGreen"
-    maps["2E8B57"] := "SeaGreen"
-    maps["2F4F4F"] := "DarkSlateGray"
-    maps["32CD32"] := "LimeGreen"
-    maps["3CB371"] := "MediumSeaGreen"
-
-    maps["40E0D0"] := "Turquoise"
-    maps["4169E1"] := "RoyalBlue"
-    maps["4682B4"] := "SteelBlue"
-    maps["483D8B"] := "DarkSlateBlue"
-    maps["48D1CC"] := "MediumTurquoise"
-    maps["4B0082"] := "Indigo"
-    maps["556B2F"] := "DarkOliveGreen"
-    maps["5F9EA0"] := "CadetBlue"
-
-    maps["6495ED"] := "CornflowerBlue"
-    maps["663399"] := "RebeccaPurple"
-    maps["66CDAA"] := "MediumAquaMarine"
-    maps["696969"] := "DimGray"
-    maps["6A5ACD"] := "SlateBlue"
-    maps["6B8E23"] := "OliveDrab"
-    maps["708090"] := "SlateGray"
-    maps["778899"] := "LightSlateGray"
-
-    maps["7B68EE"] := "MediumSlateBlue"
-    maps["7CFC00"] := "LawnGreen"
-    maps["7FFF00"] := "Chartreuse"
-    maps["7FFFD4"] := "Aquamarine"
-
-    maps["800000"] := "Maroon"
-    maps["800080"] := "Purple"
-    maps["808000"] := "Olive"
+    ; =========================================================
+    ; CORE COLORS
+    ; =========================================================
+    maps["000000"] := "Black"
+    maps["FFFFFF"] := "White"
     maps["808080"] := "Gray"
+    maps["C0C0C0"] := "Silver"
 
-    maps["87CEEB"] := "SkyBlue"
-    maps["87CEFA"] := "LightSkyBlue"
-    maps["8A2BE2"] := "BlueViolet"
-    maps["8B0000"] := "DarkRed"
-    maps["8B008B"] := "DarkMagenta"
-    maps["8B4513"] := "SaddleBrown"
-    maps["8FBC8F"] := "DarkSeaGreen"
+    ; =========================================================
+    ; BLUES
+    ; =========================================================
+    maps["000080"] := "Navy"
+    maps["00008B"] := "Dark Blue"
+    maps["0000CD"] := "Medium Blue"
+    maps["0000FF"] := "Blue"
+    maps["191970"] := "Midnight Blue"
+    maps["1E90FF"] := "Dodger Blue"
+    maps["4169E1"] := "Royal Blue"
+    maps["4682B4"] := "Steel Blue"
+    maps["6495ED"] := "Cornflower Blue"
+    maps["87CEEB"] := "Sky Blue"
+    maps["87CEFA"] := "Light Sky Blue"
 
-    maps["90EE90"] := "LightGreen"
-    maps["9370DB"] := "MediumPurple"
-    maps["9400D3"] := "DarkViolet"
-    maps["98FB98"] := "PaleGreen"
-    maps["9932CC"] := "DarkOrchid"
-    maps["9ACD32"] := "YellowGreen"
+    ; --- Extended ---
+    maps["001F3F"] := "Navy Deep"
+    maps["003366"] := "Oxford Blue"
+    maps["0047AB"] := "Cobalt"
+    maps["007FFF"] := "Azure Blue"
+    maps["3399FF"] := "Bright Blue"
+    maps["66B2FF"] := "Soft Blue"
+    maps["CCE6FF"] := "Ice Blue"
 
+    ; =========================================================
+    ; GREENS
+    ; =========================================================
+    maps["006400"] := "Dark Green"
+    maps["008000"] := "Green"
+    maps["00FF00"] := "Lime"
+    maps["228B22"] := "Forest Green"
+    maps["2E8B57"] := "Sea Green"
+    maps["32CD32"] := "Lime Green"
+    maps["3CB371"] := "Medium Sea Green"
+    maps["90EE90"] := "Light Green"
+
+    ; --- Extended ---
+    maps["013220"] := "Deep Forest"
+    maps["016936"] := "Jungle Green"
+    maps["2ECC71"] := "Emerald"
+    maps["4CAF50"] := "Material Green"
+    maps["66FF66"] := "Neon Green"
+    maps["CCFFCC"] := "Pale Mint"
+
+    ; =========================================================
+    ; REDS
+    ; =========================================================
+    maps["800000"] := "Maroon"
+    maps["8B0000"] := "Dark Red"
+    maps["DC143C"] := "Crimson"
+    maps["FF0000"] := "Red"
+    maps["FF4500"] := "Orange Red"
+    maps["FF6347"] := "Tomato"
+
+    ; --- Extended ---
+    maps["660000"] := "Deep Red"
+    maps["7A0000"] := "Blood Red"
+    maps["990000"] := "Strong Red"
+    maps["FF4D4D"] := "Soft Red"
+    maps["FF8080"] := "Light Red"
+
+    ; =========================================================
+    ; YELLOW / ORANGE
+    ; =========================================================
+    maps["FFA500"] := "Orange"
+    maps["FF8C00"] := "Dark Orange"
+    maps["FFD700"] := "Gold"
+    maps["FFFF00"] := "Yellow"
+
+    ; --- Extended ---
+    maps["CC5500"] := "Burnt Orange"
+    maps["E67300"] := "Strong Orange"
+    maps["FFB266"] := "Peach Orange"
+    maps["FFFF66"] := "Soft Yellow"
+    maps["FFFFCC"] := "Pale Yellow"
+
+    ; =========================================================
+    ; PURPLE / PINK
+    ; =========================================================
+    maps["800080"] := "Purple"
+    maps["8A2BE2"] := "Blue Violet"
+    maps["9370DB"] := "Medium Purple"
+    maps["DA70D6"] := "Orchid"
+    maps["FF00FF"] := "Magenta"
+    maps["FF69B4"] := "Hot Pink"
+
+    ; --- Extended ---
+    maps["2E003E"] := "Deep Purple"
+    maps["6A0DAD"] := "True Purple"
+    maps["B266FF"] := "Light Purple"
+    maps["FF99CC"] := "Soft Pink"
+    maps["FFD6EB"] := "Pale Rose"
+
+    ; =========================================================
+    ; BROWNS / EARTH
+    ; =========================================================
+    maps["8B4513"] := "Saddle Brown"
     maps["A0522D"] := "Sienna"
     maps["A52A2A"] := "Brown"
-    maps["A9A9A9"] := "DarkGray"
-
-    maps["ADD8E6"] := "LightBlue"
-    maps["ADFF2F"] := "GreenYellow"
-    maps["AFEEEE"] := "PaleTurquoise"
-
-    maps["B0C4DE"] := "LightSteelBlue"
-    maps["B0E0E6"] := "PowderBlue"
-    maps["B22222"] := "FireBrick"
-    maps["B8860B"] := "DarkGoldenRod"
-    maps["BA55D3"] := "MediumOrchid"
-    maps["BC8F8F"] := "RosyBrown"
-    maps["BDB76B"] := "DarkKhaki"
-
-    maps["C0C0C0"] := "Silver"
-    maps["C71585"] := "MediumVioletRed"
-
-    maps["CD5C5C"] := "IndianRed"
-    maps["CD853F"] := "Peru"
-
-    maps["D2691E"] := "Chocolate"
     maps["D2B48C"] := "Tan"
-    maps["D3D3D3"] := "LightGray"
-    maps["D8BFD8"] := "Thistle"
-    maps["DA70D6"] := "Orchid"
-    maps["DAA520"] := "GoldenRod"
-    maps["DB7093"] := "PaleVioletRed"
+    maps["DEB887"] := "Burly Wood"
 
-    maps["DC143C"] := "Crimson"
-    maps["DCDCDC"] := "Gainsboro"
-    maps["DDA0DD"] := "Plum"
-    maps["DEB887"] := "BurlyWood"
+    ; --- Extended ---
+    maps["3E2723"] := "Dark Brown"
+    maps["4E342E"] := "Coffee"
+    maps["6D4C41"] := "Earth Brown"
+    maps["A1887F"] := "Dust Brown"
+    maps["BCAAA4"] := "Sand Brown"
 
-    maps["E0FFFF"] := "LightCyan"
-    maps["E6E6FA"] := "Lavender"
-    maps["E9967A"] := "DarkSalmon"
+    ; =========================================================
+    ; GRAYS / NEUTRALS
+    ; =========================================================
+    maps["2F4F4F"] := "Dark Slate Gray"
+    maps["696969"] := "Dim Gray"
+    maps["708090"] := "Slate Gray"
+    maps["778899"] := "Light Slate Gray"
+    maps["A9A9A9"] := "Dark Gray"
+    maps["D3D3D3"] := "Light Gray"
 
-    maps["EE82EE"] := "Violet"
-    maps["EEE8AA"] := "PaleGoldenRod"
+    ; --- Extended ---
+    maps["0A0A0A"] := "Rich Black"
+    maps["1A1A1A"] := "Jet Black"
+    maps["333333"] := "Dark Charcoal"
+    maps["555555"] := "Granite"
+    maps["888888"] := "Cool Gray"
+    maps["CCCCCC"] := "Soft Gray"
+    maps["F2F2F2"] := "Snow Gray"
 
-    maps["F08080"] := "LightCoral"
-    maps["F0E68C"] := "Khaki"
-    maps["F0F8FF"] := "AliceBlue"
-    maps["F0FFF0"] := "HoneyDew"
-    maps["F0FFFF"] := "Azure"
+    ; =========================================================
+    ; CYAN / AQUA
+    ; =========================================================
+    maps["00FFFF"] := "Cyan"
+    maps["00CED1"] := "Dark Turquoise"
+    maps["40E0D0"] := "Turquoise"
+    maps["48D1CC"] := "Medium Turquoise"
+    maps["7FFFD4"] := "Aquamarine"
+    maps["E0FFFF"] := "Light Cyan"
 
-    maps["F4A460"] := "SandyBrown"
-    maps["F5DEB3"] := "Wheat"
-    maps["F5F5DC"] := "Beige"
-    maps["F5F5F5"] := "WhiteSmoke"
-    maps["F5FFFA"] := "MintCream"
+    ; =========================================================
+    ; UI / DESIGN COLORS
+    ; =========================================================
+    maps["1E1E2F"] := "Dark UI Blue"
+    maps["2A2A3D"] := "Panel Background"
+    maps["3A3A4F"] := "UI Hover"
+    maps["505070"] := "UI Border"
 
-    maps["F8F8FF"] := "GhostWhite"
-
-    maps["FA8072"] := "Salmon"
-    maps["FAEBD7"] := "AntiqueWhite"
-    maps["FAF0E6"] := "Linen"
-    maps["FAFAD2"] := "LightGoldenRodYellow"
-
-    maps["FF0000"] := "Red"
-    maps["FF00FF"] := "Magenta"
-    maps["FF1493"] := "DeepPink"
-    maps["FF4500"] := "OrangeRed"
-    maps["FF6347"] := "Tomato"
-    maps["FF69B4"] := "HotPink"
-    maps["FF7F50"] := "Coral"
-    maps["FF8C00"] := "DarkOrange"
-    maps["FFA07A"] := "LightSalmon"
-    maps["FFA500"] := "Orange"
-
-    maps["FFB6C1"] := "LightPink"
-    maps["FFC0CB"] := "Pink"
-    maps["FFD700"] := "Gold"
-    maps["FFDAB9"] := "PeachPuff"
-    maps["FFDEAD"] := "NavajoWhite"
-
-    maps["FFE4B5"] := "Moccasin"
-    maps["FFE4C4"] := "Bisque"
-    maps["FFE4E1"] := "MistyRose"
-    maps["FFEBCD"] := "BlanchedAlmond"
-    maps["FFEFD5"] := "PapayaWhip"
-    maps["FFF0F5"] := "LavenderBlush"
-    maps["FFF5EE"] := "SeaShell"
-    maps["FFF8DC"] := "Cornsilk"
-    maps["FFFACD"] := "LemonChiffon"
-
-    maps["FFFAF0"] := "FloralWhite"
-    maps["FFFAFA"] := "Snow"
-
-    maps["FFFF00"] := "Yellow"
-    maps["FFFFE0"] := "LightYellow"
-    maps["FFFFF0"] := "Ivory"
-    maps["FFFFFF"] := "White"
+    maps["F1F3F4"] := "Surface Light"
+    maps["202124"] := "Surface Dark"
+    maps["E8F0FE"] := "Light UI Blue"
 
     return maps
 }

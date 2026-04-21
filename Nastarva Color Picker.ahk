@@ -801,45 +801,65 @@ OpenPaletteManager(app) {
         return
     }
 
-    g := Gui("+AlwaysOnTop +Resize", "Palette Manager v" app.version)
-    g.BackColor := "202020"
+    g := Gui("+AlwaysOnTop +Resize", "🎨 Palette Manager v" app.version)
+    g.BackColor := "1E1E1E"
     g.SetFont("s10", "Consolas")
-    g.AddText("xm c888888", "Nastarva v" app.version)
+
+    ; =========================
+    ; HEADER
+    ; =========================
+    g.SetFont("s11 bold", "Consolas")
+    g.AddText("xm cFFFFFF", "🎨 Nastarva Palette Manager")
+
+    g.SetFont("s9 norm", "Consolas")
+    g.AddText("xm c888888", "Version " app.version)
 
     ; =========================
     ; LIST
     ; =========================
-    g.list := g.AddListBox("w300 h260 xm")
+    g.AddText("xm y+10 cAAAAAA", "📂 Palettes")
+
+    g.list := g.AddListBox("w320 h220 xm y+5")
+    g.list.OnEvent("Change", (*) => PaletteSwitchUI(app, g))
+    g.list.OnEvent("DoubleClick", (*) => OpenPaletteFile(app, g))
 
     ; =========================
-    ; SETTINGS (ONE ROW)
+    ; SETTINGS PANEL
     ; =========================
-    g.AddText("xm cFFFFFF", "Max:")
-    g.inputMax := g.AddEdit("w60 Number x+5")
+    g.AddText("xm y+10 cAAAAAA", "⚙️ Settings")
 
-    g.AddText("x+10 cFFFFFF", "Cols:")
-    g.inputCols := g.AddEdit("w60 Number x+5")
+    g.AddText("xm y+5 cFFFFFF", "Max:")
+    g.inputMax := g.AddEdit("w60 Number x+5 yp-2")
 
-    g.AddButton("x+10 w80", "Apply")
+    g.AddText("x+15 yp+2 cFFFFFF", "Cols:")
+    g.inputCols := g.AddEdit("w60 Number x+5 yp-2")
+
+    g.AddButton("x+15 yp w80 h25", "✅ Apply")
         .OnEvent("Click", (*) => ApplyPaletteSettings(app))
 
     ; =========================
-    ; ACTION BUTTONS (COMPACT)
+    ; ACTION BUTTONS
     ; =========================
-    g.AddButton("xm w90", "Switch")
-        .OnEvent("Click", (*) => PaletteSwitchUI(app, g))
+    g.AddText("xm y+15 cAAAAAA", "🛠 Actions")
 
-    g.AddButton("x+10 w90", "New")
+    g.AddButton("xm w100 h28", "➕ New")
         .OnEvent("Click", (*) => CreatePaletteUI(app, g))
 
-    g.AddButton("x+10 w90", "Delete")
+    g.AddButton("x+10 w100 h28", "🗑 Delete")
         .OnEvent("Click", (*) => DeletePaletteUI(app, g))
 
-    g.AddButton("xm w90", "Up")
+    g.AddButton("xm y+5 w100 h28", "⬆ Move Up")
         .OnEvent("Click", (*) => MovePalette(app, g, -1))
 
-    g.AddButton("x+10 w90", "Down")
+    g.AddButton("x+10 w100 h28", "⬇ Move Down")
         .OnEvent("Click", (*) => MovePalette(app, g, 1))
+
+    ; =========================
+    ; FOOTER HELP
+    ; =========================
+    g.AddText("xm y+15 c666666", "💡 Click = Switch palette")
+    g.AddText("xm c666666", "💡 Double Click = Open file location")
+
     ; =========================
     ; INIT DATA
     ; =========================
@@ -857,6 +877,33 @@ OpenPaletteManager(app) {
 
     g.Show("Center")
     app.paletteGui := g
+}
+OpenPaletteFile(app, g) {
+    sel := g.list.Value
+    if !sel
+        return
+
+    name := app.paletteOrder[sel]
+    p := app.palettes[name]
+
+    if !p
+        return
+
+    file := p.file
+
+    if !FileExist(file) {
+        MsgBox "File not found:`n" file
+        return
+    }
+
+    ; --- behavior ---
+    if GetKeyState("Ctrl") {
+        ; Ctrl + double click → open file
+        Run('notepad.exe "' file '"')
+    } else {
+        ; Double click → open folder + select file
+        Run('explorer.exe /select,"' file '"')
+    }
 }
 ApplyPaletteSettings(app) {
     g := app.paletteGui
@@ -1087,6 +1134,10 @@ SwitchPalette(app, name) {
     Emit(app, "history_changed")
 }
 CreateItem(hex, rgb, name := "", role := "Base") {
+
+    if (name = "")
+        name := GetColorName(hex)  
+
     return {
         hex: hex,
         rgb: rgb,

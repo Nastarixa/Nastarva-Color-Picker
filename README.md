@@ -80,33 +80,33 @@ and role-based shading systems like:
 
 ## ⌨️ Main Hotkeys
 
-  Hotkey              Action
-  ------------------- ------------------------
-  Ctrl + Alt + P      Toggle color picker
-  Ctrl + Alt + O      Toggle color palette
-  Ctrl + Alt + I      Toggle palette manager
-  Ctrl + Alt + U      Screenshot import
-  Ctrl + Alt + 1--9   Switch palettes
+  | Hotkey | Action |
+  | -------- | -------- |
+  | Ctrl + Alt + P | Toggle color picker |
+  | Ctrl + Alt + O | Toggle color palette |
+  | Ctrl + Alt + I | Toggle palette manager |
+  | Ctrl + Alt + U | Screenshot import |
+  | Ctrl + Alt + 1--9 | Switch palettes |
 
 ------------------------------------------------------------------------
 
 ## 🎛 Color Picker
 
-  Input                 Action
-  --------------------- -----------------
-  Middle Click          Save + Copy HEX
-  Ctrl + Middle Click   Copy RGB
+  | Input | Action |
+  | -------- | -------- |
+  | Middle Click | Save + Copy HEX |
+  | Ctrl + Middle Click |Save + Copy RGB |
 
 ------------------------------------------------------------------------
 
 ## 🎨 Color Palette
 
-  Input               Action
-  ------------------- -----------------------
-  Left Click          Copy HEX
-  Ctrl + Left Click   Copy RGB
-  Right Click         Open menu
-  Drag                Reorder pinned colors
+  | Input | Action |
+  | -------- | -------- |
+  | Left Click | Copy HEX |
+  | Ctrl + Left Click | Copy RGB |
+  | Right Click | Open Menu |
+  | Drag | Reorder pinned color |
 
 ------------------------------------------------------------------------
 

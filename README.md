@@ -100,7 +100,7 @@ and role-based shading systems like:
 ------------------------------------------------------------------------
 
 ## 🎨 Color Palette
-
+  
   | Input | Action |
   | -------- | -------- |
   | Left Click | Copy HEX |

@@ -1,0 +1,3 @@
+﻿; Nastarva Favorite Colors
+; Format: HEX|RGB|Name|Role|Tag
+1C1111|28,17,17|BG-CB 1C1111|Background|Default

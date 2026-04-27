@@ -263,7 +263,7 @@ LoadHistory(app) {
                     if (parts.Length >= 4 && InStr(parts[4], "collapsed="))
                         section.collapsed := (SubStr(parts[4], 11) = "1")
                     if (parts.Length >= 5 && InStr(parts[5], "tag="))
-                        section.tag := StrUpper(RegExReplace(SubStr(parts[5], 5), "[^0-9A-F]"))
+                        section.tag := StrUpper(RegExReplace(SubStr(parts[5], 5), "(?i)[^0-9A-F]"))
                     if (parts.Length >= 6 && InStr(parts[6], "note="))
                         section.note := UnescapeSectionMeta(SubStr(parts[6], 6))
                     p.sections.Push(section)
@@ -365,7 +365,7 @@ SavePalette(p, version) {
         if IsObject(section) {
             locked := section.HasOwnProp("locked") && section.locked ? 1 : 0
             collapsed := section.HasOwnProp("collapsed") && section.collapsed ? 1 : 0
-            tag := section.HasOwnProp("tag") ? StrUpper(RegExReplace(section.tag, "[^0-9A-F]")) : ""
+            tag := section.HasOwnProp("tag") ? StrUpper(RegExReplace(section.tag, "(?i)[^0-9A-F]")) : ""
             note := section.HasOwnProp("note") ? section.note : ""
             f.WriteLine("#SECTION|" section.id "|" EscapeSectionMeta(section.name) "|locked=" locked "|collapsed=" collapsed "|tag=" tag "|note=" EscapeSectionMeta(note))
         } else {

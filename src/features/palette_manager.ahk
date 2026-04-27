@@ -972,8 +972,13 @@ ShowImportFolderPreview(app, folderPath, imageFiles) {
     g.AddText("cAAAAAA y+5", "Found " imageFiles.Length " images:")
     g.fileList := g.AddListView("w450 h200 -Multi", ["#", "File Name"])
     g.fileList.SetFont("s8", "Consolas")
-    g.fileList.ModifyCol(1, 40)
-    g.fileList.ModifyCol(2, 380)
+    totalW := 450
+    hexW := 40
+    remaining := totalW - hexW - 20
+    each := Floor(remaining / 1)
+    g.fileList.ModifyCol(1, hexW)
+    Loop 1
+        g.fileList.ModifyCol(A_Index + 1, each)
 
     for i, fpath in imageFiles {
         fname := SubStr(fpath, InStr(fpath, "\",, -1) + 1)
@@ -1324,7 +1329,8 @@ OpenPaletteMergeDialog(app) {
 
     g.AddText("cAAAAAA y+12", "Options:")
 
-    g.chkSkipDup := g.AddCheckbox("Checked y+4", "Skip duplicates (keep existing)")
+    g.chkSkipDup := g.AddCheckbox("Checked y+4 cAAAAAA", "Skip duplicates (keep existing)")
+    g.chkDeleteSrc := g.AddCheckbox("y+4 cAAAAAA", "Delete source palette after merge")
 
     g.AddText("cAAAAAA y+10", "Section (leave empty for default):")
     g.sectionEdit := g.AddEdit("w250 y+4")
@@ -1347,6 +1353,7 @@ DoPaletteMerge(app, g) {
     src := app.palettes[srcName]
     tgt := app.palettes[tgtName]
     skipDup := g.chkSkipDup.Value
+    deleteSrc := g.chkDeleteSrc.Value
     section := Trim(g.sectionEdit.Value)
     if section = ""
         section := "Imported"
@@ -1365,14 +1372,34 @@ DoPaletteMerge(app, g) {
         newItem.pinned := 0
         AddColor(tgt, newItem)
         added++
-        if !tgt.sections.Has(item.section)
-            tgt.sections.Push(item.section)
+        if !HasSectionName(tgt, item.section)
+            AddSectionName(tgt, item.section)
     }
 
     Normalize(tgt)
     SaveHistory(app)
+
+    if deleteSrc {
+        palettePath := app.palettes[srcName].file
+        if FileExist(palettePath)
+            FileDelete(palettePath)
+        app.palettes.Delete(srcName)
+        for i, n in app.paletteOrder {
+            if (n = srcName) {
+                app.paletteOrder.RemoveAt(i)
+                break
+            }
+        }
+        if (app.activePalette.name = srcName)
+            app.activePalette := tgt
+        SavePaletteList(app)
+    }
+
     g.Destroy()
-    ShowToast(app, "Merged: " added " added, " skipped " skipped (duplicates)")
+    msg := "Merged: " added " added, " skipped " skipped"
+    if deleteSrc
+        msg .= ". Deleted " srcName
+    ShowToast(app, msg)
 }
 
 OpenPaletteCompareDialog(app) {
@@ -1450,6 +1477,13 @@ DoPaletteCompare(app, g) {
     cg.AddText("c00FF88 y+10", "In Both (" common.Length "):")
     cg.commonList := cg.AddListView("w480 h100 -Multi", ["HEX", "Name", "Role", "A Name", "B Name"])
     cg.commonList.SetFont("s8", "Consolas")
+    totalW := 480
+    hexW := 70
+    remaining := totalW - hexW - 20
+    each := Floor(remaining / 4)
+    cg.commonList.ModifyCol(1, hexW)
+    Loop 4
+        cg.commonList.ModifyCol(A_Index + 1, each)
     for hex in common {
         itemA := setA[hex]
         itemB := setB[hex]
@@ -1461,6 +1495,13 @@ DoPaletteCompare(app, g) {
     cg.AddText("cFF6B6B y+8", "Only in " nameA " (" onlyA.Length "):")
     cg.onlyAList := cg.AddListView("w480 h80 -Multi", ["HEX", "Name", "Role"])
     cg.onlyAList.SetFont("s8", "Consolas")
+    totalW := 480
+    hexW := 70
+    remaining := totalW - hexW - 20
+    each := Floor(remaining / 2)
+    cg.onlyAList.ModifyCol(1, hexW)
+    Loop 2
+        cg.onlyAList.ModifyCol(A_Index + 1, each)
     for hex in onlyA {
         item := setA[hex]
         cg.onlyAList.Add("", "#" hex, item.name, item.role)
@@ -1471,6 +1512,13 @@ DoPaletteCompare(app, g) {
     cg.AddText("c6B9FFF y+8", "Only in " nameB " (" onlyB.Length "):")
     cg.onlyBList := cg.AddListView("w480 h80 -Multi", ["HEX", "Name", "Role"])
     cg.onlyBList.SetFont("s8", "Consolas")
+    totalW := 480
+    hexW := 70
+    remaining := totalW - hexW - 20
+    each := Floor(remaining / 2)
+    cg.onlyBList.ModifyCol(1, hexW)
+    Loop 2
+        cg.onlyBList.ModifyCol(A_Index + 1, each)
     for hex in onlyB {
         item := setB[hex]
         cg.onlyBList.Add("", "#" hex, item.name, item.role)
@@ -2188,9 +2236,13 @@ ColorBlindApplyColors(app, g, colors) {
     g.AddText("cFFFFFF y+10", "Preview (" colors.Length " colors):")
     g.previewList := g.AddListView("w500 h200 -Multi", ["Original", "Simulated", "Name"])
     g.previewList.SetFont("s8", "Consolas")
-    g.previewList.ModifyCol(1, 60)
-    g.previewList.ModifyCol(2, 60)
-    g.previewList.ModifyCol(3, 150)
+    totalW := 500
+    hexW := 70
+    remaining := totalW - hexW - 20
+    each := Floor(remaining / 2)
+    g.previewList.ModifyCol(1, hexW)
+    Loop 2
+        g.previewList.ModifyCol(A_Index + 1, each)
 
     UpdateColorBlindPreview(g, colors, "Protanopia")
 

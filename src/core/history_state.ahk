@@ -256,7 +256,7 @@ GetSectionTagColor(p, sectionName) {
     section := GetSectionObjectByName(p, sectionName)
     if !IsObject(section) || !section.HasOwnProp("tag")
         return ""
-    tag := StrUpper(RegExReplace(section.tag, "[^0-9A-F]"))
+    tag := StrUpper(RegExReplace(section.tag, "(?i)[^0-9A-F]"))
     return StrLen(tag) = 6 ? tag : ""
 }
 
@@ -356,7 +356,7 @@ SetSectionTagColorMutation(p, sectionName, tag) {
     section := GetSectionObjectByName(p, sectionName)
     if !IsObject(section)
         return false
-    tag := StrUpper(RegExReplace(Trim(tag), "[^0-9A-F]"))
+    tag := StrUpper(RegExReplace(Trim(tag), "(?i)[^0-9A-F]"))
     if (tag != "" && StrLen(tag) != 6)
         return false
     section.tag := tag
@@ -756,14 +756,19 @@ DeleteSectionMutation(p, sectionName) {
         }
     }
 
-    Loop p.colors.Length {
-        index := p.colors.Length - A_Index + 1
-        item := p.colors[index]
+    indicesToRemove := []
+    for i, item in p.colors {
         if GetItemSectionNameForState(item) = sectionName {
-            if p.map.Has(item.hex)
-                p.map.Delete(item.hex)
-            p.colors.RemoveAt(index)
+            indicesToRemove.Push(i)
         }
+    }
+    
+    Loop indicesToRemove.Length {
+        idx := indicesToRemove.RemoveAt(indicesToRemove.Length)
+        item := p.colors[idx]
+        if p.map.Has(item.hex)
+            p.map.Delete(item.hex)
+        p.colors.RemoveAt(idx)
     }
 
     EnsureDefaultSection(p)

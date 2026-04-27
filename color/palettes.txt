@@ -1,6 +1,3 @@
 Default
-Shadow
 UI
-ggss
-Primary + Secondary
-ggss (Copy)
+Shadow

@@ -1,60 +1,114 @@
 #META|version=3.5|historyMax=20|maxCols=10|guiMode=undocked|priority=1|note=
-#ROLEORDER|Base,Highlight,Shadow,Hi Shadow,2 Shadow
-#SECTION|s12835921-4-2432|Default|locked=0|collapsed=0|tag=|note=
-#SECTION|s12840078-5-2232|Clothing|locked=0|collapsed=0|tag=|note=
-#SECTION|s12840078-6-5050|Eyes (Blue)|locked=0|collapsed=0|tag=|note=
-#SECTION|s12840078-7-2105|Eyes (Brown)|locked=0|collapsed=0|tag=|note=
-#SECTION|s12840078-8-7474|Hair (Dark)|locked=0|collapsed=0|tag=|note=
-#SECTION|s12840078-9-1028|Hair (Light)|locked=0|collapsed=0|tag=|note=
-#SECTION|s12840078-11-4857|Skin|locked=0|collapsed=0|tag=FF6600|note=
-#SECTION|s13219625-1-4476|Outline|locked=0|collapsed=0|tag=|note=
-#POSITION|s12835921-4-2432|88|1517|2472|75
-#POSITION|s12840078-11-4857|104|1135|2472|75
-#POSITION|s12840078-5-2232|88|1517|2472|75
-#POSITION|s12840078-6-5050|88|1517|2472|75
-#POSITION|s12840078-7-2105|88|1517|2472|75
-#POSITION|s12840078-8-7474|88|1517|2472|75
-#POSITION|s12840078-9-1028|68|929|2472|75
-#POSITION|s13219625-1-4476|88|1517|2472|75
-6E4630|110,70,48|Deep Soft Orange|Base|0|0|Default|20975109-42-2725
-E6C77A|230,199,122|Light Vivid Orange|Highlight|0|0|Default|18552859-41-5927
-CFAE68|207,174,104|Soft Orange|Highlight|0|0|Default|17612062-40-6959
-A3874F|163,135,79|Hair Shadow|Base|0|0|Hair (Light)|12840078-25-1103
-FFF2B0|255,242,176|Hair Highlight|Hi Shadow|0|0|Hair (Light)|12840078-24-6370
-CFAE68|207,174,104|Hair Hi-Shadow|Base|0|0|Hair (Light)|12840078-23-7543
-A3874F|163,135,79|Muted Orange|2 Shadow|0|0|Default|17435890-39-4072
-6E5A33|110,90,51|Deep Soft Orange|Shadow|0|0|Default|15743187-38-3410
-FFF2B0|255,242,176|Light Vivid Yellow|2 Shadow|0|0|Default|15644656-37-1394
-FF0000|255,0,0|Red|Base|0|0|Default|13860343-36-3182
-FF0000|255,0,0|Red|Base|0|0|Skin|13844546-35-3467
-4169E1|65,105,225|Royal Blue|Base|0|0|Default|13221671-34-7542
-212121|33,33,33|Dark Gray Gray|Shadow|0|0|Skin|12846406-97-9690
-B97A50|185,122,80|Skin Shadow|Highlight|0|0|Skin|12840078-32-4674
-FFDCC2|255,220,194|Skin Highlight|Shadow|0|0|Skin|12840078-31-8334
-D89A6A|216,154,106|Skin Hi-Shadow|Hi-Shadow|0|0|Skin|12840078-30-1498
-6E4630|110,70,48|Skin Deep|Hi Shadow|0|0|Skin|12840078-29-4411
-EFA676|239,166,118|Skin Base|Shadow|0|0|Skin|12840078-28-4688
-0F0F0F|15,15,15|Outline|Outline|0|0|Skin|12840078-27-4498
-141414|20,20,20|Black|Black|0|0|Skin|12840078-26-3936
-6E5A33|110,90,51|Hair Deep|Shadow|0|0|Hair (Light)|12840078-22-8991
-E6C77A|230,199,122|Hair Base|Highlight|0|0|Hair (Light)|12840078-21-8096
-36251D|54,37,29|Hair Shadow|Shadow|0|0|Hair (Dark)|12840078-20-6777
-8B6A55|139,106,85|Hair Highlight|Highlight|0|0|Hair (Dark)|12840078-19-3944
-4A342A|74,52,42|Hair Hi-Shadow|Hi-Shadow|0|0|Hair (Dark)|12840078-18-3807
-1C130F|28,19,15|Hair Deep|2 Shadow|0|0|Hair (Dark)|12840078-17-7369
-5C4033|92,64,51|Hair Base|Base|0|0|Hair (Dark)|12840078-16-6143
-5A371A|90,55,26|Eye Shadow|Shadow|0|0|Eyes (Brown)|12840078-15-3640
-E6C7A1|230,199,161|Eye Highlight|Highlight|0|0|Eyes (Brown)|12840078-14-8425
-734923|115,73,35|Eye Hi-Shadow|Hi-Shadow|0|0|Eyes (Brown)|12840078-13-7690
-2E1C0D|46,28,13|Eye Deep|2 Shadow|0|0|Eyes (Brown)|12840078-12-3688
-8B5A2B|139,90,43|Eye Base|Base|0|0|Eyes (Brown)|12840078-11-6266
-2F5C99|47,92,153|Eye Shadow|Shadow|0|0|Eyes (Blue)|12840078-10-2026
-CFE9FF|207,233,255|Eye Highlight|Highlight|0|0|Eyes (Blue)|12840078-9-9742
-3E7BC0|62,123,192|Eye Hi-Shadow|Hi-Shadow|0|0|Eyes (Blue)|12840078-8-9433
-1A345A|26,52,90|Eye Deep|2 Shadow|0|0|Eyes (Blue)|12840078-7-1082
-4A90E2|74,144,226|Eye Base|Base|0|0|Eyes (Blue)|12840078-6-4830
-2C4AA3|44,74,163|Cloth Shadow|Shadow|0|0|Clothing|12840078-5-5186
-8FB3FF|143,179,255|Cloth Highlight|Highlight|0|0|Clothing|12840078-4-4592
-3657C0|54,87,192|Cloth Hi-Shadow|Hi-Shadow|0|0|Clothing|12840078-3-5069
-162552|22,37,82|Cloth Deep|2 Shadow|0|0|Clothing|12840078-2-2766
-4169E1|65,105,225|Cloth Base|Base|0|0|Clothing|12840078-1-6418
+#ROLEORDER|Base,Highlight,Shadow,Hi Shadow,2 Shadow,Mask,Outline,Black
+#SECTION|s25174640-1-9057|Default|locked=0|collapsed=0|tag=|note=
+#SECTION|s92796-1-4410|Clothing|locked=0|collapsed=0|tag=|note=
+#SECTION|s92796-2-2726|Eyes (Blue)|locked=0|collapsed=0|tag=|note=
+#SECTION|s92796-3-1219|Eyes (Brown)|locked=0|collapsed=0|tag=|note=
+#SECTION|s92796-4-3251|Hair (Dark)|locked=0|collapsed=0|tag=|note=
+#SECTION|s92796-5-8260|Hair (Light)|locked=0|collapsed=0|tag=|note=
+#SECTION|s92796-6-6283|Outline|locked=0|collapsed=0|tag=|note=
+#SECTION|s92796-7-3070|Skin|locked=0|collapsed=0|tag=|note=
+#SECTION|s760953-1-4933|Harmony|locked=0|collapsed=0|tag=|note=
+#SECTION|s915906-1-3052|ColorBlind|locked=0|collapsed=0|tag=|note=
+#SECTION|s1583390-1-9733|Contrast|locked=0|collapsed=0|tag=|note=
+#SECTION|s7648093-1-3306|Gradient|locked=0|collapsed=0|tag=|note=
+#POSITION|s1583390-1-9733|179|794|2472|75
+#POSITION|s25174640-1-9057|192|486|2472|75
+#POSITION|s760953-1-4933|449|365|2472|75
+#POSITION|s7648093-1-3306|3324|190|2472|117
+#POSITION|s915906-1-3052|88|1483|2472|117
+#POSITION|s92796-1-4410|88|1517|2472|75
+#POSITION|s92796-2-2726|88|1517|2472|75
+#POSITION|s92796-3-1219|88|1517|2472|75
+#POSITION|s92796-4-3251|88|1517|2472|75
+#POSITION|s92796-5-8260|88|1517|2472|75
+#POSITION|s92796-6-6283|88|1517|2472|75
+#POSITION|s92796-7-3070|166|1301|2472|75
+8B5A2B|139,90,43|Deep Soft Orange|Base|0|0|Gradient|7910625-98-6312
+826627|130,102,39|Deep Soft Orange|Base|0|0|Gradient|7910625-97-3900
+787222|120,114,34|Deep Soft Yellow|Base|0|0|Gradient|7910625-96-3165
+6F7E1E|111,126,30|Deep Soft Green|Base|0|0|Gradient|7910625-95-5247
+668A1A|102,138,26|Deep Vivid Green|Base|0|0|Gradient|7910625-94-9177
+5C9715|92,151,21|Deep Vivid Green|Base|0|0|Gradient|7910625-93-6898
+53A311|83,163,17|Deep Vivid Green|Base|0|0|Gradient|7910625-92-6614
+4AAF0D|74,175,13|Deep Vivid Green|Base|0|0|Gradient|7910625-91-4563
+40BB08|64,187,8|Deep Vivid Green|Base|0|0|Gradient|7910625-90-3020
+37C704|55,199,4|Deep Vivid Green|Base|0|0|Gradient|7910625-89-9949
+C4033|0,0,0|Dark Gray Gray|Base|0|0|Gradient|7707078-395-3374
+95449|0,0,0|Dark Gray Gray|Base|0|0|Gradient|7707078-394-8947
+6685E|0,0,0|Dark Gray Gray|Base|0|0|Gradient|7707078-393-9509
+37C74|0,0,0|Dark Gray Gray|Base|0|0|Gradient|7707078-392-9283
+09089|0,0,0|Dark Gray Gray|Base|0|0|Gradient|7707078-391-7571
+CA59F|0,0,0|Dark Gray Gray|Base|0|0|Gradient|7707078-390-6345
+9B9B4|0,0,0|Dark Gray Gray|Base|0|0|Gradient|7707078-389-4661
+6CDCA|0,0,0|Dark Gray Gray|Base|0|0|Gradient|7707078-388-5594
+3E1DF|0,0,0|Dark Gray Gray|Base|0|0|Gradient|7707078-387-3258
+0F5F5|0,0,0|Dark Gray Gray|Base|0|0|Gradient|7707078-386-4455
+713335|113,51,53|BG-CB 713335|Background|0|0|Contrast|2813593-68-5712
+60BCBA|96,188,186|FG-CB 60BCBA|Foreground|0|0|Contrast|2813593-67-8186
+1C1111|28,17,17|BG-CB 1C1111|Background|0|0|Contrast|2245671-67-5290
+4A8886|74,136,134|FG-CB 4A8886|Foreground|0|0|Contrast|2245671-66-7408
+43ADA8|67,173,168|Soft Cyan|Base|0|0|Default|2181546-64-8199
+60BCBA|96,188,186|CB 60BCBA|Base|0|0|ColorBlind|921109-272-8037
+323636|50,54,54|CB 323636|Base|0|0|ColorBlind|921109-271-9667
+4A8886|74,136,134|CB 4A8886|Base|0|0|ColorBlind|921109-270-7648
+43ADA8|67,173,168|CB 43ADA8|Base|0|0|ColorBlind|921109-269-3831
+173F3D|23,63,61|CB 173F3D|Base|0|0|ColorBlind|921109-268-7252
+38938E|56,147,142|CB 38938E|Base|0|0|ColorBlind|921109-267-8633
+91DEDB|145,222,219|CB 91DEDB|Base|0|0|ColorBlind|921109-266-5793
+2E7C79|46,124,121|CB 2E7C79|Base|0|0|ColorBlind|921109-265-4535
+4EBEBB|78,190,187|CB 4EBEBB|Base|0|0|ColorBlind|921109-264-8288
+1B4A48|27,74,72|CB 1B4A48|Base|0|0|ColorBlind|921109-263-5011
+41A29F|65,162,159|CB 41A29F|Base|0|0|ColorBlind|921109-262-7529
+D0F5F5|208,245,245|CB D0F5F5|Base|0|0|ColorBlind|921109-261-6770
+317F7C|49,127,124|CB 317F7C|Base|0|0|ColorBlind|921109-260-4044
+893F41|137,63,65|CB 893F41|Base|0|0|ColorBlind|921109-259-5379
+2D1314|45,19,20|CB 2D1314|Base|0|0|ColorBlind|921109-258-8213
+713335|113,51,53|CB 713335|Base|0|0|ColorBlind|921109-257-8367
+E4B1B3|228,177,179|CB E4B1B3|Base|0|0|ColorBlind|921109-256-2227
+582728|88,39,40|CB 582728|Base|0|0|ColorBlind|921109-255-9694
+5B3939|91,57,57|CB 5B3939|Base|0|0|ColorBlind|921109-254-6824
+1C1111|28,17,17|CB 1C1111|Base|0|0|ColorBlind|921109-253-1530
+76BEEF|118,190,239|Light Vivid Cyan|Base|0|0|Harmony|787359-198-4134
+82EF76|130,239,118|Light Vivid Green|Base|0|0|Harmony|787359-197-3444
+EFA676|239,166,118|Light Vivid Orange|Base|0|0|Harmony|787359-196-8700
+E376EF|227,118,239|Light Vivid Magenta|Base|0|0|Harmony|777453-114-9985
+76BFEF|118,191,239|Light Vivid Cyan|Base|0|0|Harmony|777453-113-6354
+83EF76|131,239,118|Light Vivid Green|Base|0|0|Harmony|777453-112-6640
+B9AF50|185,175,80|Soft Yellow|Base|0|0|Harmony|760953-37-4649
+B94650|185,70,80|Soft Red|Base|0|0|Harmony|760953-36-3288
+B97A50|185,122,80|Skin Shadow|Shadow|0|0|Skin|92796-35-2921
+FFDCC2|255,220,194|Skin Highlight|Highlight|0|0|Skin|92796-34-1079
+D89A6A|216,154,106|Skin Hi-Shadow|Hi-Shadow|0|0|Skin|92796-33-5359
+6E4630|110,70,48|Skin Deep|2 Shadow|0|0|Skin|92796-32-2567
+EFA676|239,166,118|Skin Base|Base|0|0|Skin|92796-31-3244
+0F0F0F|15,15,15|Outline|Outline|0|0|Outline|92796-30-7890
+141414|20,20,20|Black|Black|0|0|Outline|92796-29-5828
+A3874F|163,135,79|Hair Shadow|Shadow|0|0|Hair (Light)|92796-28-9904
+FFF2B0|255,242,176|Hair Highlight|Highlight|0|0|Hair (Light)|92796-27-3624
+CFAE68|207,174,104|Hair Hi-Shadow|Hi-Shadow|0|0|Hair (Light)|92796-26-2554
+6E5A33|110,90,51|Hair Deep|2 Shadow|0|0|Hair (Light)|92796-25-2754
+E6C77A|230,199,122|Hair Base|Base|0|0|Hair (Light)|92796-24-1302
+36251D|54,37,29|Hair Shadow|Shadow|0|0|Hair (Dark)|92796-23-9884
+8B6A55|139,106,85|Hair Highlight|Highlight|0|0|Hair (Dark)|92796-22-3221
+4A342A|74,52,42|Hair Hi-Shadow|Hi-Shadow|0|0|Hair (Dark)|92796-21-4555
+1C130F|28,19,15|Hair Deep|2 Shadow|0|0|Hair (Dark)|92796-20-6908
+5C4033|92,64,51|Hair Base|Base|0|0|Hair (Dark)|92796-19-4159
+5A371A|90,55,26|Eye Shadow|Shadow|0|0|Eyes (Brown)|92796-18-3660
+E6C7A1|230,199,161|Eye Highlight|Highlight|0|0|Eyes (Brown)|92796-17-9702
+734923|115,73,35|Eye Hi-Shadow|Hi-Shadow|0|0|Eyes (Brown)|92796-16-5355
+2E1C0D|46,28,13|Eye Deep|2 Shadow|0|0|Eyes (Brown)|92796-15-6293
+8B5A2B|139,90,43|Eye Base|Base|0|0|Eyes (Brown)|92796-14-7334
+2F5C99|47,92,153|Eye Shadow|Shadow|0|0|Eyes (Blue)|92796-13-7490
+CFE9FF|207,233,255|Eye Highlight|Highlight|0|0|Eyes (Blue)|92796-12-3222
+3E7BC0|62,123,192|Eye Hi-Shadow|Hi-Shadow|0|0|Eyes (Blue)|92796-11-7474
+1A345A|26,52,90|Eye Deep|2 Shadow|0|0|Eyes (Blue)|92796-10-6730
+4A90E2|74,144,226|Eye Base|Base|0|0|Eyes (Blue)|92796-9-8225
+2C4AA3|44,74,163|Cloth Shadow|Shadow|0|0|Clothing|92796-8-7614
+8FB3FF|143,179,255|Cloth Highlight|Highlight|0|0|Clothing|92796-7-6860
+3657C0|54,87,192|Cloth Hi-Shadow|Hi-Shadow|0|0|Clothing|92796-6-3300
+162552|22,37,82|Cloth Deep|2 Shadow|0|0|Clothing|92796-5-4831
+4169E1|65,105,225|Cloth Base|Base|0|0|Clothing|92796-4-5643
+487299|72,114,153|Soft Cyan|2 Shadow|0|0|Default|25179046-1-6376
+323338|50,51,56|Deep Gray Gray|2 Shadow|0|0|Default|26543578-3-9791
+5D9FD2|93,159,210|Soft Cyan|Base|0|0|Default|25179640-2-3812

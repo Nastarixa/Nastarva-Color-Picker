@@ -103,6 +103,8 @@ Hotkey("~Space", (*) => App.historyVisible && ToggleNavSelection(App))
 
 ~MButton::
 {
+    if App.HasOwnProp("roleMenuGui") && SafeGetGuiHwnd(App.roleMenuGui)
+        return
     if HandleSectionHeaderMiddleClick(App)
         return
     if HandleHistoryMiddleClick(App)

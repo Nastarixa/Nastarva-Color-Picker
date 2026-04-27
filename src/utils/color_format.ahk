@@ -84,6 +84,9 @@ GetRoleIcon(role) {
         case "Shadow": return "▰"
         case "Hi Shadow": return "▼"
         case "2 Shadow": return "▣"
+        case "Mask": return "░"
+        case "Outline": return "◇"
+        case "Black": return "⬢"
         default: return ""
     }
 }

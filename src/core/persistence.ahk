@@ -410,7 +410,16 @@ JoinRoleOrder(roleOrder) {
 }
 
 DefaultRoleOrder() {
-    return ["Base", "Highlight", "Shadow", "Hi Shadow", "2 Shadow"]
+    return [
+        "Base",
+        "Highlight",
+        "Shadow",
+        "Hi Shadow",
+        "2 Shadow",
+        "Mask",
+        "Outline",
+        "Black"
+    ]
 }
 
 GenerateItemId() {

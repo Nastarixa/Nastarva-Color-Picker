@@ -2102,6 +2102,8 @@ OpenColorHarmonyDialog(app) {
     g.targetPreview := g.AddProgress("x175 y" rowY " w90 h24")
     g.targetPreview.Opt("Background" colors[1])
 
+    g.colorDrop.OnEvent("Change", (*) => UpdateColorDropPreview(g, colors))
+
     rowY += 32
 
     ; =========================
@@ -2136,7 +2138,7 @@ OpenColorHarmonyDialog(app) {
     g.btnApply.OnEvent("Click", (*) => ApplyColorHarmony(app, g))
     g.btnClose.OnEvent("Click", (*) => g.Destroy())
 
-    g.colorDrop.OnEvent("Change", (*) => UpdateHarmonyPreview(g))
+    g.colorDrop.OnEvent("Change", (*) => UpdateColorDropPreview(g, colors))
     g.harmonyDrop.OnEvent("Change", (*) => UpdateHarmonyPreview(g))
 
     ; =========================
@@ -2146,6 +2148,15 @@ OpenColorHarmonyDialog(app) {
 
     g.Show("AutoSize Center")
 }
+UpdateColorDropPreview(g, colors) {
+    dropText := g.colorDrop.Text
+    if !dropText || dropText = ""
+        return
+    baseHex := Trim(StrReplace(dropText, "#"))
+    if StrLen(baseHex) = 6
+        try g.targetPreview.Opt("Background" baseHex)
+}
+
 UpdateHarmonyPreview(g) {
     dropText := g.colorDrop.Text
     if !dropText || dropText = "" {
@@ -2157,7 +2168,7 @@ UpdateHarmonyPreview(g) {
         g.previewLabel.Text := "Preview: Invalid color"
         return
     }
-    try g.targetPreview.Opt("c" baseHex)
+    try g.targetPreview.Opt("Background" baseHex)
     harmonyType := g.harmonyDrop.Text
     harmonyColors := CalculateHarmony(baseHex, harmonyType)
     g.previewLabel.Text := "Preview: " harmonyColors.Length " colors"
@@ -2216,15 +2227,16 @@ OpenColorBlindDialog(app) {
     g.cbDrop := g.AddDropDownList("x10 y" rowY " w230", cbTypes)
     g.cbDrop.Value := 1
     rowY += 28
-    g.targetPreview := g.AddProgress("x10 y" rowY " w230 h1 Background4A4A4A")
-    rowY += 12
-    g.previewLabel := g.AddText("x10 y" rowY " cAAAAAA", "Preview: " colors.Length " colors")
+    g.targetPreview := g.AddProgress("x10 y" rowY " w230 h30 Background" colors[1])
+    rowY += 34
+    g.previewLabel := g.AddText("x10 y" rowY " cFFFFFF", "Preview: " colors.Length " colors")
     rowY += 26
     g.AddText("x10 y" rowY " cAAAAAA", "Actions")
     rowY += 18
     g.btnApply := g.AddButton("x10 y" rowY " w110 h28", "✨ Apply")
-g.btnClose := g.AddButton("x130 y" rowY " w110 h28", "✖ Close")
+    g.btnClose := g.AddButton("x130 y" rowY " w110 h28", "✖ Close")
     g.btnClose.OnEvent("Click", (*) => g.Destroy())
+    g.btnApply.OnEvent("Click", (*) => AddColorBlindColors(app, g, colors))
     g.cbDrop.OnEvent("Change", (*) => UpdateColorBlindPreview(g, colors, g.cbDrop.Text))
 
     UpdateColorBlindPreview(g, colors, g.cbDrop.Text)
@@ -2263,7 +2275,7 @@ UpdateColorBlindPreview(g, colors, cbType) {
     if InStr(firstColor, "|")
         firstColor := StrSplit(firstColor, "|")[1]
     simHex := SimulateColorBlindness(firstColor, cbType)
-    try g.targetPreview.Opt("c" simHex)
+    try g.targetPreview.Opt("Background" simHex)
 
     if !g.HasOwnProp("previewList") || !g.previewList {
         g.previewLabel.Text := "Preview: " colors.Length " colors"

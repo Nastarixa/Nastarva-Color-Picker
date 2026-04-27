@@ -151,7 +151,7 @@ HistoryMiddleClick(app, wParam, lParam, msg, hwnd) {
     if SafeGetGuiHwnd(app.pinMenuGui)
         try app.pinMenuGui.Hide()
     if SafeGetGuiHwnd(app.roleMenuGui)
-        try app.roleMenuGui.Hide()
+        try app.roleMenuGui.Destroy()
 
     OpenRoleMenu(app, token)
 }

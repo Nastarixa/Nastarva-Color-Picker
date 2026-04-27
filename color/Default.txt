@@ -1,6 +1,6 @@
-#META|version=3.5|historyMax=20|maxCols=10|guiMode=docked|priority=3|note=
+#META|version=3.5|historyMax=20|maxCols=10|guiMode=docked|priority=2|note=
 #ROLEORDER|Base,Highlight,Shadow,Hi Shadow,2 Shadow
 #SECTION|s33326156-2-1433|Default|locked=0|collapsed=0|tag=|note=
-10B981|16,185,129|Deep Vivid Cyan|Base|0|0|Default|33452265-3-6854
-EC4899|236,72,153|Vivid Red|Base|0|0|Default|33440265-2-9840
-3B82F6|59,130,246|Vivid Blue|Base|0|0|Default|33419265-1-4016
+10B981|16,185,129|Deep Vivid Cyan|Hi Shadow|0|0|Default|33452265-3-6854
+EC4899|236,72,153|Vivid Red|Hi Shadow|0|0|Default|33440265-2-9840
+3B82F6|59,130,246|Vivid Blue|Hi Shadow|0|0|Default|33419265-1-4016

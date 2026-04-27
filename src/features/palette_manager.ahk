@@ -1606,15 +1606,29 @@ OpenPaletteTemplateDialog(app) {
     ; ===== Initial preview =====
     selName := g.tplList.Text
     tpl := templates[selName]
-    g.previewLabel.Text := "Preview: " tpl["items"].Count " colors"
+    g.previewLabel.Text := "Preview: " GetTemplateColorCount(tpl) " colors"
 
     g.Show("AutoSize Center")
 }
 UpdateTemplatePreview(g, templates) {
     selName := g.tplList.Text
     tpl := templates[selName]
-    count := tpl["items"].Count
+    count := GetTemplateColorCount(tpl)
     g.previewLabel.Text := "Preview: " count " colors"
+}
+
+GetTemplateColorCount(tpl) {
+    count := 0
+    if tpl.Has("sections") {
+        for sectionName, sectionData in tpl["sections"] {
+            if sectionData.Has("items") {
+                count += sectionData["items"].Count
+            }
+        }
+    } else if tpl.Has("items") {
+        count := tpl["items"].Count
+    }
+    return count
 }
 
 CreatePaletteFromTemplate(app, g) {
@@ -1712,18 +1726,18 @@ ReplacePaletteWithTemplate(app, tpl) {
 }
 
 AddTemplateItemsToPalette(p, tpl, defaultSection := "") {
-    if tpl.HasOwnProp("sections") && IsObject(tpl.sections) {
-        for sectionName, sectionData in tpl.sections {
-            if !IsObject(sectionData) || !sectionData.HasOwnProp("items")
+    if tpl.Has("sections") && IsObject(tpl["sections"]) {
+        for sectionName, sectionData in tpl["sections"] {
+            if !IsObject(sectionData) || !sectionData.Has("items")
                 continue
-            for name, data in sectionData.items {
+            for name, data in sectionData["items"] {
                 AddTemplateItemToPalette(p, name, data, sectionName)
             }
         }
-    } else {
-        useUniqueSection := tpl.HasOwnProp("section") && tpl.section != ""
+    } else if tpl.Has("items") && IsObject(tpl["items"]) {
+        useUniqueSection := tpl.Has("section") && tpl["section"] != ""
         for name, data in tpl["items"] {
-            AddTemplateItemToPalette(p, name, data, useUniqueSection ? tpl.section : defaultSection)
+            AddTemplateItemToPalette(p, name, data, useUniqueSection ? tpl["section"] : defaultSection)
         }
     }
 }

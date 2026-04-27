@@ -1,3 +1,3 @@
-#META|version=3.5|historyMax=20|maxCols=10|guiMode=docked|priority=1|note=
+#META|version=3.5|historyMax=20|maxCols=10|guiMode=docked|priority=3|note=
 #ROLEORDER|Base,Highlight,Shadow,Hi Shadow,2 Shadow
-#SECTION|s33329843-3-2449|Default|locked=0|collapsed=0|tag=|note=
+#SECTION|s4958484-1-6705|Default|locked=0|collapsed=0|tag=|note=

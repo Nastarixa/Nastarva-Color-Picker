@@ -5,13 +5,23 @@ Persistent
 
 #Include "src/utils/color_format.ahk"
 #Include "src/utils/color_names.ahk"
+#Include "src/utils/color_calc.ahk"
 #Include "src/core/app_core.ahk"
 #Include "src/core/history_state.ahk"
 #Include "src/core/persistence.ahk"
+#Include "src/ui/cell.ahk"
+#Include "src/features/palette_gui.ahk"
 #Include "src/features/picker.ahk"
-#Include "src/features/history_gui.ahk"
 #Include "src/features/palette_manager.ahk"
+#Include "src/features/palette_templates.ahk"
+#Include "src/features/display_settings.ahk"
+#Include "src/features/actions.ahk"
 #Include "src/features/palette_export.ahk"
+#Include "src/features/section_handler.ahk"
+#Include "src/features/role_handler.ahk"
+#Include "src/features/color_dialogs.ahk"
+#Include "src/features/import_review.ahk"
+#Include "src/features/favorites.ahk"
 
 ; =========================================================
 ; GLOBAL STATE
@@ -25,14 +35,48 @@ CoordMode("Pixel", "Screen")
 InitPalettes(App)
 App.activePalette := App.palettes["Default"]
 LoadHistory(App)
+LoadFavorites(App)
 InitEvents(App)
+InitKeyboardNav(App)
 ShowHotkeyHelp(App)
+SetTimer(CheckClipboardColorPoll, 1000)
+
+CheckClipboardColorPoll() {
+    global App
+    hex := CheckClipboardForColor(App)
+    if hex = "" || !App.historyVisible
+        return
+    if App.HasOwnProp("lastClipboardHex") && App.lastClipboardHex = hex
+        return
+    App.lastClipboardHex := hex
+    section := GetSelectedSectionName(App.activePalette)
+    if section = ""
+        section := "Clipboard"
+    AddColorFromHex(App, hex, section)
+}
+
+AddColorFromHex(App, hex, section) {
+    p := App.activePalette
+    if p.map.Has(hex)
+        return
+    rgb := HexToRGB(hex)
+    name := GetColorName(hex)
+    item := CreateItem(hex, rgb.r "," rgb.g "," rgb.b, name, "Base")
+    item.section := section
+    item.pinned := 0
+    AddColor(p, item)
+    AddSectionName(p, section)
+    Normalize(p)
+    SaveHistory(App)
+    RefreshSectionByName(App, section)
+    ShowToast(App, "Added #" hex " from clipboard")
+}
 
 ; =========================================================
 ; HOTKEYS (MUST BE GLOBAL SCOPE IN AHK v2)
 ; =========================================================
 ^!p::TogglePicker(App)
-^!o::ToggleHistory(App)
+^!o::TogglePalette(App)
 ^!u::StartPaletteScreenshotImport(App)
 
 ^!1::SwitchPaletteByIndex(App, 1)
@@ -45,7 +89,25 @@ ShowHotkeyHelp(App)
 ^!8::SwitchPaletteByIndex(App, 8)
 ^!9::SwitchPaletteByIndex(App, 9)
 ^!i::TogglePaletteManager(App)
+^!f::ShowFavoritesWindow(App)
+^!v::PasteColorFromClipboard(App)
 
-~MButton::SaveColor(App)
+Hotkey("~Left", (*) => App.historyVisible && NavigateKeyboard(App, "Left"))
+Hotkey("~Right", (*) => App.historyVisible && NavigateKeyboard(App, "Right"))
+Hotkey("~Up", (*) => App.historyVisible && NavigateKeyboard(App, "Up"))
+Hotkey("~Down", (*) => App.historyVisible && NavigateKeyboard(App, "Down"))
+Hotkey("~Home", (*) => App.historyVisible && NavigateKeyboard(App, "Home"))
+Hotkey("~End", (*) => App.historyVisible && NavigateKeyboard(App, "End"))
+Hotkey("~Enter", (*) => App.historyVisible && EnterSelectedColor(App))
+Hotkey("~Space", (*) => App.historyVisible && ToggleNavSelection(App))
+
+~MButton::
+{
+    if HandleSectionHeaderMiddleClick(App)
+        return
+    if HandleHistoryMiddleClick(App)
+        return
+    SaveColor(App)
+}
+
 ~^MButton::SaveColor(App)
-

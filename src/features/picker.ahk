@@ -1,8 +1,6 @@
 GetCursorPosForCapture(app, &x, &y) {
     pt := Buffer(8, 0)
-
     DllCall("GetCursorPos", "Ptr", pt)
-
     x := NumGet(pt, 0, "Int")
     y := NumGet(pt, 4, "Int")
 }
@@ -11,16 +9,11 @@ GetColorAtPhysical(x, y) {
     hDC := DllCall("GetDC", "Ptr", 0, "Ptr")
     if (!hDC)
         return -1
-
     bgr := DllCall("GetPixel", "Ptr", hDC, "Int", x, "Int", y, "UInt")
     DllCall("ReleaseDC", "Ptr", 0, "Ptr", hDC)
-
     if (bgr = 0xFFFFFFFF)
         return -1
-
-    return ((bgr & 0xFF) << 16)
-         | (bgr & 0x00FF00)
-         | ((bgr >> 16) & 0xFF)
+    return ((bgr & 0xFF) << 16) | (bgr & 0x00FF00) | ((bgr >> 16) & 0xFF)
 }
 
 EnterDpiCaptureContext(app) {
@@ -36,32 +29,101 @@ LeaveDpiCaptureContext(oldCtx) {
 
 GetColorUnderCursor(app) {
     old := EnterDpiCaptureContext(app)
-    try {
-        GetCursorPosForCapture(app, &x, &y)
-        color := GetColorAtPhysical(x, y)
+    GetCursorPosForCapture(app, &x, &y)
+    color := GetColorAtPhysical(x, y)
+    LeaveDpiCaptureContext(old)
+    if (color = -1)
+        return "000000"
+    return Format("{:06X}", color)
+}
 
-        if (color = -1)
-            return "000000"
+CreatePickGui(app) {
+    app.pickGui := Gui("+AlwaysOnTop -Caption +ToolWindow")
+    app.pickGui.BackColor := "323338"
+    app.pickGui.SetFont("s9", "Consolas")
+    app.pickGui.MarginX := 8
+    app.pickGui.MarginY := 6
 
-        return Format("{:06X}", color)
-    } finally {
-        LeaveDpiCaptureContext(old)
+    app.pickGui.preview := app.pickGui.AddProgress("xm y+4 w40 h40")
+    app.pickGui.hexText := app.pickGui.AddText("xp+50 yp+2 w140 h18 cFFFFFF", "#FFFFFF")
+    app.pickGui.rgbText := app.pickGui.AddText("xp yp+18 w140 h18 cAAAAAA", "RGB: 255,255,255")
+
+    app.pickGuiRole := Gui("+AlwaysOnTop -Caption +ToolWindow")
+    app.pickGuiRole.BackColor := "323338"
+    app.pickGuiRole.SetFont("s9", "Consolas")
+    app.pickGuiRole.MarginX := 0
+    app.pickGuiRole.MarginY := 0
+
+    app.pickGuiRole.roleControls := []
+
+    app.rolePadding := 6
+    app.roleGapX := 6
+    app.roleGapY := 4
+    app.roleColWidth := 90
+    app.roleRowHeight := 18
+
+    containerX := 3
+    containerY := 5
+    containerW := 200
+    containerH := 100
+
+    app.pickGuiRole.container := app.pickGuiRole.AddText(
+        "x" containerX " y" containerY " w" containerW " h" containerH " Background38383D Border"
+    )
+
+    startX := containerX + app.rolePadding
+    startY := containerY + app.rolePadding
+
+    Loop 6 {
+        i := A_Index
+
+        col := Mod(i-1, 2)
+        row := Floor((i-1) / 2)
+
+        x := startX + col * (app.roleColWidth + app.roleGapX)
+        y := startY + row * (app.roleRowHeight + app.roleGapY)
+
+        ctrl := app.pickGuiRole.AddText(
+            "x" x " y" y " w" app.roleColWidth " h" app.roleRowHeight " cAAAAAA BackgroundTrans"
+        )
+
+        app.pickGuiRole.roleControls.Push(ctrl)
     }
 }
 
 TogglePicker(app) {
-    if !IsObject(app.pickerTickFn)
+    if !IsObject(app.pickerTickFn) {
         app.pickerTickFn := PickerTick.Bind(app)
+    }
 
     app.CheckActive := !app.CheckActive
 
     if app.CheckActive {
+        app.lastPickHex := ""
+        app.lastMouseX := 0
+        app.lastMouseY := 0
+        app.pickGuiRoleVisible := false
+
+        if !app.pickGui {
+            CreatePickGui(app)
+        }
+
+        for ctrl in app.pickGuiRole.roleControls {
+            ctrl.Value := ""
+        }
+
+        MovePickGui(app)
         SetTimer(app.pickerTickFn, 10)
+
+        app.pickGui.Show("AutoSize NoActivate")
     } else {
         SetTimer(app.pickerTickFn, 0)
 
         if app.pickGui
             app.pickGui.Hide()
+
+        if app.pickGuiRole
+            app.pickGuiRole.Hide()
     }
 }
 
@@ -69,83 +131,124 @@ PickerTick(app) {
     if !app.CheckActive
         return
 
-    g := app.pickGui
-
     hex := GetColorUnderCursor(app)
 
-    if (hex = app.lastHex)
-        app.stableCount++
-    else {
-        app.lastHex := hex
-        app.stableCount := 0
+    if (hex != app.lastPickHex) {
+        app.lastPickHex := hex
+        UpdatePickGui(app, hex)
     }
 
-    if (app.stableCount < 2)
+    MouseGetPos(&mx, &my)
+    if (mx != app.lastMouseX || my != app.lastMouseY) {
+        app.lastMouseX := mx
+        app.lastMouseY := my
+        MovePickGui(app)
+    }
+}
+
+UpdatePickGui(app, hex) {
+    g := app.pickGui
+    gr := app.pickGuiRole
+
+    g.preview.Opt("c" hex)
+    g.preview.Value := 100
+
+    rgb := HexToRGB(hex)
+
+    g.hexText.Value := "#" hex
+    g.rgbText.Value := "RGB: " rgb.r "," rgb.g "," rgb.b
+
+    items := []
+
+    for c in app.activePalette.colors {
+        if c.hex = hex
+            items.Push(c)
+    }
+
+    ; reset
+    for ctrl in gr.roleControls {
+        ctrl.Value := ""
+        ctrl.Opt("+Hidden")
+    }
+
+    if (items.Length = 0) {
+        gr.Hide()
+        app.pickGuiRoleVisible := false
+        return
+    }
+
+    ; fill
+    for i, item in items {
+        if i > 6
+            break
+
+        ctrl := gr.roleControls[i]
+        ctrl.Value := GetRoleIcon(item.role) "  " item.section
+        ctrl.Opt("-Hidden")
+    }
+
+    ; ===== SIZE CALC =====
+    visibleRows := Ceil(items.Length / 2)
+
+    padding := app.rolePadding
+    gapY := app.roleGapY
+    rowH := app.roleRowHeight
+
+    containerH := padding*2 + (visibleRows * rowH) + ((visibleRows-1) * gapY)
+
+    gr.container.Move(,, , containerH)
+
+    ; match width with main GUI
+    g.GetPos(,, &mainW, &mainH)
+
+    gr.Show("w" mainW " h" containerH+10 " NoActivate")
+
+    app.pickGuiRoleVisible := true
+}
+
+MovePickGui(app) {
+
+    if !app.pickGui
         return
 
-    if !IsObject(g) {
-        g := Gui("+AlwaysOnTop -Caption +ToolWindow")
-        g.BackColor := "202020"
-        g.SetFont("s10", "Consolas")
-
-        g.preview := g.AddProgress("x8 w40 h60")
-        g.txt := g.AddText("x+8 yp w160 h65 cFFFFFF")
-
-        app.pickGui := g
-    }
-
-    hex := GetColorUnderCursor(app)
-    static lastHex := ""
-    static lastTargetSection := ""
-    targetSection := GetSelectedSectionName(app.activePalette)
-
-    if (hex != lastHex || targetSection != lastTargetSection) {
-        rgb := HexToRGB(hex)
-        exists := app.activePalette.map.Has(hex)
-
-        if exists
-            ApplyHighlight(app, hex)
-
-        g.preview.Opt("c" hex)
-        g.preview.Value := 100
-
-        item := GetItemByHex(app, hex)
-
-        text := "HEX: #" hex "`nRGB: " rgb.r "," rgb.g "," rgb.b
-
-        if item {
-            text .= "`nROLE: " item.role " " GetRoleIcon(item.role)
-            text .= "`n(ALREADY SAVED)"
-        }
-
-        g.txt.Text := text
-        lastHex := hex
-        lastTargetSection := targetSection
-    }
-
     MouseGetPos(&X, &Y)
-    g.GetPos(,, &w, &h)
 
-    hoverHistory := GetHoveredHistoryPanelRect(app, X, Y, &hx, &hy, &hw, &hh)
+    app.pickGui.GetPos(,, &w1, &h1)
+    w2 := 0, h2 := 0
+    if app.pickGuiRoleVisible
+        app.pickGuiRole.GetPos(,, &w2, &h2)
 
-    offsetX := 23
-    offsetY := 30
+    offsetX := 20
+    offsetY := 25
+
+    mon := GetMonitorFromPoint(X, Y)
+    MonitorGetWorkArea(mon, &L, &T, &R, &B)
+
+    totalW := w1
+    totalH := h1 + (app.pickGuiRoleVisible ? (h2 + 6) : 0)
 
     x := X + offsetX
     y := Y + offsetY
 
-    if hoverHistory {
-        margin := 10
-        y := hy - h - margin
-
-        mon := GetMonitorFromPoint(X, Y)
-        MonitorGetWorkArea(mon, &L, &T, &R, &B)
-
-        if (y < T)
-            y := hy + hh + margin
+    ; RIGHT SAFE
+    if (x + totalW > R) {
+        x := X - totalW - offsetX
+        if (x < L)
+            x := L + 5
     }
 
-    g.Show("AutoSize NoActivate x" x " y" y)
+    ; BOTTOM SAFE
+    if (y + totalH > B) {
+        y := Y - totalH - offsetY
+        if (y < T)
+            y := T + 5
+    }
+
+    roleX := x + (w1 - w2) // 2
+    app.pickGui.Show("NoActivate x" x " y" y)
+
+    if (app.pickGuiRoleVisible)
+        app.pickGuiRole.Show("NoActivate x" roleX " y" y + h1 + 6)
 }
 
 SaveColor(app) {
@@ -155,40 +258,38 @@ SaveColor(app) {
     palette := App.activePalette
     hex := GetColorUnderCursor(App)
     rgb := GetRGBFromHex(hex)
+    section := GetSelectedSectionName(palette)
 
-    A_Clipboard := GetKeyState("Ctrl") ? rgb : hex
+    if section = ""
+        section := "Default"
 
-    exists := palette.map.Has(hex)
+    existsInSection := false
+    for c in palette.colors {
+        if c.hex = hex && c.section = section {
+            existsInSection := true
+            break
+        }
+    }
 
-    clip := GetKeyState("Ctrl")
-        ? FormatColor(rgb, "rgb")
-        : FormatColor(hex, "hex")
-
-    A_Clipboard := clip.value
-    app.lastCopyType := clip.type
-
-    if exists {
-        ShowToast(app, "✔ COPIED " (app.lastCopyType = "rgb" ? "RGB: " rgb : "HEX: #" hex ))
-        ApplyHighlight(app, hex)
-        Emit(app, "history_changed")
+    if existsInSection {
+        ShowToast(app, "Already in " section)
         return
-    } else {
-        ShowToast(app, "➕ SAVED COLOR " (app.lastCopyType = "rgb" ? "RGB: " rgb : "HEX: #" hex ))
     }
 
-    targetSection := GetSelectedSectionName(palette)
-    item := CreateItem(hex, rgb)
-    item.isSaved := true
-    item.section := targetSection
+    item := CreateItem(hex, rgb, GetColorName(hex), "Base")
+    item.section := section
+    item.pinned := 0
 
-    Mutate(app, (p) => (
-        AddSectionName(p, targetSection),
-        AddColor(p, item)
-    ))
-    ApplyHighlight(app, hex)
-    if app.historyVisible {
-        Emit(app, "history_changed")
-        DebouncedRefresh(app)
-    }
+    AddColor(palette, item)
+
+    if !palette.sections.Has(section)
+        palette.sections.Push(section)
+
+    Normalize(palette)
     SaveHistory(app)
+
+    ApplyHighlight(app, hex)
+    RefreshSectionByName(app, section)
+
+    ShowToast(app, "Saved #" hex " to " section)
 }

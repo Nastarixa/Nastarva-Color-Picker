@@ -1,5 +1,3 @@
 Default
 UI
 Shadow
-UI Copy
-test

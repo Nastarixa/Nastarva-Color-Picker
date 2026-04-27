@@ -6,7 +6,8 @@ ExportActivePalette(app, format) {
         "json", "JSON Files (*.json)",
         "ini", "INI Files (*.ini)",
         "csv", "CSV Files (*.csv)",
-        "png", "PNG Files (*.png)"
+        "png", "PNG Files (*.png)",
+        "ase", "Adobe Swatch Exchange (*.ase)"
     )
 
     defaultName := p.name ext
@@ -25,8 +26,24 @@ ExportActivePalette(app, format) {
 
     if FileExist(path)
         FileDelete(path)
+
+    if (format = "ase") {
+        ExportPaletteAse(app, p, path)
+        return
+    }
+
     FileAppend(content, path, "UTF-8")
     ShowToast(app, "Exported " p.name " as " StrUpper(format))
+}
+
+ExportActivePaletteCharacterSheet(app) {
+    p := app.activePalette
+    defaultName := p.name ".png"
+    path := FileSelect("S16", A_ScriptDir "\" defaultName, "Export Character Sheet Style", "PNG Files (*.png)")
+    if (path = "")
+        return
+
+    ExportPalettePngCharacter(app, p, path)
 }
 
 ExportPalettePng(app, p, path) {
@@ -53,7 +70,35 @@ ExportPalettePng(app, p, path) {
     if FileExist(path) {
         ShowToast(app, "Exported " p.name " as PNG")
     } else {
-        MsgBox "PNG export failed."
+        ShowToast(app, "PNG export failed")
+    }
+}
+
+ExportPalettePngCharacter(app, p, path) {
+    jsonPath := A_Temp "\nastarva_palette_export_char.json"
+    scriptPath := A_Temp "\nastarva_palette_export_character.ps1"
+
+    if FileExist(jsonPath)
+        FileDelete(jsonPath)
+    if FileExist(scriptPath)
+        FileDelete(scriptPath)
+
+    FileAppend(BuildPaletteJson(p, app.version), jsonPath, "UTF-8")
+    FileAppend(GetPalettePngExportCharacterScript(), scriptPath, "UTF-8")
+
+    cmd := Format(
+        'powershell -NoProfile -ExecutionPolicy Bypass -File "{}" "{}" "{}"',
+        scriptPath,
+        jsonPath,
+        path
+    )
+
+    RunWait(cmd, , "Hide")
+
+    if FileExist(path) {
+        ShowToast(app, "Exported " p.name " as Character Sheet PNG")
+    } else {
+        ShowToast(app, "Character sheet PNG export failed")
     }
 }
 
@@ -67,6 +112,8 @@ BuildPaletteExportContent(p, version, format) {
             return BuildPaletteIni(p, version)
         case "csv":
             return BuildPaletteCsv(p, version)
+        case "ase":
+            return ""
         default:
             return ""
     }
@@ -175,9 +222,76 @@ JsonEscape(value) {
 
 JoinJsonStringArray(items) {
     text := ""
-    for index, item in items
-        text .= (index > 1 ? "," : "") '"' JsonEscape(item) '"'
+    for index, item in items {
+        val := IsObject(item) ? item.name : item
+        text .= (index > 1 ? "," : "") '"' JsonEscape(val) '"'
+    }
     return text
+}
+
+ExportPaletteAse(app, p, path) {
+    colorCount := p.colors.Length
+    blockSize := 0
+    for item in p.colors {
+        nameLen := StrLen(item.name) + 1
+        blockSize += 2 + 4 + 2 + (nameLen * 2) + 2 + 2 + 2 + 2 + 2
+    }
+
+    dataSize := 12 + (colorCount * 4) + blockSize
+    data := Buffer(dataSize)
+    offset := 0
+
+    NumPut("Int", 0x41534546, data, offset)
+    offset += 4
+    NumPut("Int16", 1, data, offset)
+    offset += 2
+    NumPut("Int16", 0, data, offset)
+    offset += 2
+    NumPut("Int32", colorCount, data, offset)
+    offset += 4
+
+    groupOffset := 12 + (colorCount * 4)
+    NumPut("Int32", groupOffset, data, offset)
+    offset += 4
+
+    for item in p.colors {
+        rgb := StrSplit(item.rgb, ",")
+        r := Integer(rgb[1])
+        g := Integer(rgb[2])
+        b := Integer(rgb[3])
+
+        NumPut("Int16", 1, data, offset)
+        offset += 2
+
+        nameLen := StrLen(item.name) + 1
+        byteLen := (nameLen * 2) + 12
+        NumPut("Int32", byteLen, data, offset)
+        offset += 4
+
+        NumPut("Int16", nameLen, data, offset)
+        offset += 2
+
+        nameWide := TextToUtf16(item.name)
+        StrPut(item.name, data.Offset(offset), nameLen, "UTF-16")
+        offset += nameLen * 2
+
+        NumPut("Int16", 0, data, offset)
+        offset += 2
+        NumPut("Int16", 0, data, offset)
+        offset += 2
+        NumPut("Int16", r * 257, data, offset)
+        offset += 2
+        NumPut("Int16", g * 257, data, offset)
+        offset += 2
+        NumPut("Int16", b * 257, data, offset)
+        offset += 2
+    }
+
+    f := FileOpen(path, "w")
+    f.RawWrite(data, offset)
+    f.Close()
+
+    ShowToast(app, "Exported " p.name " as ASE")
 }
 
 CsvEscape(value) {
@@ -187,4 +301,15 @@ CsvEscape(value) {
 
 GetPalettePngExportScript() {
     return FileRead(A_ScriptDir "\src\features\palette_png_export.ps1")
+}
+
+TextToUtf16(str) {
+    size := StrPut(str, "UTF-16")
+    buf := Buffer(size)
+    StrPut(str, buf, "UTF-16")
+    return buf
+}
+
+GetPalettePngExportCharacterScript() {
+    return FileRead(A_ScriptDir "\src\features\palette_png_export_character.ps1")
 }

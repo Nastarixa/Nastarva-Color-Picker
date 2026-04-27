@@ -1,29 +1,6 @@
-#META|version=3.0|historyMax=20|maxCols=10|guiMode=docked
+#META|version=3.5|historyMax=20|maxCols=10|guiMode=docked|priority=3|note=
 #ROLEORDER|Base,Highlight,Shadow,Hi Shadow,2 Shadow
-#SECTION|Default
-#SECTION|test
-A73F23|167,63,35|Deep Vivid Red|Base|0|0|Default|50026890-140-1563
-13120E|19,18,14|Dark Muted Yellow|Base|0|0|Default|50005187-139-4483
-E2A13C|226,161,60|Vivid Orange|Base|0|0|Default|50004031-138-3511
-CA8A1E|202,138,30|Vivid Orange|Base|0|0|Default|50000140-137-8328
-26262C|38,38,44|Dark Gray Gray|Base|0|0|Default|48713140-2014-9018
-555555|85,85,85|Granite|Base|0|0|Default|48494000-1902-4281
-3AA05E|58,160,94|Soft Green|Base|0|0|test|47480875-213-2529
-00FF5A|0,255,90|Vivid Green|Base|0|0|test|47480500-212-3690
-FF00B7|255,0,183|Vivid Magenta|Base|0|0|test|47479390-211-2258
-FF00BF|255,0,191|Vivid Magenta|Base|0|0|test|47479078-210-4287
-F100FF|241,0,255|Vivid Magenta|Base|0|0|test|47478656-209-8949
-8EA04C|142,160,76|Soft Green|Base|0|0|Default|47250484-21-9292
-00FF25|0,255,37|Vivid Green|Base|0|0|Default|47250156-20-5031
-00FF2E|0,255,46|Vivid Green|Highlight|0|0|Default|47249843-19-9361
-0E00FF|14,0,255|Vivid Blue|Hi Shadow|0|0|Default|47248703-18-1458
-16203E|22,32,62|Dark Soft Blue|Shadow|0|0|Default|47246984-17-1817
-434343|67,67,67|Deep Gray Gray|2 Shadow|0|0|Default|47244937-16-1021
-323338|50,51,56|Deep Gray Gray|Shadow|0|0|Default|47240875-15-1090
-390F99|57,15,153|Deep Vivid Blue|2 Shadow|0|0|Default|47240109-14-4264
-152449|21,36,73|Dark Soft Blue|Shadow|0|0|Default|47239671-13-4778
-3758FF|55,88,255|Vivid Blue|Base|0|0|Default|47238843-12-7681
-02030E|2,3,14|Dark Vivid Blue|Highlight|0|0|Default|47237734-11-8173
-131E41|19,30,65|Dark Soft Blue|Base|0|0|Default|47237453-10-6126
-9EFF80|158,255,128|Light Vivid Green|Base|0|0|Default|47237187-9-8265
-7F7F7F|127,127,127|Gray Gray|Base|0|0|Default|47236937-8-2232
+#SECTION|s33326156-2-1433|Default|locked=0|collapsed=0|tag=|note=
+10B981|16,185,129|Deep Vivid Cyan|Base|0|0|Default|33452265-3-6854
+EC4899|236,72,153|Vivid Red|Base|0|0|Default|33440265-2-9840
+3B82F6|59,130,246|Vivid Blue|Base|0|0|Default|33419265-1-4016

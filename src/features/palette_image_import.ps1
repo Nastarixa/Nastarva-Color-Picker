@@ -496,7 +496,14 @@ $lines = New-Object System.Collections.Generic.List[string]
 for ($g = 0; $g -lt $groups.Count; $g++) {
     $group = @($groups[$g])
     $sectionName = Get-UniqueSectionName (Get-NearestGroupLabel $group $ocrLines) ($g + 1) $usedSectionNames
-    $lines.Add("#SECTION|" + $sectionName)
+    
+    $group = @($group | Sort-Object { $_.Y + ($_.Height / 2.0) }, { $_.X + ($_.Width / 2.0) })
+    $sectionTag = ""
+    if ($group.Count -gt 0) {
+        $sectionTag = Get-Hex $group[0].R $group[0].G $group[0].B
+    }
+    
+    $lines.Add("#SECTION|" + $sectionTag + "|" + $sectionName)
     $minX = ($group | Measure-Object -Property X -Minimum).Minimum
     $maxX = ($group | ForEach-Object { $_.X + $_.Width } | Measure-Object -Maximum).Maximum
     $minY = ($group | Measure-Object -Property Y -Minimum).Minimum

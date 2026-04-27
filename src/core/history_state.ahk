@@ -1,13 +1,23 @@
-﻿AddColor(p, item) {
-    if p.map.Has(item.hex)
-        return
+AddColor(p, item) {
+    sectionName := GetItemSectionNameForState(item)
+
+    for existing in p.colors {
+        if existing.hex = item.hex && GetItemSectionNameForState(existing) = sectionName {
+            return
+        }
+    }
 
     item.flashUntil := 0
-
     p.colors.InsertAt(1, item)
     p.map[item.hex] := item
+    TrimSectionToMax(p, sectionName)
+}
 
-    TrimSectionToMax(p, GetItemSectionNameForState(item))
+MovePinnedColorLeft(app, token) {
+    MovePinnedColor(app, token, -1)
+}
+MovePinnedColorRight(app, token) {
+    MovePinnedColor(app, token, 1)
 }
 
 Mutate(app, fn) {
@@ -33,7 +43,7 @@ TrimSectionToMax(p, sectionName) {
 
         Loop p.colors.Length {
             idx := p.colors.Length - A_Index + 1
-            if (GetItemToken(p.colors[idx]) = GetItemToken(removed)) {
+            if (GetItemToken(p.colors[idx]) == GetItemToken(removed)) {
                 p.colors.RemoveAt(idx)
                 break
             }
@@ -49,17 +59,6 @@ TrimAllSectionsToMax(p) {
 
 Commit(app) {
     SaveHistory(app)
-    DebouncedRefresh(app)
-}
-
-RefreshHistoryStructure(app) {
-    SaveHistory(app)
-
-    if app.historyVisible {
-        app.ui.generation++
-        RebuildUI(app)
-        Emit(app, "history_changed")
-    }
 }
 
 Normalize(p) {
@@ -129,13 +128,17 @@ GetSelectedSectionName(p) {
 }
 
 SetSelectedSection(app, sectionName, silent := false) {
+    if IsObject(sectionName)
+        sectionName := sectionName.name
     sectionName := Trim(sectionName)
     changed := false
 
     Mutate(app, (p) => changed := SetSelectedSectionMutation(p, sectionName))
 
-    if app.historyVisible
+    if app.historyVisible {
+        RefreshAllSectionChrome(app)
         Emit(app, "history_changed")
+    }
 
     if !silent
         ShowToast(app, "Target section: " GetSelectedSectionName(app.activePalette))
@@ -146,6 +149,8 @@ SetSelectedSection(app, sectionName, silent := false) {
 SetSelectedSectionMutation(p, sectionName) {
     EnsureDefaultSection(p)
 
+    if IsObject(sectionName)
+        sectionName := sectionName.name
     sectionName := Trim(sectionName)
     if (sectionName = "" || !HasSectionName(p, sectionName))
         sectionName := "Default"
@@ -158,9 +163,10 @@ SetSelectedSectionMutation(p, sectionName) {
 GetFirstNonDefaultSectionName(p) {
     EnsureDefaultSection(p)
 
-    for _, sectionName in p.sections {
-        if (sectionName != "Default")
-            return sectionName
+    for _, section in p.sections {
+        name := IsObject(section) ? section.name : section
+        if (name != "Default")
+            return name
     }
 
     return "Default"
@@ -171,7 +177,20 @@ EnsureDefaultSection(p) {
         p.sections := []
 
     if !HasSectionName(p, "Default")
-        p.sections.InsertAt(1, "Default")
+        p.sections.InsertAt(1, { id: GenerateSectionId(), name: "Default", isDefault: true, locked: false, collapsed: false, tag: "", note: "" })
+}
+
+GetSectionId(p, sectionName) {
+    if !p.HasOwnProp("sections")
+        return ""
+
+    for section in p.sections {
+        if IsObject(section) && section.name = sectionName
+            return section.id
+        if !IsObject(section) && section = sectionName
+            return ""
+    }
+    return ""
 }
 
 HasSectionName(p, sectionName) {
@@ -179,10 +198,23 @@ HasSectionName(p, sectionName) {
         return false
 
     for section in p.sections {
-        if (section = sectionName)
+        if IsObject(section) && section.name = sectionName
+            return true
+        if !IsObject(section) && section = sectionName
             return true
     }
     return false
+}
+
+GetSectionById(p, id) {
+    if !p.HasOwnProp("sections")
+        return 0
+
+    for section in p.sections {
+        if IsObject(section) && section.id = id
+            return section
+    }
+    return 0
 }
 
 AddSectionName(p, sectionName) {
@@ -196,7 +228,164 @@ AddSectionName(p, sectionName) {
     if HasSectionName(p, sectionName)
         return false
 
-    p.sections.Push(sectionName)
+    p.sections.Push({ id: GenerateSectionId(), name: sectionName, isDefault: false, locked: false, collapsed: false, tag: "", note: "" })
+    return true
+}
+
+GetSectionObjectByName(p, sectionName) {
+    if !p.HasOwnProp("sections")
+        return 0
+    for _, section in p.sections {
+        if IsObject(section) && section.name = sectionName
+            return section
+    }
+    return 0
+}
+
+IsSectionLocked(p, sectionName) {
+    section := GetSectionObjectByName(p, sectionName)
+    return IsObject(section) && section.HasOwnProp("locked") && section.locked
+}
+
+IsSectionCollapsed(p, sectionName) {
+    section := GetSectionObjectByName(p, sectionName)
+    return IsObject(section) && section.HasOwnProp("collapsed") && section.collapsed
+}
+
+GetSectionTagColor(p, sectionName) {
+    section := GetSectionObjectByName(p, sectionName)
+    if !IsObject(section) || !section.HasOwnProp("tag")
+        return ""
+    tag := StrUpper(RegExReplace(section.tag, "[^0-9A-F]"))
+    return StrLen(tag) = 6 ? tag : ""
+}
+
+GetSectionNote(p, sectionName) {
+    section := GetSectionObjectByName(p, sectionName)
+    return (IsObject(section) && section.HasOwnProp("note")) ? section.note : ""
+}
+
+GetPaletteNote(p) {
+    return p.HasOwnProp("note") ? p.note : ""
+}
+
+SetPaletteNote(app, note) {
+    changed := false
+    Mutate(app, (p) => changed := SetPaletteNoteMutation(p, note))
+    if !changed
+        return false
+    SaveHistory(app)
+    ShowToast(app, "Updated palette note")
+    return true
+}
+
+SetPaletteNoteMutation(p, note) {
+    p.note := Trim(note)
+    return true
+}
+
+ToggleSectionLock(app, sectionName) {
+    changed := false
+    state := false
+    Mutate(app, (p) => changed := ToggleSectionLockMutation(p, sectionName, &state))
+    if !changed
+        return false
+    SaveHistory(app)
+    if app.historyVisible {
+        RefreshSectionChromeByName(app, sectionName)
+        Emit(app, "history_changed")
+    }
+    ShowToast(app, sectionName " " (state ? "locked" : "unlocked"))
+    return true
+}
+
+ToggleSectionLockMutation(p, sectionName, &state := false) {
+    section := GetSectionObjectByName(p, sectionName)
+    if !IsObject(section)
+        return false
+    section.locked := !section.locked
+    state := section.locked
+    return true
+}
+
+ToggleSectionCollapsed(app, sectionName) {
+    changed := false
+    state := false
+    Mutate(app, (p) => changed := ToggleSectionCollapsedMutation(p, sectionName, &state))
+    if !changed
+        return false
+    SaveHistory(app)
+    if app.historyVisible {
+        app.ui.generation++
+        RebuildUI(app)
+        Emit(app, "history_changed")
+    }
+    ShowToast(app, sectionName " " (state ? "collapsed" : "expanded"))
+    return true
+}
+
+ToggleSectionCollapsedMutation(p, sectionName, &state := false) {
+    section := GetSectionObjectByName(p, sectionName)
+    if !IsObject(section)
+        return false
+    section.collapsed := !section.collapsed
+    state := section.collapsed
+    return true
+}
+
+SetSectionTagColor(app, sectionName, tag) {
+    changed := false
+    Mutate(app, (p) => changed := SetSectionTagColorMutation(p, sectionName, tag))
+    if !changed
+        return false
+    SaveHistory(app)
+    if app.historyVisible {
+        RefreshSectionBySectionName(app, sectionName)
+        Emit(app, "history_changed")
+    } else if app.ui.HasOwnProp("sectionGuis") && app.ui.sectionGuis.Has(sectionName) {
+        RefreshSectionBySectionName(app, sectionName)
+    }
+    ShowToast(app, tag = "" ? "Cleared section tag" : "Updated section tag")
+    return true
+}
+
+SetSectionTagColorMutation(p, sectionName, tag) {
+    if !HasSectionName(p, sectionName) {
+        AddSectionName(p, sectionName)
+    }
+    section := GetSectionObjectByName(p, sectionName)
+    if !IsObject(section)
+        return false
+    tag := StrUpper(RegExReplace(Trim(tag), "[^0-9A-F]"))
+    if (tag != "" && StrLen(tag) != 6)
+        return false
+    section.tag := tag
+    return true
+}
+
+SetSectionNote(app, sectionName, note) {
+    changed := false
+    Mutate(app, (p) => changed := SetSectionNoteMutation(p, sectionName, note))
+    if !changed
+        return false
+    SaveHistory(app)
+    if app.historyVisible {
+        Emit(app, "history_changed")
+    } else if app.ui.HasOwnProp("sectionGuis") && app.ui.sectionGuis.Has(sectionName) {
+        RefreshSectionBySectionName(app, sectionName)
+    }
+    ShowToast(app, "Updated section note")
+    return true
+}
+
+SetSectionNoteMutation(p, sectionName, note) {
+    if !HasSectionName(p, sectionName) {
+        AddSectionName(p, sectionName)
+    }
+    section := GetSectionObjectByName(p, sectionName)
+    if !IsObject(section)
+        return false
+    section.note := Trim(note)
     return true
 }
 
@@ -256,6 +445,13 @@ GetItemByHex(app, hex) {
     return GetItemByToken(app, hex)
 }
 
+GetItemById(app, id) {
+    p := app.activePalette
+    if p.HasOwnProp("idMap") && p.idMap.Has(id)
+        return p.idMap[id]
+    return 0
+}
+
 GetItemToken(item) {
     return item.HasOwnProp("id") && item.id != ""
         ? item.id
@@ -263,7 +459,7 @@ GetItemToken(item) {
 }
 
 ItemMatchesToken(item, token) {
-    return GetItemToken(item) = token || item.hex = token
+    return GetItemToken(item) == token || item.hex == token
 }
 
 HasColor(colors, hex) {
@@ -290,7 +486,7 @@ SectionHasHex(p, sectionName, hex, exceptToken := "") {
 }
 
 ApplyHighlight(app, token) {
-    if (token = "")
+    if (token == "")
         return
 
     p := app.activePalette
@@ -300,12 +496,54 @@ ApplyHighlight(app, token) {
 
     actualToken := GetItemToken(item)
 
-    if (p.highlightToken = actualToken)
+    if (p.highlightToken == actualToken)
         return
+
+    oldToken := p.highlightToken
+    if (oldToken != "" && app.ui.controls.Has(oldToken)) {
+        oldCtrl := app.ui.controls[oldToken]
+        oldItem := GetItemByToken(app, oldToken)
+        if oldItem && SafeGetControlHwnd(oldCtrl.bg) {
+            try oldCtrl.bg.Opt("Background" oldItem.hex)
+            try oldCtrl.txt.Opt("cFFFFFF")
+        }
+    }
 
     p.selectedHex := item.hex
     p.highlightHex := item.hex
     p.highlightToken := actualToken
+
+    if app.ui.controls.Has(actualToken) {
+        ctrl := app.ui.controls[actualToken]
+        if SafeGetControlHwnd(ctrl.bg) {
+            if (item.hex != "" && StrLen(item.hex) = 6)
+                try ctrl.bg.Opt("Background" item.hex)
+            try ctrl.txt.Opt("cFFD700")
+        }
+    }
+}
+
+ClearHighlight(app, token) {
+    if token == ""
+        return
+
+    p := app.activePalette
+    oldItem := GetItemByToken(app, token)
+    if !oldItem
+        return
+
+    p.highlightToken := ""
+    p.highlightHex := ""
+
+    actualToken := GetItemToken(oldItem)
+    if app.ui.controls.Has(actualToken) {
+        ctrl := app.ui.controls[actualToken]
+        if SafeGetControlHwnd(ctrl.bg) {
+            itemHex := oldItem.hex
+            try ctrl.bg.Opt("Background" itemHex)
+            try ctrl.txt.Opt("cFFFFFF")
+        }
+    }
 }
 
 ApplyRole(app, role, token) {
@@ -336,7 +574,7 @@ CreateSection(app, sectionName) {
     SaveHistory(app)
     if app.historyVisible {
         Emit(app, "history_changed")
-        DebouncedRefresh(app)
+
     }
 
     ShowToast(app, "Created section: " sectionName)
@@ -345,6 +583,10 @@ CreateSection(app, sectionName) {
 }
 
 RenameSection(app, oldName, newName) {
+    if IsSectionLocked(app.activePalette, oldName) {
+        ShowToast(app, "Unlock the section first")
+        return false
+    }
     renamed := false
 
     Mutate(app, (p) => renamed := RenameSectionMutation(p, oldName, newName))
@@ -357,7 +599,7 @@ RenameSection(app, oldName, newName) {
     SaveHistory(app)
     if app.historyVisible {
         Emit(app, "history_changed")
-        DebouncedRefresh(app)
+
     }
 
     ShowToast(app, "Renamed section: " newName)
@@ -377,9 +619,9 @@ RenameSectionMutation(p, oldName, newName) {
     if !HasSectionName(p, oldName) || HasSectionName(p, newName)
         return false
 
-    for index, section in p.sections {
-        if (section = oldName) {
-            p.sections[index] := newName
+    for section in p.sections {
+        if IsObject(section) && section.name = oldName {
+            section.name := newName
             break
         }
     }
@@ -409,7 +651,7 @@ DuplicateSection(app, sourceName) {
     SaveHistory(app)
     if app.historyVisible {
         Emit(app, "history_changed")
-        DebouncedRefresh(app)
+
     }
 
     ShowToast(app, "Duplicated section: " newName)
@@ -467,6 +709,10 @@ GetSectionCopyName(p, sourceName) {
 }
 
 DeleteSection(app, sectionName) {
+    if IsSectionLocked(app.activePalette, sectionName) {
+        ShowToast(app, "Unlock the section first")
+        return false
+    }
     deleted := false
 
     Mutate(app, (p) => deleted := DeleteSectionMutation(p, sectionName))
@@ -479,7 +725,7 @@ DeleteSection(app, sectionName) {
     SaveHistory(app)
     if app.historyVisible {
         Emit(app, "history_changed")
-        DebouncedRefresh(app)
+
     }
 
     ShowToast(app, "Deleted section: " sectionName)
@@ -495,10 +741,18 @@ DeleteSectionMutation(p, sectionName) {
     if !HasSectionName(p, sectionName)
         return false
 
-    Loop p.sections.Length {
-        if (p.sections[A_Index] = sectionName) {
-            p.sections.RemoveAt(A_Index)
-            break
+    toRemove := []
+    for section in p.sections {
+        if IsObject(section) && section.name = sectionName {
+            toRemove.Push(section)
+        }
+    }
+    for section in toRemove {
+        Loop p.sections.Length {
+            if (p.sections[A_Index] = section) {
+                p.sections.RemoveAt(A_Index)
+                break
+            }
         }
     }
 
@@ -516,44 +770,6 @@ DeleteSectionMutation(p, sectionName) {
     if GetSelectedSectionName(p) = sectionName
         p.selectedSection := "Default"
     return true
-}
-
-MoveColorToSection(app, token, sectionName) {
-    moved := false
-
-    Mutate(app, (p) => moved := MoveColorToSectionMutation(p, token, sectionName))
-
-    if !moved {
-        ShowToast(app, "Could not move color")
-        return false
-    }
-
-    RefreshHistoryStructure(app)
-
-    item := GetItemByToken(app, token)
-    ShowToast(app, "Moved #" (item ? item.hex : token) " -> " sectionName)
-    return true
-}
-
-MoveColorToSectionMutation(p, token, sectionName) {
-    sectionName := Trim(sectionName)
-    if (sectionName = "")
-        return false
-
-    for item in p.colors {
-        if ItemMatchesToken(item, token) {
-            currentSection := GetItemSectionNameForState(item)
-            if (currentSection = sectionName)
-                return true
-            if SectionHasHex(p, sectionName, item.hex, token)
-                return false
-            AddSectionName(p, sectionName)
-            item.section := sectionName
-            return true
-        }
-    }
-
-    return false
 }
 
 TogglePin(app, token) {
@@ -595,8 +811,81 @@ MovePinnedColor(app, token, dir) {
     SaveHistory(app)
     if app.historyVisible {
         Emit(app, "history_changed")
-        DebouncedRefresh(app)
     }
+}
+
+BatchMovePinnedColor(app, targetIds, dir) {
+    if !IsObject(targetIds) || targetIds.Length = 0 {
+        ShowToast(app, "No colors selected")
+        return false
+    }
+
+    moved := false
+    Mutate(app, (p) => moved := BatchMovePinnedMutation(p, targetIds, dir))
+
+    if !moved {
+        ShowToast(app, "Pin the colors first")
+        return false
+    }
+
+    SaveHistory(app)
+    if app.historyVisible {
+        Emit(app, "history_changed")
+    }
+
+    ShowToast(app, "Moved " targetIds.Length " pinned color" (targetIds.Length > 1 ? "s" : ""))
+    return true
+}
+
+BatchMovePinnedMutation(p, targetIds, dir) {
+    Normalize(p)
+
+    pinned := []
+    targetTokens := []
+
+    for item in p.colors {
+        if item.pinned {
+            pinned.Push(item)
+            for _, token in targetIds {
+                if ItemMatchesToken(item, token) {
+                    targetTokens.Push(item)
+                    break
+                }
+            }
+        }
+    }
+
+    if targetTokens.Length = 0
+        return false
+
+    moves := []
+    for targetItem in targetTokens {
+        targetIndex := 0
+        for i, item in pinned {
+            if (item = targetItem) {
+                targetIndex := i
+                break
+            }
+        }
+
+        if !targetIndex
+            continue
+
+        newIndex := targetIndex + dir
+        if (newIndex < 1 || newIndex > pinned.Length)
+            continue
+
+        moves.Push({from: targetIndex, to: newIndex})
+    }
+
+    for move in moves {
+        tempOrder := pinned[move.from].pinOrder
+        pinned[move.from].pinOrder := pinned[move.to].pinOrder
+        pinned[move.to].pinOrder := tempOrder
+    }
+
+    Normalize(p)
+    return true
 }
 
 MovePinnedColorMutation(p, token, dir) {
@@ -628,6 +917,18 @@ MovePinnedColorMutation(p, token, dir) {
 }
 
 ReorderPinnedColorToTarget(app, sourceToken, targetToken) {
+    sourceItem := GetItemByToken(app, sourceToken)
+    targetItem := GetItemByToken(app, targetToken)
+
+    if sourceItem {
+        sourceSection := GetItemSectionNameForState(sourceItem)
+        targetSection := targetItem ? GetItemSectionNameForState(targetItem) : sourceSection
+        if IsSectionLocked(app.activePalette, sourceSection) || IsSectionLocked(app.activePalette, targetSection) {
+            ShowToast(app, "Unlock the section first")
+            return
+        }
+    }
+
     moved := false
 
     Mutate(app, (p) => moved := ReorderPinnedColorToTargetMutation(p, sourceToken, targetToken))
@@ -637,20 +938,94 @@ ReorderPinnedColorToTarget(app, sourceToken, targetToken) {
         return
     }
 
-    RefreshHistoryStructure(app)
+    SaveHistory(app)
+    if app.historyVisible {
+        RefreshSectionBySectionName(app, sourceSection)
+        if (targetSection != sourceSection)
+            RefreshSectionBySectionName(app, targetSection)
+        Emit(app, "history_changed")
+    }
 }
 
-MovePinnedColorToSection(app, sourceToken, sectionName) {
+MoveColorToSection(app, sourceToken, sectionName, sourceSection := "") {
+    item := GetItemByToken(app, sourceToken)
+    if item {
+        if (sourceSection = "")
+            sourceSection := GetItemSectionNameForState(item)
+        if IsSectionLocked(app.activePalette, sourceSection) || IsSectionLocked(app.activePalette, sectionName) {
+            ShowToast(app, "Unlock the section first")
+            return
+        }
+    }
     moved := false
 
-    Mutate(app, (p) => moved := MovePinnedColorToSectionMutation(p, sourceToken, sectionName))
+    Mutate(app, (p) => moved := MoveColorToSectionMutation(p, sourceToken, sectionName))
 
     if !moved {
-        ShowToast(app, "Could not move pinned color")
+        ShowToast(app, "Could not move color")
         return
     }
 
-    RefreshHistoryStructure(app)
+    SaveHistory(app)
+    if app.historyVisible {
+        RefreshSectionBySectionName(app, sourceSection)
+        RefreshSectionBySectionName(app, sectionName)
+        Emit(app, "history_changed")
+    }
+
+    ShowToast(app, "Moved to " sectionName)
+}
+
+BatchMoveColorToSection(app, targetIds, sectionName) {
+    if !IsObject(targetIds) || targetIds.Length = 0 {
+        ShowToast(app, "No colors selected")
+        return false
+    }
+
+    if IsSectionLocked(app.activePalette, sectionName) {
+        ShowToast(app, "Unlock the section first")
+        return false
+    }
+
+    movedCount := 0
+    sourceSections := []
+
+    for _, token in targetIds {
+        item := GetItemByToken(app, token)
+        if !item
+            continue
+
+        sourceSection := GetItemSectionNameForState(item)
+        if IsSectionLocked(app.activePalette, sourceSection)
+            continue
+
+        currentToken := token
+        moved := false
+        Mutate(app, (p) => (moved := MoveColorToSectionMutation(p, currentToken, sectionName)))
+
+        if moved {
+            movedCount++
+            if !sourceSections.Has(sourceSection)
+                sourceSections.Push(sourceSection)
+        }
+    }
+
+    if movedCount = 0 {
+        ShowToast(app, "Could not move colors")
+        return false
+    }
+
+    SaveHistory(app)
+    if app.historyVisible {
+        for _, srcSection in sourceSections {
+            RefreshSectionBySectionName(app, srcSection)
+        }
+        RefreshSectionBySectionName(app, sectionName)
+        Emit(app, "history_changed")
+    }
+
+    ShowToast(app, "Moved " movedCount " color" (movedCount > 1 ? "s" : "") " to " sectionName)
+    return true
 }
 
 ReorderPinnedColorToTargetMutation(p, sourceToken, targetToken) {
@@ -708,7 +1083,7 @@ ReorderPinnedColorToTargetMutation(p, sourceToken, targetToken) {
     return true
 }
 
-MovePinnedColorToSectionMutation(p, sourceToken, sectionName) {
+MoveColorToSectionMutation(p, sourceToken, sectionName) {
     sectionName := Trim(sectionName)
     if (sectionName = "")
         return false
@@ -716,48 +1091,84 @@ MovePinnedColorToSectionMutation(p, sourceToken, sectionName) {
     Normalize(p)
     AddSectionName(p, sectionName)
 
-    pinned := []
-    sourceIndex := 0
     source := 0
 
     for item in p.colors {
-        if item.pinned {
-            pinned.Push(item)
-            if ItemMatchesToken(item, sourceToken) {
-                source := item
-                sourceIndex := pinned.Length
-            }
-        } else if ItemMatchesToken(item, sourceToken) {
+        if ItemMatchesToken(item, sourceToken) {
             source := item
+            break
         }
     }
 
-    if !source || !source.pinned || !sourceIndex
+    if !source
         return false
 
     currentSection := GetItemSectionNameForState(source)
+    if IsSectionLocked(p, currentSection) || IsSectionLocked(p, sectionName)
+        return false
     if (currentSection = sectionName)
         return true
     if SectionHasHex(p, sectionName, source.hex, sourceToken)
         return false
 
     source.section := sectionName
-    targetIndex := GetPinnedInsertIndexForSection(pinned, source, sectionName)
-    if !targetIndex
-        targetIndex := pinned.Length + 1
 
-    movedItem := pinned.RemoveAt(sourceIndex)
-    if (sourceIndex < targetIndex)
-        targetIndex--
+    if source.pinned {
+        pinned := []
+        sourceIndex := 0
 
-    targetIndex := Max(1, Min(targetIndex, pinned.Length + 1))
-    pinned.InsertAt(targetIndex, movedItem)
+        for item in p.colors {
+            if item.pinned && GetItemSectionNameForState(item) = sectionName {
+                pinned.Push(item)
+                if ItemMatchesToken(item, sourceToken)
+                    sourceIndex := pinned.Length
+            }
+        }
 
-    for index, item in pinned
-        item.pinOrder := index
+        if !sourceIndex
+            sourceIndex := pinned.Length + 1
+
+        for index, item in pinned
+            item.pinOrder := index
+    }
 
     Normalize(p)
     return true
+}
+
+MergeSection(app, sourceName, targetName) {
+    if (sourceName = "" || targetName = "" || sourceName = targetName)
+        return false
+    if IsSectionLocked(app.activePalette, sourceName) || IsSectionLocked(app.activePalette, targetName) {
+        ShowToast(app, "Unlock the section first")
+        return false
+    }
+
+    merged := false
+    Mutate(app, (p) => merged := MergeSectionMutation(p, sourceName, targetName))
+    if !merged {
+        ShowToast(app, "Could not merge section")
+        return false
+    }
+    SaveHistory(app)
+    if app.historyVisible
+        Emit(app, "history_changed")
+    ShowToast(app, "Merged " sourceName " -> " targetName)
+    return true
+}
+
+MergeSectionMutation(p, sourceName, targetName) {
+    if !HasSectionName(p, sourceName) || !HasSectionName(p, targetName)
+        return false
+
+    for _, item in p.colors {
+        if GetItemSectionNameForState(item) = sourceName {
+            if !SectionHasHex(p, targetName, item.hex, GetItemToken(item))
+                item.section := targetName
+        }
+    }
+
+    return DeleteSectionMutation(p, sourceName)
 }
 
 GetItemSectionNameForState(item) {
@@ -774,7 +1185,7 @@ GetPinnedInsertIndexForSection(pinned, source, sectionName) {
     insertIndex := pinned.Length + 1
 
     for index, item in pinned {
-        if (GetItemToken(item) = GetItemToken(source))
+        if (GetItemToken(item) == GetItemToken(source))
             continue
 
         if GetItemSectionNameForState(item) = sectionName
@@ -818,7 +1229,7 @@ DeleteColor(app, token) {
     SaveHistory(app)
     if app.historyVisible {
         Emit(app, "history_changed")
-        DebouncedRefresh(app)
+
     }
 
     ShowToast(app, "Deleted #" removed.hex)
@@ -886,10 +1297,72 @@ MoveColorToPalette(app, token, targetName) {
 
     if app.historyVisible {
         Emit(app, "history_changed")
-        DebouncedRefresh(app)
+
     }
 
     ShowToast(app, "Moved #" item.hex " -> " targetName)
+    return true
+}
+
+BatchMoveColorToPalette(app, targetIds, targetName) {
+    if !IsObject(targetIds) || targetIds.Length = 0 {
+        ShowToast(app, "No colors selected")
+        return false
+    }
+
+    source := app.activePalette
+
+    if (targetName = "") || (targetName = source.name)
+        return false
+
+    if !app.palettes.Has(targetName)
+        return false
+
+    target := app.palettes[targetName]
+
+    movedCount := 0
+
+    for _, token in targetIds {
+        item := GetItemByToken(app, token)
+        if !item
+            continue
+
+        if target.map.Has(item.hex)
+            continue
+
+        clone := CloneItem(item)
+        currentToken := token
+        Mutate(app, (p) => RemoveColorByToken(p, currentToken))
+        AddColor(target, clone)
+        movedCount++
+    }
+
+    if movedCount = 0 {
+        ShowToast(app, "No colors moved")
+        return false
+    }
+
+    Normalize(target)
+    SavePalette(source, app.version)
+    SavePalette(target, app.version)
+
+    if app.historyVisible {
+        affectedSections := []
+        for _, token in targetIds {
+            item := GetItemByToken(app, token)
+            if item {
+                section := GetItemSectionNameForState(item)
+                if section != "" && !affectedSections.Has(section)
+                    affectedSections.Push(section)
+            }
+        }
+        for _, section in affectedSections {
+            RefreshSectionBySectionName(app, section)
+        }
+        Emit(app, "history_changed")
+    }
+
+    ShowToast(app, "Moved " movedCount " color" (movedCount > 1 ? "s" : "") " -> " targetName)
     return true
 }
 
@@ -907,9 +1380,9 @@ ShowHotkeyHelp(app) {
     if IsObject(app.helpGui)
         try app.helpGui.Destroy()
 
-    g := Gui("+AlwaysOnTop -Caption +ToolWindow")
-    g.BackColor := "202020"
-    g.SetFont("s10", "Consolas")
+    g := Gui("+AlwaysOnTop -Caption +ToolWindow Border")
+    g.BackColor := "323338"
+    g.SetFont("s9", "Consolas")
 
     text :=
     (
@@ -918,6 +1391,8 @@ ShowHotkeyHelp(app) {
     "Ctrl + Alt + O   → Toggle Color Palette`n"
     "Ctrl + Alt + U   → Screenshot Palette Import`n"
     "Ctrl + Alt + I   → Open Palette Manager`n"
+    "Ctrl + Alt + F   → Favorites Window`n"
+    "Ctrl + Alt + V   → Paste HEX from Clipboard`n"
     "Ctrl + Alt + 1-9 → Switch Palette`n`n"
     "-------------------------`n`n"
     "After Toggle Picker:`n"
@@ -925,14 +1400,24 @@ ShowHotkeyHelp(app) {
     "Ctrl + Middle    → Save RGB Color`n`n"
     "-------------------------`n`n"
     "In Color Palette:`n"
-    "Click = Copy HEX`n"
-    "Ctrl + Click = Copy RGB`n"
-    "Right Click = Menu`n"
-    "Drag = Reorder Colors"
+    "Click           → Copy (by mode)`n"
+    "Ctrl + Click    → Copy (opposite)`n"
+    "Shift + Click   → Multi Select Toggle`n"
+    "Ctrl + Shift    → Batch Select Range`n"
+    "Right Click     → Menu`n"
+    "Drag            → Reorder Colors`n"
+    "Clipboard HEX   → Auto-add color`n`n"
+    "Keyboard Navigation:`n"
+    "Arrows / Home / End → Navigate`n"
+    "Enter            → Copy (current mode)`n"
+    "Space            → Toggle selection`n`n"
+    "Display Mode (in Manager):`n"
+    "HEX Mode: Click=HEX, Ctrl=RGB`n"
+    "RGB Mode: Click=RGB, Ctrl=HEX"
     )
 
-    g.bg := g.AddText("x0 y0 w450 h300 Background202020")
-    g.txt := g.AddText("x10 y10 cFFFFFF w430", text)
+    g.bg := g.AddText("x0 y0 w500 h360 Background323338")
+    g.txt := g.AddText("x10 y10 cFFFFFF w480", text)
 
     g.bg.OnEvent("Click", (*) => CloseHelp(app))
     g.OnEvent("Escape", (*) => CloseHelp(app))
@@ -954,3 +1439,4 @@ CloseHelp(app) {
         app.helpGui := 0
     }
 }
+

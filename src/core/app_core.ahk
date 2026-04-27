@@ -1,15 +1,19 @@
 InitApp() {
     return {
-        version: "3.0",
+        version: "3.5",
         CheckActive: false,
+        lastPickHex: "",
         historyVisible: false,
         g_UsePhysicalCoords: true,
 
         historyMax: 0,
 
         pickGui: 0,
+        pickGuiRoleVisible: false,
         historyGui: 0,
         roleMenuGui: 0,
+        roleMenuHwnd: 0,
+        pinMenuGui: 0,
         lastHex: "",
         stableCount: 0,
         selectedRole: "Base",
@@ -22,6 +26,7 @@ InitApp() {
         events: Map(),
         toastTick: 0,
         lastCopyType: "",
+        displayMode: "hex",
         pickerTickFn: 0,
         screenshotPollFn: 0,
         helpGui: 0,
@@ -33,6 +38,8 @@ InitApp() {
             sectionPositions: Map(),
             panelDragHwnds: Map(),
             controlHexByHwnd: Map(),
+            sectionByHwnd: Map(),
+            batchSelected: Map(),
             lockLayoutOrder: false,
             drag: {
                 active: false,
@@ -42,9 +49,18 @@ InitApp() {
             },
             panelMove: {
                 active: false,
+                pending: false,
+                tickFn: 0,
                 hwnd: 0,
+                startMouseX: 0,
+                startMouseY: 0,
                 offsetX: 0,
-                offsetY: 0
+                offsetY: 0,
+                lastX: "",
+                lastY: "",
+                lastMoveTick: 0,
+                nextX: "",
+                nextY: ""
             },
             generation: 0,
             itemW: 194,
@@ -72,23 +88,26 @@ InitApp() {
             type: "normal",
             dismissable: false,
             hasShownHelp: false
-        }
+        },
+
+        compactMode: false,
+        headerCompactMode: false,
+        fullCompactMode: false,
+        layoutMode: false,
+        favorites: [],
+        favoritesGui: 0
     }
 }
 
 InitEvents(app) {
-    app.events["history_changed"] := [(*) => SafeRefreshHistoryUI(app)]
+    app.events["history_changed"] := []
     OnMessage(0x84, (wParam, lParam, msg, hwnd) => HistoryPanelHitTest(app, wParam, lParam, msg, hwnd))
     OnMessage(0x201, (wParam, lParam, msg, hwnd) => HistoryDragMouseDown(app, wParam, lParam, msg, hwnd))
     OnMessage(0x200, (wParam, lParam, msg, hwnd) => HistoryMouseMove(app, wParam, lParam, msg, hwnd))
     OnMessage(0x202, (wParam, lParam, msg, hwnd) => HistoryDragMouseUp(app, wParam, lParam, msg, hwnd))
-}
-
-SafeRefreshHistoryUI(app) {
-    if !app.historyVisible
-        return
-
-    RefreshHistoryUI(app)
+    OnMessage(0x204, (wParam, lParam, msg, hwnd) => HistoryRightClick(app, wParam, lParam, msg, hwnd))
+    OnMessage(0x207, (wParam, lParam, msg, hwnd) => HistoryMiddleClick(app, wParam, lParam, msg, hwnd))
+    OnMessage(0x201, (wParam, lParam, msg, hwnd) => DismissMenusOnClickOutside(app, wParam, lParam, msg, hwnd))
 }
 
 Emit(app, name) {
@@ -100,9 +119,6 @@ Emit(app, name) {
     if !app.events.Has(name)
         return
 
-    if (name = "history_changed" && !app.historyVisible)
-        return
-
     _emitLock := true
     try {
         for _, fn in app.events[name]
@@ -112,24 +128,43 @@ Emit(app, name) {
     }
 }
 
-DebouncedRefresh(app) {
-    static pending := false
-
-    if pending
+HistoryMiddleClick(app, wParam, lParam, msg, hwnd) {
+    if !app.historyVisible {
         return
+    }
 
-    pending := true
-    SetTimer(() => (
-        pending := false,
-        SafeHistoryRefresh(app)
-    ), -50)
+    if app.ui.HasOwnProp("sectionByHwnd") && app.ui.sectionByHwnd.Has(hwnd) {
+        sectionName := app.ui.sectionByHwnd[hwnd]
+        OpenSectionMenu(app, sectionName)
+        return
+    }
+
+    if !app.ui.HasOwnProp("controlHexByHwnd") || !app.ui.controlHexByHwnd.Has(hwnd) {
+        return
+    }
+
+    token := app.ui.controlHexByHwnd[hwnd]
+    if !token {
+        return
+    }
+
+    if SafeGetGuiHwnd(app.pinMenuGui)
+        try app.pinMenuGui.Hide()
+    if SafeGetGuiHwnd(app.roleMenuGui)
+        try app.roleMenuGui.Hide()
+
+    OpenRoleMenu(app, token)
 }
 
-SafeHistoryRefresh(app) {
+HistoryRightClick(app, wParam, lParam, msg, hwnd) {
     if !app.historyVisible
         return
 
-    RefreshHistoryUI(app)
+    if app.ui.HasOwnProp("sectionByHwnd") && app.ui.sectionByHwnd.Has(hwnd) {
+        sectionName := app.ui.sectionByHwnd[hwnd]
+        SetSelectedSection(app, sectionName)
+        return
+    }
 }
 
 GetMonitorFromPoint(x, y) {
@@ -166,4 +201,34 @@ SafeGetControlHwnd(ctrlObj) {
     try return ctrlObj.Hwnd
     catch
         return 0
+}
+
+DismissMenusOnClickOutside(app, wParam, lParam, msg, hwnd) {
+    if SafeGetGuiHwnd(app.roleMenuGui) {
+        roleHwnd := SafeGetGuiHwnd(app.roleMenuGui)
+        if (hwnd != roleHwnd && !IsChildOfMenu(app.roleMenuGui, hwnd)) {
+            try app.roleMenuGui.Destroy()
+        }
+    }
+
+    if SafeGetGuiHwnd(app.pinMenuGui) {
+        pinHwnd := SafeGetGuiHwnd(app.pinMenuGui)
+        if (hwnd != pinHwnd && !IsChildOfMenu(app.pinMenuGui, hwnd)) {
+            try app.pinMenuGui.Destroy()
+        }
+    }
+}
+
+IsChildOfMenu(menuGui, hwnd) {
+    if !SafeGetGuiHwnd(menuGui)
+        return false
+
+    menuHwnd := SafeGetGuiHwnd(menuGui)
+    parent := DllCall("GetParent", "Ptr", hwnd)
+    while (parent) {
+        if (parent = menuHwnd)
+            return true
+        parent := DllCall("GetParent", "Ptr", parent)
+    }
+    return (hwnd = menuHwnd)
 }

@@ -136,10 +136,11 @@ EscapeSectionMeta(value) {
 
 UnescapeSectionMeta(value) {
     value := "" value
+    value := StrReplace(value, "\\", "\x1b")
     value := StrReplace(value, "\n", "`n")
     value := StrReplace(value, "\r", "`r")
     value := StrReplace(value, "\p", "|")
-    value := StrReplace(value, "\\", "\")
+    value := StrReplace(value, "\x1b", "\")
     return value
 }
 
@@ -336,7 +337,8 @@ LoadHistory(app) {
         }
     }
     GetSelectedSectionName(p)
-    p.roleOrder := NormalizeRoleOrderList(p.HasOwnProp("roleOrder") ? p.roleOrder : DefaultRoleOrder())
+    if p.HasOwnProp("roleOrder")
+        p.roleOrder := NormalizeRoleOrderList(p.roleOrder)
     if !p.HasOwnProp("sectionPositions")
         p.sectionPositions := Map()
 }
@@ -355,10 +357,10 @@ SavePalette(p, version) {
     priority := p.HasOwnProp("priority") ? p.priority : 1
     f.WriteLine("#META|version=" version "|historyMax=" p.historyMax "|maxCols=" p.maxCols "|guiMode=" guiMode "|priority=" priority "|note=" note)
 
-    if !p.HasOwnProp("roleOrder")
-        p.roleOrder := DefaultRoleOrder()
-    p.roleOrder := NormalizeRoleOrderList(p.roleOrder)
-    f.WriteLine("#ROLEORDER|" JoinRoleOrder(p.roleOrder))
+    if p.HasOwnProp("roleOrder") {
+        p.roleOrder := NormalizeRoleOrderList(p.roleOrder)
+        f.WriteLine("#ROLEORDER|" JoinRoleOrder(p.roleOrder))
+    }
 
     EnsureDefaultSection(p)
     for section in p.sections {
@@ -411,14 +413,14 @@ JoinRoleOrder(roleOrder) {
 
 DefaultRoleOrder() {
     return [
-        "Base",
-        "Highlight",
-        "Shadow",
-        "Hi Shadow",
-        "2 Shadow",
-        "Mask",
+        "Black",
         "Outline",
-        "Black"
+        "Mask",
+        "Highlight",
+        "Base",
+        "Hi Shadow",
+        "Shadow",
+        "2 Shadow"
     ]
 }
 

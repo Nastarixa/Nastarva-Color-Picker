@@ -67,7 +67,7 @@ TXT • JSON • INI • CSV • PNG • ASE
 ### 📦 Templates
 - Material Design
 - Tailwind CSS
-- Greyscale
+- Pastel Soft
 - RPG UI
 - Neon Cyberpunk
 - and more

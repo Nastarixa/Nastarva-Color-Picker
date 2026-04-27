@@ -282,8 +282,8 @@ SaveColor(app) {
 
     AddColor(palette, item)
 
-    if !palette.sections.Has(section)
-        palette.sections.Push(section)
+    if !HasSectionName(palette, section)
+        AddSectionName(palette, section)
 
     Normalize(palette)
     SaveHistory(app)

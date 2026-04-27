@@ -1,22 +1,28 @@
-ExportActivePalette(app, format) {
+ExportActivePalette(app, format, name?, pngStyle?, pngInfo?) {
     p := app.activePalette
     ext := "." format
-    filters := Map(
-        "txt", "Text Files (*.txt)",
-        "json", "JSON Files (*.json)",
-        "ini", "INI Files (*.ini)",
-        "csv", "CSV Files (*.csv)",
-        "png", "PNG Files (*.png)",
-        "ase", "Adobe Swatch Exchange (*.ase)"
-    )
+    filter := format = "txt" ? "Text Files (*.txt)"
+        : format = "json" ? "JSON Files (*.json)"
+        : format = "ini" ? "INI Files (*.ini)"
+        : format = "csv" ? "CSV Files (*.csv)"
+        : format = "png" ? "PNG Files (*.png)"
+        : format = "ase" ? "Adobe Swatch Exchange (*.ase)"
+        : "All Files (*.*)"
 
-    defaultName := p.name ext
-    path := FileSelect("S16", A_ScriptDir "\" defaultName, "Export Palette as " StrUpper(format), filters[format])
+    defaultName := (IsSet(name) && name != "") ? name : p.name
+    initialDir := A_ScriptDir "\color"
+    DirCreate(initialDir)
+    if !DirExist(initialDir)
+        initialDir := A_ScriptDir
+    title := "Export Palette as " StrUpper(format)
+    path := FileSelect("S16", initialDir "\" defaultName ext, title "|" filter)
     if (path = "")
         return
 
     if (format = "png") {
-        ExportPalettePng(app, p, path)
+        style := IsSet(pngStyle) ? pngStyle : 1
+        info := IsSet(pngInfo) ? pngInfo : 1
+        ExportPalettePng(app, p, path, style, info)
         return
     }
 
@@ -46,7 +52,7 @@ ExportActivePaletteCharacterSheet(app) {
     ExportPalettePngCharacter(app, p, path)
 }
 
-ExportPalettePng(app, p, path) {
+ExportPalettePng(app, p, path, style := 1, showInfo := 1) {
     jsonPath := A_Temp "\nastarva_palette_export.json"
     scriptPath := A_Temp "\nastarva_palette_export.ps1"
 
@@ -55,8 +61,13 @@ ExportPalettePng(app, p, path) {
     if FileExist(scriptPath)
         FileDelete(scriptPath)
 
-    FileAppend(BuildPaletteJson(p, app.version), jsonPath, "UTF-8")
-    FileAppend(GetPalettePngExportScript(), scriptPath, "UTF-8")
+    FileAppend(BuildPaletteJson(p, app.version, showInfo), jsonPath, "UTF-8")
+
+    if (style = 2) {
+        FileAppend(GetPalettePngExportCharacterScript(), scriptPath, "UTF-8")
+    } else {
+        FileAppend(GetPalettePngExportSectionScript(), scriptPath, "UTF-8")
+    }
 
     cmd := Format(
         'powershell -NoProfile -ExecutionPolicy Bypass -File "{}" "{}" "{}"',
@@ -68,7 +79,8 @@ ExportPalettePng(app, p, path) {
     RunWait(cmd, , "Hide")
 
     if FileExist(path) {
-        ShowToast(app, "Exported " p.name " as PNG")
+        styleName := style = 2 ? "Character Sheet" : "Grid with Sections"
+        ShowToast(app, "Exported " p.name " as PNG (" styleName ")")
     } else {
         ShowToast(app, "PNG export failed")
     }
@@ -133,11 +145,12 @@ BuildPaletteTxt(p, version) {
     return JoinLines(lines)
 }
 
-BuildPaletteJson(p, version) {
+BuildPaletteJson(p, version, showInfo := 1) {
     json := []
     json.Push("{")
     json.Push('  "name": "' JsonEscape(p.name) '",')
     json.Push('  "version": "' JsonEscape(version) '",')
+    json.Push('  "showInfo": ' showInfo ',')
     json.Push('  "historyMax": ' p.historyMax ',')
     json.Push('  "maxCols": ' p.maxCols ',')
     json.Push('  "sections": [' JoinJsonStringArray(p.sections) '],')
@@ -234,7 +247,7 @@ ExportPaletteAse(app, p, path) {
     blockSize := 0
     for item in p.colors {
         nameLen := StrLen(item.name) + 1
-        blockSize += 2 + 4 + 2 + (nameLen * 2) + 2 + 2 + 2 + 2 + 2
+        blockSize += 2 + 4 + (nameLen * 2) + 4 + 8 + 12
     }
 
     dataSize := 12 + (colorCount * 4) + blockSize
@@ -250,45 +263,44 @@ ExportPaletteAse(app, p, path) {
     NumPut("Int32", colorCount, data, offset)
     offset += 4
 
-    groupOffset := 12 + (colorCount * 4)
-    NumPut("Int32", groupOffset, data, offset)
-    offset += 4
-
     for item in p.colors {
         rgb := StrSplit(item.rgb, ",")
         r := Integer(rgb[1])
-        g := Integer(rgb[2])
+        gv := Integer(rgb[2])
         b := Integer(rgb[3])
 
         NumPut("Int16", 1, data, offset)
         offset += 2
 
         nameLen := StrLen(item.name) + 1
-        byteLen := (nameLen * 2) + 12
+        byteLen := (nameLen * 2) + 4 + 8 + 12
         NumPut("Int32", byteLen, data, offset)
         offset += 4
 
         NumPut("Int16", nameLen, data, offset)
         offset += 2
 
-        nameWide := TextToUtf16(item.name)
         StrPut(item.name, data.Offset(offset), nameLen, "UTF-16")
         offset += nameLen * 2
 
-        NumPut("Int16", 0, data, offset)
-        offset += 2
-        NumPut("Int16", 0, data, offset)
-        offset += 2
-        NumPut("Int16", r * 257, data, offset)
-        offset += 2
-        NumPut("Int16", g * 257, data, offset)
-        offset += 2
-        NumPut("Int16", b * 257, data, offset)
-        offset += 2
+        modeStr := "RGB "
+        StrPut(modeStr, data.Offset(offset), 5, "UTF-16")
+        offset += 8
+
+        rf := r / 255.0
+        gf := gv / 255.0
+        bf := b / 255.0
+
+        NumPut("Float", rf, data, offset)
+        offset += 4
+        NumPut("Float", gf, data, offset)
+        offset += 4
+        NumPut("Float", bf, data, offset)
+        offset += 4
     }
 
     f := FileOpen(path, "w")
-    f.RawWrite(data, offset)
+    f.WriteRaw(data)
     f.Close()
 
     ShowToast(app, "Exported " p.name " as ASE")
@@ -303,13 +315,11 @@ GetPalettePngExportScript() {
     return FileRead(A_ScriptDir "\src\features\palette_png_export.ps1")
 }
 
-TextToUtf16(str) {
-    size := StrPut(str, "UTF-16")
-    buf := Buffer(size)
-    StrPut(str, buf, "UTF-16")
-    return buf
+GetPalettePngExportCharacterScript(showInfo := 1) {
+    return FileRead(A_ScriptDir "\src\features\palette_png_export_character.ps1")
 }
 
-GetPalettePngExportCharacterScript() {
-    return FileRead(A_ScriptDir "\src\features\palette_png_export_character.ps1")
+GetPalettePngExportSectionScript(showInfo := 1) {
+    script := FileRead(A_ScriptDir "\src\features\palette_png_export_sections.ps1")
+    return script
 }

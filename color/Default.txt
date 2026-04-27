@@ -1,5 +1,5 @@
-#META|version=3.5|historyMax=20|maxCols=10|guiMode=undocked|priority=1|note=
-#ROLEORDER|Base,Highlight,Shadow,Hi Shadow,2 Shadow,Mask,Outline,Black
+#META|version=3.5|historyMax=20|maxCols=10|guiMode=undocked|priority=2|note=
+#ROLEORDER|Black,Outline,Mask,Highlight,Base,Hi Shadow,Shadow,2 Shadow
 #SECTION|s25174640-1-9057|Default|locked=0|collapsed=0|tag=|note=
 #SECTION|s92796-1-4410|Clothing|locked=0|collapsed=0|tag=|note=
 #SECTION|s92796-2-2726|Eyes (Blue)|locked=0|collapsed=0|tag=|note=
@@ -12,8 +12,8 @@
 #SECTION|s915906-1-3052|ColorBlind|locked=0|collapsed=0|tag=|note=
 #SECTION|s1583390-1-9733|Contrast|locked=0|collapsed=0|tag=|note=
 #SECTION|s7648093-1-3306|Gradient|locked=0|collapsed=0|tag=|note=
-#POSITION|s1583390-1-9733|179|794|2472|75
-#POSITION|s25174640-1-9057|192|486|2472|75
+#POSITION|s1583390-1-9733|127|446|2472|75
+#POSITION|s25174640-1-9057|243|344|2472|75
 #POSITION|s760953-1-4933|449|365|2472|75
 #POSITION|s7648093-1-3306|3324|190|2472|117
 #POSITION|s915906-1-3052|88|1483|2472|117
@@ -23,7 +23,9 @@
 #POSITION|s92796-4-3251|88|1517|2472|75
 #POSITION|s92796-5-8260|88|1517|2472|75
 #POSITION|s92796-6-6283|88|1517|2472|75
-#POSITION|s92796-7-3070|166|1301|2472|75
+#POSITION|s92796-7-3070|240|234|2472|75
+FFFFFF|255,255,255|White|Base|0|0|Contrast|18966625-90-2719
+808080|128,128,128|Gray|Base|0|0|Default|15310609-89-2645
 8B5A2B|139,90,43|Deep Soft Orange|Base|0|0|Gradient|7910625-98-6312
 826627|130,102,39|Deep Soft Orange|Base|0|0|Gradient|7910625-97-3900
 787222|120,114,34|Deep Soft Yellow|Base|0|0|Gradient|7910625-96-3165
@@ -80,8 +82,8 @@ B94650|185,70,80|Soft Red|Base|0|0|Harmony|760953-36-3288
 B97A50|185,122,80|Skin Shadow|Shadow|0|0|Skin|92796-35-2921
 FFDCC2|255,220,194|Skin Highlight|Highlight|0|0|Skin|92796-34-1079
 D89A6A|216,154,106|Skin Hi-Shadow|Hi-Shadow|0|0|Skin|92796-33-5359
-6E4630|110,70,48|Skin Deep|2 Shadow|0|0|Skin|92796-32-2567
-EFA676|239,166,118|Skin Base|Base|0|0|Skin|92796-31-3244
+6E4630|110,70,48|Skin Deep|Base|0|0|Skin|92796-32-2567
+EFA676|239,166,118|Skin Base|Black|0|0|Skin|92796-31-3244
 0F0F0F|15,15,15|Outline|Outline|0|0|Outline|92796-30-7890
 141414|20,20,20|Black|Black|0|0|Outline|92796-29-5828
 A3874F|163,135,79|Hair Shadow|Shadow|0|0|Hair (Light)|92796-28-9904

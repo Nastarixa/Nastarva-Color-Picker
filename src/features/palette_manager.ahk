@@ -1089,6 +1089,7 @@ ProcessSingleImageImport(app, imgPath, tempPath) {
         AddColor(p, item)
         AddSectionName(p, "Imported")
     }
+    return true
 }
 
 ShowImportModeDialog(app, imagePath) {
@@ -1159,8 +1160,8 @@ GetPaletteImageImportScript() {
 
 StartPaletteScreenshotImport(app) {
     if app.screenshotCapture.active {
-        ShowToast(app, "Screenshot capture already running")
-        return
+        CancelPaletteScreenshotImport(app, "")
+        Sleep(500)
     }
 
     if !IsObject(app.screenshotPollFn)
@@ -1168,6 +1169,7 @@ StartPaletteScreenshotImport(app) {
 
     app.screenshotCapture.savedClipboard := ClipboardAll()
     app.screenshotCapture.active := true
+    app.screenshotCapture.noSnipTicks := 0
     app.screenshotCapture.deadline := A_TickCount + 120000
     app.screenshotCapture.tempPath := A_Temp "\nastarva_palette_capture.png"
 
@@ -1188,11 +1190,6 @@ PollPaletteScreenshotImport(app) {
         return
     }
 
-    try currentClip := ClipboardAll()
-    if currentClip = "" || currentClip = app.screenshotCapture.savedClipboard {
-        return
-    }
-
     if ClipboardHasImage() {
         SetTimer(app.screenshotPollFn, 0)
         tempPath := app.screenshotCapture.tempPath
@@ -1205,23 +1202,33 @@ PollPaletteScreenshotImport(app) {
         app.screenshotCapture.active := false
         try A_Clipboard := app.screenshotCapture.savedClipboard
         catch
-        app.screenshotCapture.savedClipboard := 0
+            app.screenshotCapture.savedClipboard := 0
 
         ShowImportModeDialog(app, tempPath)
         return
     }
 
-    SetTimer(app.screenshotPollFn, 0)
-    CancelPaletteScreenshotImport(app, "Screenshot canceled")
+    if !WinExist("ahk_exe ScreenClippingHost.exe") && !WinExist("Snip & Sketch") && !WinExist("ahk_class Microsoft.UI.Content.Desktop") {
+        if !app.screenshotCapture.HasOwnProp("noSnipTicks")
+            app.screenshotCapture.noSnipTicks := 0
+        app.screenshotCapture.noSnipTicks++
+        if app.screenshotCapture.noSnipTicks > 20 {
+            CancelPaletteScreenshotImport(app, "")
+            return
+        }
+    } else {
+        app.screenshotCapture.noSnipTicks := 0
+    }
 }
 
 CancelPaletteScreenshotImport(app, message := "") {
     app.screenshotCapture.active := false
     SetTimer(app.screenshotPollFn, 0)
+    app.screenshotCapture.noSnipTicks := 0
 
     try A_Clipboard := app.screenshotCapture.savedClipboard
     catch
-    app.screenshotCapture.savedClipboard := 0
+        app.screenshotCapture.savedClipboard := 0
 
     if (message != "")
         ShowToast(app, message)

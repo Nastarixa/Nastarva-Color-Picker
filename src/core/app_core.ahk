@@ -102,12 +102,12 @@ InitApp() {
 InitEvents(app) {
     app.events["history_changed"] := []
     OnMessage(0x84, (wParam, lParam, msg, hwnd) => HistoryPanelHitTest(app, wParam, lParam, msg, hwnd))
-    OnMessage(0x201, (wParam, lParam, msg, hwnd) => HistoryDragMouseDown(app, wParam, lParam, msg, hwnd))
+    OnMessage(0x201, (wParam, lParam, msg, hwnd) => HistoryDragMouseDown(app, wParam, lParam, msg, hwnd), 2)
     OnMessage(0x200, (wParam, lParam, msg, hwnd) => HistoryMouseMove(app, wParam, lParam, msg, hwnd))
     OnMessage(0x202, (wParam, lParam, msg, hwnd) => HistoryDragMouseUp(app, wParam, lParam, msg, hwnd))
     OnMessage(0x204, (wParam, lParam, msg, hwnd) => HistoryRightClick(app, wParam, lParam, msg, hwnd))
     OnMessage(0x207, (wParam, lParam, msg, hwnd) => HistoryMiddleClick(app, wParam, lParam, msg, hwnd))
-    OnMessage(0x201, (wParam, lParam, msg, hwnd) => DismissMenusOnClickOutside(app, wParam, lParam, msg, hwnd))
+    OnMessage(0x201, (wParam, lParam, msg, hwnd) => DismissMenusOnClickOutside(app, wParam, lParam, msg, hwnd), 3)
 }
 
 Emit(app, name) {

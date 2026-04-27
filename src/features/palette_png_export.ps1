@@ -41,16 +41,16 @@ foreach ($color in $colors) {
     }
 
     $r = [Convert]::ToInt32($color.hex.Substring(0,2), 16)
-    $g = [Convert]::ToInt32($color.hex.Substring(2,2), 16)
+    $gr = [Convert]::ToInt32($color.hex.Substring(2,2), 16)
     $b = [Convert]::ToInt32($color.hex.Substring(4,2), 16)
-    $c = [System.Drawing.Color]::FromArgb(255, $r, $g, $b)
+    $c = [System.Drawing.Color]::FromArgb(255, $r, $gr, $b)
 
     $rect = New-Object System.Drawing.Rectangle($x, $y, $cellSize, $cellSize)
     $g.FillRectangle((New-Object System.Drawing.SolidBrush($c)), $rect)
     $g.DrawRectangle([System.Drawing.Pens]::DarkGray, $rect)
 
-    $dark = [System.Drawing.Color]::FromArgb(180, (($r - 50), 0) | Measure-Object -Maximum).Maximum, (($g - 50), 0) | Measure-Object -Maximum).Maximum, (($b - 50), 0) | Measure-Object -Maximum).Maximum)
-    $light = [System.Drawing.Color]::FromArgb(180, (($r + 50), 255) | Measure-Object -Minimum).Minimum, (($g + 50), 255) | Measure-Object -Minimum).Minimum, (($b + 50), 255) | Measure-Object -Minimum).Minimum)
+    $dark = [System.Drawing.Color]::FromArgb(180, [Math]::Max($r - 50, 0), [Math]::Max($gr - 50, 0), [Math]::Max($b - 50, 0))
+    $light = [System.Drawing.Color]::FromArgb(180, [Math]::Min($r + 50, 255), [Math]::Min($gr + 50, 255), [Math]::Min($b + 50, 255))
 
     $g.FillRectangle((New-Object System.Drawing.SolidBrush($dark)), $x, $y, $cellSize, 2)
     $g.FillRectangle((New-Object System.Drawing.SolidBrush($light)), $x, $y + $cellSize - 2, $cellSize, 2)

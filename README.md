@@ -1,60 +1,133 @@
 # 🎨 Nastarva Color Picker
 
-Nastarva Color Picker is an AutoHotkey v2 tool for picking, organizing,
-and exporting colors.
+A **color palette manager** for game developers, digital artists, and designers — built with [AutoHotkey v2](https://www.autohotkey.com/).
 
-It is designed for character-sheet workflows, art references, and
-palette systems, where colors are structured into palettes, sections,
-and role-based shading systems like:
+![Version](https://img.shields.io/badge/version-3.5-blue)
+![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
+![Language](https://img.shields.io/badge/language-AutoHotkey_v2-green)
 
--   Base
--   Highlight
--   Shadow
--   Hi Shadow
--   2 Shadow
+---
 
-------------------------------------------------------------------------
+## ✨ Overview
 
-## ✨ Features
+Nastarva Color Picker is a powerful color workflow tool for fast creative iteration:
 
-### 🎯 Color Picking
+- Capture colors directly from screen
+- Organize into structured palettes
+- Assign semantic roles (Base, Shadow, Outline, etc.)
+- Validate accessibility (WCAG)
+- Generate gradients, harmonies, and variations
 
--   Live screen color picker
--   HEX & RGB copy support
--   Middle click to save color
--   Ctrl + Middle click to copy RGB
+---
+
+## 🚀 Features
+
+### 🎯 Color Picker
+- Live eyedropper with real-time HEX / RGB (`Ctrl + Alt + P`)
+- Middle-click instant save from screen
+- Clipboard HEX auto-detection
+
+---
 
 ### 🗂 Palette System
+- Multiple named palettes
+- Section-based grouping (collapsible panels)
+- Pin important colors
+- Drag & drop reorder system
+- Merge & compare palettes
 
--   Multiple palettes stored in text format
--   Role-based color organization
--   Section-based micro palettes
--   Pinned colors with ordering system
+---
 
-### 🪟 UI System
+### 🎭 Color Roles System
+- Base, Highlight, Shadow, Hi Shadow, 2 Shadow, Mask, Outline, Black
+- Batch role assignment (multi-select)
+- Custom role ordering
 
--   Docked / Undocked section windows
--   Floating section panels
--   Drag & drop pinned colors between sections
--   Persistent panel positions per palette
+---
 
-### 🖼 Image-Based Workflow
+### 🧪 Color Tools
+- 🎨 Harmony Generator (Complementary, Analogous, Triadic, Split, Tetradic)
+- ♿ WCAG Contrast Checker (AA/AAA + bad pair detection)
+- 🌈 Gradient Generator (2–20 steps)
+- 👁 Color Blindness Simulation (4 modes)
 
--   Import palette from image file
--   Import palette from screenshot snip
--   Auto-detect color blocks
--   Best-effort OCR section naming
--   Auto-role assignment (heuristic)
+---
 
-### 📤 Export Formats
+### 📥 Import / Export
+- Screenshot capture (`Ctrl + Alt + U`)
+- Image color extraction (PNG / JPG / BMP)
+- Folder batch import
+- Pre-import review system
 
--   TXT
--   JSON
--   INI
--   CSV
--   PNG (with layout + labels)
+Export formats:
+TXT • JSON • INI • CSV • PNG • ASE
 
-------------------------------------------------------------------------
+---
+
+### 📦 Templates
+- Material Design
+- Tailwind CSS
+- Greyscale
+- RPG UI
+- Neon Cyberpunk
+- and more
+
+Apply as:
+- New palette
+- Insert into palette
+- Replace current palette
+
+---
+
+### ⭐ Favorites
+- Star/unstar colors (`Ctrl + Alt + F`)
+- Persistent across sessions
+
+---
+
+### 🧭 Display Modes
+- Normal / Compact / Square
+- HEX or RGB primary mode
+- Docked or floating panels
+
+---
+
+## ⌨️ Hotkeys
+
+### Global
+| Shortcut | Action |
+|----------|--------|
+| Ctrl + Alt + P | Toggle Color Picker |
+| Ctrl + Alt + O | Toggle Palette |
+| Ctrl + Alt + U | Screenshot Import |
+| Ctrl + Alt + I | Palette Manager |
+| Ctrl + Alt + F | Favorites |
+| Ctrl + Alt + V | Paste HEX |
+| Ctrl + Alt + 1–9 | Switch Palette |
+
+---
+
+### Picker Mode
+| Input | Action |
+|------|--------|
+| Middle Mouse | Save HEX |
+| Ctrl + Middle Mouse | Save RGB |
+
+---
+
+### Palette Mode
+| Input | Action |
+|------|--------|
+| Click | Copy value |
+| Ctrl + Click | Copy alternate format |
+| Shift + Click | Multi-select |
+| Right Click | Context menu |
+| Middle Click | Role assignment |
+| Arrow Keys | Navigate |
+| Enter | Copy |
+| Space | Toggle selection |
+
+---
 
 ## 🖼 Image Preview
 
@@ -67,160 +140,61 @@ and role-based shading systems like:
 ![Information of the Color](docs/images/7.png)
 ![Additional Color Palette for Drawing Software](docs/images/8.png)
 ![Screenshot Import Result](docs/images/9.png)
-------------------------------------------------------------------------
 
-## ⚙️ Requirements
+---
 
--   Windows OS
--   AutoHotkey v2
--   PowerShell
--   Windows Snipping Tool (ms-screenclip support)
+## 🧱 Project Structure
 
-------------------------------------------------------------------------
-
-## ⌨️ Main Hotkeys
-
-  | Hotkey | Action |
-  | -------- | -------- |
-  | Ctrl + Alt + P | Toggle color picker |
-  | Ctrl + Alt + O | Toggle color palette |
-  | Ctrl + Alt + I | Toggle palette manager |
-  | Ctrl + Alt + U | Screenshot import |
-  | Ctrl + Alt + 1--9 | Switch palettes |
-
-------------------------------------------------------------------------
-
-## 🎛 Color Picker
-
-  | Input | Action |
-  | -------- | -------- |
-  | Middle Click | Save + Copy HEX |
-  | Ctrl + Middle Click |Save + Copy RGB |
-
-------------------------------------------------------------------------
-
-## 🎨 Color Palette
-  
-  | Input | Action |
-  | -------- | -------- |
-  | Left Click | Copy HEX |
-  | Ctrl + Left Click | Copy RGB |
-  | Right Click | Open Menu |
-  | Drag | Reorder pinned color |
-
-------------------------------------------------------------------------
-
-## 🔄 Workflow
-
-1.  Pick colors live
-2.  Organize into sections
-3.  Assign roles
-4.  Pin important colors
-5.  Export palette
-
-------------------------------------------------------------------------
-
-## 🪟 GUI Modes
-
-### Docked
-
--   Stacked sections
--   Fixed layout
-
-### Undocked
-
--   Floating panels
--   Draggable windows
-
-------------------------------------------------------------------------
-
-## 📦 Export Formats
-
-TXT, JSON, INI, CSV, PNG
-
-PNG includes: - Palette name - Sections - Swatches - RGB - Roles
-
-------------------------------------------------------------------------
-
-## 📁 File Structure
-
-Main script:
-
-- [Nastarva Color Picker.ahk](Nastarva-Color-Picker/Nastarva%20Color%20Picker.ahk)
-
-Core modules:
-
-- [app_core.ahk](Nastarva-Color-Picker/src/core/app_core.ahk)
-- [history_state.ahk](Nastarva-Color-Picker/src/core/history_state.ahk)
-- [persistence.ahk](Nastarva-Color-Picker/src/core/persistence.ahk)
-
-Feature modules:
-
-- [picker.ahk](Nastarva-Color-Picker/src/features/picker.ahk)
-- [history_gui.ahk](Nastarva-Color-Picker/src/features/history_gui.ahk)
-- [palette_manager.ahk](Nastarva-Color-Picker/src/features/palette_manager.ahk)
-- [palette_export.ahk](Nastarva-Color-Picker/src/features/palette_export.ahk)
-- [palette_image_import.ps1](Nastarva-Color-Picker/src/features/palette_image_import.ps1)
-- [palette_png_export.ps1](Nastarva-Color-Picker/src/features/palette_png_export.ps1)
-
+```
+Nastarva Color Picker.ahk
+src/
+  core/
+  features/
+  utils/
+  ui/
+color/
+templates/
+```
 Data:
-
 - palette files are stored in `color\`
 - palette order is stored in `color\palettes.txt`
 
-------------------------------------------------------------------------
+---
 
-## 📜 Palette Format
+## ⚙️ Requirements
 
-Example:
+- Windows 10 / 11
+- AutoHotkey v2 (64-bit)
+- PowerShell
+- Windows Snipping Tool (ms-screenclip support)
 
-```txt
-#META|version=3.0|historyMax=20|maxCols=4|guiMode=undocked
-#ROLEORDER|Base,Highlight,Shadow,Hi Shadow,2 Shadow
-#SECTION|Default
-#SECTION|Hair
-FFCCAA|255,204,170|Hair Base|Base|1|1|Hair|171369999-1-1234
-CC9966|204,153,102|Hair Shadow|Shadow|1|2|Hair|171369999-2-5678
+https://www.autohotkey.com/
+
+---
+
+## 📦 Installation
+
+```bash
+git clone <repo-url>
+cd nastarva-color-picker
 ```
 
-Color row fields:
+Run:
 
-1. `hex`
-2. `rgb`
-3. `name`
-4. `role`
-5. `pinned`
-6. `pinOrder`
-7. `section`
-8. `item id`
+```
+Nastarva Color Picker.ahk
+```
 
-------------------------------------------------------------------------
+---
 
-## ⚠️ Notes
+## 📄 License
 
-- Image role assignment is heuristic, not guaranteed
-- OCR section naming is best-effort and depends on Windows OCR quality
-- Imported palette layouts with unusual shapes may still need manual cleanup
-- A screenshot import can differ by 1 RGB value from live picker if the captured image is slightly different from the exact on-screen pixel
+MIT
+See [LICENSE](/LICENSE).
 
-------------------------------------------------------------------------
+---
 
 ## ⚠️ Disclaimer
 
 This project was developed with the assistance of AI tools.
 AI was used to support code writing, refactoring, and documentation, while the design direction, features, and final implementation were guided and reviewed by the author.
-
-------------------------------------------------------------------------
-
-## ▶️ Running The Script
-
-Run:
-
-```powershell
-AutoHotkey64.exe "D:\Github\Nastarva-Color-Picker\Nastarva Color Picker.ahk"
-```
-------------------------------------------------------------------------
-
-## 📜 License
-
-See [LICENSE](D:/Github/Nastarva-Color-Picker/LICENSE).

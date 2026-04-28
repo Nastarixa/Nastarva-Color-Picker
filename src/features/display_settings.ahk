@@ -40,17 +40,6 @@ y += 26
     headerLabel := headerCompactMode ? "Header: Compact" : "Header: Normal"
     gui.btnHeaderCompact := gui.AddButton("x" leftX+5 " y" y " w" leftW-10 " h22", headerLabel)
     gui.btnHeaderCompact.OnEvent("Click", (*) => ToggleHeaderClicked(app, gui))
-
-    y += 26
-    hasRoleOrder := p.HasOwnProp("roleOrder") && p.roleOrder.Length > 0
-    roleLabel := hasRoleOrder ? "Role Order: Custom" : "Role Order: Default"
-    gui.btnRoleOrder := gui.AddButton("x" leftX+5 " y" y " w" leftW-10 " h22", roleLabel)
-    gui.btnRoleOrder.OnEvent("Click", (*) => ToggleRoleOrderClicked(app, gui))
-
-    y += 26
-    roleOrderText := hasRoleOrder ? JoinRoleOrder(p.roleOrder) : ""
-    gui.roleOrderEdit := gui.AddEdit("x" leftX+5 " y" y " w" leftW-10 " h22" (hasRoleOrder ? "" : " Disabled"), roleOrderText)
-    gui.roleOrderEdit.OnEvent("Change", (*) => ApplyRoleOrderEdit(app, gui))
 }
 
 ApplyDisplayBtnClicked(app) {

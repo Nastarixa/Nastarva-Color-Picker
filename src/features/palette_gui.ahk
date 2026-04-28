@@ -615,6 +615,10 @@ ClearAllSelections(app) {
 
 GetSelectedIds(app, clickedToken) {
     selectedIds := []
+
+    if !app.ui.HasOwnProp("controls") || app.ui.controls.Count = 0
+        return selectedIds
+
     clickedItem := GetItemByToken(app, clickedToken)
     if clickedItem && clickedItem.HasOwnProp("id") {
         selectedIds.Push(clickedItem.id)
@@ -629,7 +633,7 @@ GetSelectedIds(app, clickedToken) {
         }
     }
 
-    return selectedIds
+return selectedIds
 }
 
 BatchTogglePin(app, ids) {
@@ -679,6 +683,13 @@ BatchDeleteColor(app, ids) {
 }
 
 DoHighlight(app, token) {
+    for tkn, ctrl in app.ui.controls {
+        if ctrl.selected {
+            ctrl.selected := false
+            try ctrl.bg.Opt("-Border")
+        }
+    }
+
     p := app.activePalette
     item := GetItemByToken(app, token)
     if !item
@@ -1797,7 +1808,6 @@ NavigateToToken(app, token) {
 
     if sectionName != app.navSection {
         app.navSection := sectionName
-        SetSelectedSection(app, sectionName)
     }
 
     p := app.activePalette
@@ -1808,11 +1818,20 @@ NavigateToToken(app, token) {
         oldItem := GetItemByToken(app, oldToken)
         if oldItem {
             try oldCtrl.bg.Opt("Background" oldItem.hex)
+            try oldCtrl.txt.Opt("cFFFFFF")
         }
     }
 
     p.highlightHex := ctrl.hex
     p.highlightToken := token
+
+    tokens := GetVisibleOrderedTokens(app)
+    for i, t in tokens {
+        if t = token {
+            app.navIndex := i
+            break
+        }
+    }
 
     try {
         ctrl.txt.Opt("cFFD700")
@@ -1931,5 +1950,95 @@ RefreshCellVisual(app, token) {
 
     try ctrl.bg.Opt("Background" item.hex)
     UpdateCellDisplay(app, token)
+}
+
+ChangeRoleByKeyboard(app, dir) {
+    if !app.historyVisible
+        return
+
+    tokens := GetVisibleOrderedTokens(app)
+    if tokens.Length = 0
+        return
+
+    if app.navIndex < 1
+        app.navIndex := tokens.Length
+    else if app.navIndex > tokens.Length
+        app.navIndex := 1
+
+    token := tokens[app.navIndex]
+    if !app.ui.controls.Has(token)
+        return
+
+    item := GetItemByToken(app, token)
+    if !item
+        return
+
+    roles := app.activePalette.HasOwnProp("roleOrder")
+        ? app.activePalette.roleOrder
+        : DefaultRoleOrder()
+
+    curRole := item.role != "" ? item.role : "Base"
+    curIdx := 1
+    for i, r in roles {
+        if r = curRole {
+            curIdx := i
+            break
+        }
+    }
+
+    newIdx := curIdx + dir
+    if newIdx < 1
+        newIdx := roles.Length
+    else if newIdx > roles.Length
+        newIdx := 1
+
+    newRole := roles[newIdx]
+
+    selectedIds := GetSelectedIds(app, token)
+    for _, id in selectedIds {
+        ApplyRoleMutationById(app.activePalette, newRole, id)
+        RefreshSectionByItemId(app, id)
+    }
+
+    SaveHistory(app)
+    count := selectedIds.Length
+    label := count > 1 ? " (" count " colors)" : ""
+    ShowToast(app, "Role: " newRole label)
+}
+
+NavigateOrPinCell(app, dir) {
+    if !app.ui.HasOwnProp("controls") || app.ui.controls.Count = 0
+        return
+
+    tokens := GetVisibleOrderedTokens(app)
+    if tokens.Length = 0
+        return
+
+    for token, ctrl in app.ui.controls {
+        if ctrl.selected {
+            ctrl.selected := false
+            try ctrl.bg.Opt("-Border")
+        }
+    }
+
+    if app.navIndex < 1
+        app.navIndex := tokens.Length
+    else if app.navIndex > tokens.Length
+        app.navIndex := 1
+
+    curIdx := app.navIndex
+    newIdx := curIdx + dir
+
+    if newIdx < 1
+        newIdx := tokens.Length
+    if newIdx > tokens.Length
+        newIdx := 1
+
+    if newIdx = curIdx
+        return
+
+    app.navIndex := newIdx
+    newToken := tokens[newIdx]
+    NavigateToToken(app, newToken)
 }
 

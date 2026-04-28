@@ -173,18 +173,6 @@ ApplyDisplaySettings(app) {
 }
 
 ApplyRoleOrderSettings(app) {
-    g := app.paletteGui
-    if !IsObject(g)
-        return
-
-    p := app.activePalette
-
-    if g.HasOwnProp("inputRoleOrder") {
-        roleOrder := ParseRoleOrder(g.inputRoleOrder.Value)
-        if (roleOrder.Length > 0)
-            p.roleOrder := roleOrder
-    }
-
     SaveHistory(app)
     ShowToast(app, "✅ Role order applied")
 }
@@ -396,12 +384,6 @@ GetPaletteLayoutLabel(p) {
     }
 }
 
-GetRoleOrderLabel(app) {
-    p := app.activePalette
-    frozen := p.HasOwnProp("lockLayoutOrder") && p.lockLayoutOrder
-    return frozen ? "📌 Role Order: Locked" : "🔄 Role Order: Auto"
-}
-
 GetPaletteLayoutIndex(p) {
     layout := p.HasOwnProp("layout") ? p.layout : "normal"
     switch StrLower(layout) {
@@ -467,13 +449,6 @@ ApplyColsUI(app, g) {
 
 GetActivePaletteName(app) {
     return app.activePalette.name
-}
-
-GetPaletteRoleOrderText(p) {
-    if !p.HasOwnProp("roleOrder")
-        p.roleOrder := DefaultRoleOrder()
-
-    return JoinRoleOrder(p.roleOrder)
 }
 
 GetPaletteGuiModeLabel(p) {
@@ -571,14 +546,10 @@ PaletteSwitchUI(app, g) {
     g.inputCols.Value := app.activePalette.maxCols
     if g.HasOwnProp("btnGuiMode")
         g.btnGuiMode.Text := GetGuiModeLabel(app)
-    if g.HasOwnProp("inputRoleOrder")
-        g.inputRoleOrder.Value := GetPaletteRoleOrderText(app.activePalette)
     if g.HasOwnProp("btnLayout")
         g.btnLayout.Text := GetLayoutLabel(app)
     if g.HasOwnProp("noteEdit")
         g.noteEdit.Value := GetPaletteNote(selectedPalette)
-    if g.HasOwnProp("btnRoleOrder")
-        g.btnRoleOrder.Text := GetRoleOrderLabel(app)
     if g.HasOwnProp("infoTable")
         UpdatePaletteInfoTable(g, selectedPalette)
 
@@ -647,14 +618,10 @@ DeletePaletteConfirm(app, g, name) {
     g.inputCols.Value := app.activePalette.maxCols
     if g.HasOwnProp("btnGuiMode")
         g.btnGuiMode.Text := GetGuiModeLabel(app)
-    if g.HasOwnProp("inputRoleOrder")
-        g.inputRoleOrder.Value := GetPaletteRoleOrderText(app.activePalette)
     if g.HasOwnProp("btnLayout")
         g.btnLayout.Text := GetLayoutLabel(app)
     if g.HasOwnProp("noteEdit")
         g.noteEdit.Value := GetPaletteNote(app.activePalette)
-    if g.HasOwnProp("btnRoleOrder")
-        g.btnRoleOrder.Text := GetRoleOrderLabel(app)
 
     SavePaletteList(app)
     Emit(app, "history_changed")
@@ -699,7 +666,6 @@ DuplicatePaletteConfirm(app, g, val) {
     p.historyMax := src.historyMax
     p.maxCols := src.maxCols
     p.guiMode := src.HasOwnProp("guiMode") ? src.guiMode : "undocked"
-    p.roleOrder := src.HasOwnProp("roleOrder") ? CloneRoleOrder(src.roleOrder) : DefaultRoleOrder()
     p.note := src.HasOwnProp("note") ? src.note : ""
 
     for section in src.sections {
@@ -724,13 +690,6 @@ DuplicatePaletteConfirm(app, g, val) {
 
     RefreshPaletteList(app, g)
     ShowToast(app, "📋 Duplicated palette: " newName)
-}
-
-CloneRoleOrder(roleOrder) {
-    result := []
-    for _, role in roleOrder
-        result.Push(role)
-    return result
 }
 
 RenamePaletteUI(app, g) {
@@ -826,30 +785,62 @@ MovePalette(app, g, dir) {
 
     app.paletteUIBusy := false
 }
-TogglePaletteLockLayout(app) {
-    p := app.activePalette
 
-    if !p.HasOwnProp("lockLayoutOrder")
-        p.lockLayoutOrder := false
-
-    p.lockLayoutOrder := !p.lockLayoutOrder
-
-    g := app.paletteGui
-    if IsObject(g) && g.HasOwnProp("btnRoleOrder")
-        g.btnRoleOrder.Text := GetRoleOrderLabel(app)
-
-    ShowToast(app, p.lockLayoutOrder
-        ? "📌 Role order LOCKED"
-        : "🔄 Role order AUTO")
-
-    Layout(app)
-}
 ImportPaletteImageUI(app) {
-    path := FileSelect(1, , "Import Character Sheet Palette", "Images (*.png; *.jpg; *.jpeg; *.bmp)")
+    path := FileSelect(1, , "Import Palette", "All Supported (*.png;*.txt;*.json;*.csv;*.ini)|Images (*.png;*.jpg;*.jpeg;*.bmp)|Text Files (*.txt)|JSON Files (*.json)|CSV Files (*.csv)|INI Files (*.ini)")
     if (path = "")
         return
 
-    ShowImportModeDialog(app, path)
+    ext := SubStr(path, InStr(path, ".") + 1)
+    ext := StrLower(ext)
+
+    if (ext = "png" || ext = "jpg" || ext = "jpeg" || ext = "bmp") {
+        ShowImportModeDialog(app, path)
+    } else if (ext = "txt") {
+        ImportPaletteTxtFile(app, path)
+    } else if (ext = "json") {
+        ImportPaletteJsonFile(app, path)
+    } else if (ext = "csv") {
+        ImportPaletteCsvFile(app, path)
+    } else if (ext = "ini") {
+        ImportPaletteIniFile(app, path)
+    }
+}
+
+ImportPaletteTxtFile(app, path) {
+    content := FileRead(path, "UTF-8")
+    if (Trim(content) = "") {
+        ShowToast(app, "Empty file")
+        return
+    }
+    ShowImportReview(app, content, path, false, "new")
+}
+
+ImportPaletteJsonFile(app, path) {
+    content := FileRead(path, "UTF-8")
+    if (Trim(content) = "") {
+        ShowToast(app, "Empty file")
+        return
+    }
+    ShowImportReview(app, content, path, false, "new")
+}
+
+ImportPaletteCsvFile(app, path) {
+    content := FileRead(path, "UTF-8")
+    if (Trim(content) = "") {
+        ShowToast(app, "Empty file")
+        return
+    }
+    ShowImportReview(app, content, path, false, "new")
+}
+
+ImportPaletteIniFile(app, path) {
+    content := FileRead(path, "UTF-8")
+    if (Trim(content) = "") {
+        ShowToast(app, "Empty file")
+        return
+    }
+    ShowImportReview(app, content, path, false, "new")
 }
 
 ImportFolderImages(app) {
@@ -1102,12 +1093,12 @@ ShowImportModeDialog(app, imagePath) {
     if (slashPos > 0)
         shortPath := "..." SubStr(imagePath, slashPos)
 
-    g.AddText("xm y+5 c888888 w320", shortPath)
+    g.AddText("xm y+5 c888888 w450", shortPath)
 
-    g.AddButton("xm y+10 w320 h32", "🔍 Review Import Colors")
+    g.AddButton("xm y+10 w450 h32", "🔍 Review Import Colors")
         .OnEvent("Click", (*) => (g.Destroy(), ImportPaletteImage(app, imagePath)))
 
-    g.AddButton("xm y+3 w320 h28", "❌ Cancel")
+    g.AddButton("xm y+3 w450 h28", "❌ Cancel")
         .OnEvent("Click", (*) => g.Destroy())
 
     g.Show("AutoSize Center")
@@ -1562,14 +1553,10 @@ RefreshPaletteManager(app, g) {
     g.inputCols.Value := app.activePalette.maxCols
     if g.HasOwnProp("btnGuiMode")
         g.btnGuiMode.Text := GetGuiModeLabel(app)
-    if g.HasOwnProp("inputRoleOrder")
-        g.inputRoleOrder.Value := GetPaletteRoleOrderText(app.activePalette)
     if g.HasOwnProp("btnLayout")
         g.btnLayout.Text := GetLayoutLabel(app)
     if g.HasOwnProp("noteEdit")
         g.noteEdit.Value := GetPaletteNote(app.activePalette)
-    if g.HasOwnProp("btnRoleOrder")
-        g.btnRoleOrder.Text := GetRoleOrderLabel(app)
 
 
     RefreshPaletteList(app, g)
@@ -2241,10 +2228,12 @@ OpenColorBlindDialog(app) {
     g.AddText("x10 y" rowY " cAAAAAA", "Actions")
     rowY += 18
     g.btnApply := g.AddButton("x10 y" rowY " w110 h28", "✨ Apply")
-    g.btnClose := g.AddButton("x130 y" rowY " w110 h28", "✖ Close")
+    g.btnClose := g.AddButton("x130 y" rowY " w110 h28", "Close")
     g.btnClose.OnEvent("Click", (*) => g.Destroy())
     g.btnApply.OnEvent("Click", (*) => AddColorBlindColors(app, g, colors))
     g.cbDrop.OnEvent("Change", (*) => UpdateColorBlindPreview(g, colors, g.cbDrop.Text))
+
+    g.previewStartY := g.previewLabel.Y + 26
 
     UpdateColorBlindPreview(g, colors, g.cbDrop.Text)
 
@@ -2278,25 +2267,17 @@ UpdateColorBlindPreview(g, colors, cbType) {
         g.previewLabel.Text := "Preview: 0 colors"
         return
     }
+
+    ; update main preview (top)
     firstColor := colors[1]
     if InStr(firstColor, "|")
         firstColor := StrSplit(firstColor, "|")[1]
+
     simHex := SimulateColorBlindness(firstColor, cbType)
     try g.targetPreview.Opt("Background" simHex)
 
-    if !g.HasOwnProp("previewList") || !g.previewList {
-        g.previewLabel.Text := "Preview: " colors.Length " colors"
-        return
-    }
-    count := 0
-    g.previewList.Delete()
-    for hex in colors {
-        cleanHex := InStr(hex, "|") ? StrSplit(hex, "|")[1] : hex
-        simHex := SimulateColorBlindness(cleanHex, cbType)
-        g.previewList.Add("", "#" cleanHex, "#" simHex)
-        count++
-    }
-    g.previewLabel.Text := "Preview: " count " colors"
+    ; 🔥 new visual renderer
+    RenderColorBlindPreview(g, colors, cbType)
 }
 
 AddColorBlindColors(app, g, colors) {
@@ -2324,7 +2305,46 @@ AddColorBlindColors(app, g, colors) {
     RefreshPaletteManager(app, app.paletteGui)
     SwitchPalette(app, p.name)
 }
+RenderColorBlindPreview(g, colors, cbType) {
+    ; clear old preview
+    if g.HasOwnProp("previewCtrls") {
+        for ctrl in g.previewCtrls
+            try ctrl.Destroy()
+    }
+    g.previewCtrls := []
 
+    startY := g.previewStartY
+    startX := 10
+    boxW := 50
+    boxH := 20
+    gapY := 6
+
+    for i, hex in colors {
+        cleanHex := InStr(hex, "|") ? StrSplit(hex, "|")[1] : hex
+        simHex := SimulateColorBlindness(cleanHex, cbType)
+
+        y := startY + (i-1)*(boxH + gapY)
+
+        ; ORIGINAL
+        c1 := g.AddText("x" startX " y" y " w" boxW " h" boxH " Background" cleanHex " Border")
+
+        ; SIMULATED
+        c2 := g.AddText("x" (startX + boxW + 10) " y" y " w" boxW " h" boxH " Background" simHex " Border")
+
+        ; HEX LABEL (optional but useful)
+        t := g.AddText("x" (startX + boxW*2 + 20) " y" y " w150 h" boxH " cAAAAAA"
+            , "#" cleanHex " → #" simHex)
+
+        g.previewCtrls.Push(c1)
+        g.previewCtrls.Push(c2)
+        g.previewCtrls.Push(t)
+
+        if i > 15  ; limit for performance
+            break
+    }
+
+    g.previewLabel.Text := "Preview: " colors.Length " colors"
+}
 GetLuminance(hex) {
     r := Integer("0x" SubStr(hex, 1, 2)) / 255
     g := Integer("0x" SubStr(hex, 3, 2)) / 255

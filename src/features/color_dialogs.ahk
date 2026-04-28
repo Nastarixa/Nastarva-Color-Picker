@@ -10,16 +10,18 @@ OpenExportDialog(app) {
     g.AddText("cFFFFFF", "Export Format:")
     g.fmtDrop := g.AddDropDownList("w200 y+4", formats)
     g.fmtDrop.Value := 1
-    g.fmtDrop.OnEvent("Change", (*) => TogglePngOptions(g))
 
     g.AddText("cFFFFFF y+10", "Filename:")
     g.fname := g.AddEdit("w200 y+4", app.activePalette.name)
 
-    g.pngStyleLabel := g.AddText("cAAAAAA y+10 Hidden", "PNG Style:")
-    g.pngStyle := g.AddDropDownList("w200 y+4 Hidden", ["Grid with Section Headers", "Character Sheet Style"])
+    g.pngStyleLabel := g.AddText("cAAAAAA y+10 +Hidden", "PNG Style:")
+    g.pngStyle := g.AddDropDownList("w200 y+4 +Hidden", ["Grid with Sections", "Character Sheet"])
     g.pngStyle.Value := 1
 
-    g.pngInfoCheck := g.AddCheckbox("y+8 w200 Hidden cAAAAAA", "Show HEX, RGB, Role info")
+    g.showInfo := g.AddCheckBox("cFFFFFF y+10 +Hidden", "Show color info (Hex, RGB, Role)")
+    g.showInfo.Value := 1
+
+    g.fmtDrop.OnEvent("Change", (*) => ExportFormatChanged(g))
 
     g.AddButton("w90 h28 y+15", "Export").OnEvent("Click", (*) => DoExportPalette(app, g))
     g.AddButton("w90 h28 x+10", "Cancel").OnEvent("Click", (*) => g.Destroy())
@@ -27,21 +29,36 @@ OpenExportDialog(app) {
     g.Show("AutoSize Center")
 }
 
-TogglePngOptions(g) {
-    isPng := g.fmtDrop.Text = "png"
-    g.pngStyleLabel.Visible := isPng
-    g.pngStyle.Visible := isPng
-    g.pngInfoCheck.Visible := isPng
+ExportFormatChanged(g) {
+    format := g.fmtDrop.Text
+    isPng := format = "png"
+
+    if isPng {
+        g.pngStyleLabel.Opt("-Hidden")
+        g.pngStyle.Opt("-Hidden")
+        g.showInfo.Opt("-Hidden")
+    } else {
+        g.pngStyleLabel.Opt("+Hidden")
+        g.pngStyle.Opt("+Hidden")
+        g.showInfo.Opt("+Hidden")
+    }
     g.Show("AutoSize Center")
 }
 
 DoExportPalette(app, inputGui) {
     format := inputGui.fmtDrop.Text
     name := inputGui.fname.Value
-    pngStyle := format = "png" ? inputGui.pngStyle.Value : 0
-    pngInfo := format = "png" ? (inputGui.pngInfoCheck.Value = 1) : 0
+
+    if format = "png" {
+        pngStyle := inputGui.pngStyle.Value
+        showInfo := inputGui.showInfo.Value
+    } else {
+        pngStyle := 0
+        showInfo := 0
+    }
+
     inputGui.Destroy()
-    ExportActivePalette(app, format, name, pngStyle, pngInfo)
+    ExportActivePalette(app, format, name, pngStyle, showInfo)
 }
 
 OpenGradientDialog(app) {

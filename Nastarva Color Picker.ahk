@@ -92,14 +92,13 @@ AddColorFromHex(App, hex, section) {
 ^!f::ShowFavoritesWindow(App)
 ^!v::PasteColorFromClipboard(App)
 
-Hotkey("~Left", (*) => App.historyVisible && NavigateKeyboard(App, "Left"))
-Hotkey("~Right", (*) => App.historyVisible && NavigateKeyboard(App, "Right"))
-Hotkey("~Up", (*) => App.historyVisible && NavigateKeyboard(App, "Up"))
-Hotkey("~Down", (*) => App.historyVisible && NavigateKeyboard(App, "Down"))
+Hotkey("~Left", (*) => App.historyVisible && NavigateOrPinCell(App, -1))
+Hotkey("~Right", (*) => App.historyVisible && NavigateOrPinCell(App, 1))
+Hotkey("~Up", (*) => App.historyVisible && ChangeRoleByKeyboard(App, -1))
+Hotkey("~Down", (*) => App.historyVisible && ChangeRoleByKeyboard(App, 1))
 Hotkey("~Home", (*) => App.historyVisible && NavigateKeyboard(App, "Home"))
 Hotkey("~End", (*) => App.historyVisible && NavigateKeyboard(App, "End"))
 Hotkey("~Enter", (*) => App.historyVisible && EnterSelectedColor(App))
-Hotkey("~Space", (*) => App.historyVisible && ToggleNavSelection(App))
 
 ~MButton::
 {

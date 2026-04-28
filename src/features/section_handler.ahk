@@ -444,10 +444,7 @@ BuildSectionGroups(app) {
     }
 
     for _, group in groups {
-        p := app.activePalette
-        hasRoleOrder := p.HasOwnProp("roleOrder") && p.roleOrder.Length > 0
-        if hasRoleOrder || !(p.HasOwnProp("lockLayoutOrder") && p.lockLayoutOrder)
-            SortSectionItems(app, group.items)
+        SortSectionItems(app, group.items)
     }
 
     return groups

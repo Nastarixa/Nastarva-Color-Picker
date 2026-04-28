@@ -1,27 +1,23 @@
-ExportActivePalette(app, format, name?, pngStyle?, pngInfo?) {
+ExportActivePalette(app, format, name?, pngStyle?, showInfo?) {
     p := app.activePalette
     ext := "." format
-    filter := format = "txt" ? "Text Files (*.txt)"
-        : format = "json" ? "JSON Files (*.json)"
-        : format = "ini" ? "INI Files (*.ini)"
-        : format = "csv" ? "CSV Files (*.csv)"
-        : format = "png" ? "PNG Files (*.png)"
-        : format = "ase" ? "Adobe Swatch Exchange (*.ase)"
-        : "All Files (*.*)"
+    filters := Map(
+        "txt", "Text Files (*.txt)",
+        "json", "JSON Files (*.json)",
+        "ini", "INI Files (*.ini)",
+        "csv", "CSV Files (*.csv)",
+        "png", "PNG Files (*.png)",
+        "ase", "Adobe Swatch Exchange (*.ase)"
+    )
 
     defaultName := (IsSet(name) && name != "") ? name : p.name
-    initialDir := A_ScriptDir "\color"
-    DirCreate(initialDir)
-    if !DirExist(initialDir)
-        initialDir := A_ScriptDir
-    title := "Export Palette as " StrUpper(format)
-    path := FileSelect("S16", initialDir "\" defaultName ext, title "|" filter)
+    path := FileSelect("S16", A_ScriptDir "\" defaultName ext, "Export Palette as " StrUpper(format), filters[format])
     if (path = "")
         return
 
     if (format = "png") {
         style := IsSet(pngStyle) ? pngStyle : 1
-        info := IsSet(pngInfo) ? pngInfo : 1
+        info := IsSet(showInfo) ? showInfo : 1
         ExportPalettePng(app, p, path, style, info)
         return
     }
@@ -61,7 +57,9 @@ ExportPalettePng(app, p, path, style := 1, showInfo := 1) {
     if FileExist(scriptPath)
         FileDelete(scriptPath)
 
-    FileAppend(BuildPaletteJson(p, app.version, showInfo), jsonPath, "UTF-8")
+    json := BuildPaletteJson(p, app.version)
+    json.Push('  "showInfo": ' showInfo ',')
+    FileAppend(JoinLines(json), jsonPath, "UTF-8")
 
     if (style = 2) {
         FileAppend(GetPalettePngExportCharacterScript(), scriptPath, "UTF-8")
@@ -145,12 +143,11 @@ BuildPaletteTxt(p, version) {
     return JoinLines(lines)
 }
 
-BuildPaletteJson(p, version, showInfo := 1) {
+BuildPaletteJson(p, version) {
     json := []
     json.Push("{")
     json.Push('  "name": "' JsonEscape(p.name) '",')
     json.Push('  "version": "' JsonEscape(version) '",')
-    json.Push('  "showInfo": ' showInfo ',')
     json.Push('  "historyMax": ' p.historyMax ',')
     json.Push('  "maxCols": ' p.maxCols ',')
     json.Push('  "sections": [' JoinJsonStringArray(p.sections) '],')
@@ -243,28 +240,38 @@ JoinJsonStringArray(items) {
 }
 
 ExportPaletteAse(app, p, path) {
-    sectionGroups := Map()
+    sections := p.HasOwnProp("sections") ? p.sections : []
+    groups := Map()
+    sectionColors := Map()
+
+    for section in sections {
+        sectionName := IsObject(section) ? section.name : section
+        sectionColors[sectionName] := []
+    }
+
     for item in p.colors {
-        sec := item.HasOwnProp("section") && item.section != "" ? item.section : "Default"
-        if !sectionGroups.Has(sec)
-            sectionGroups[sec] := []
-        sectionGroups[sec].Push(item)
+        secName := item.HasOwnProp("section") ? item.section : "Default"
+        if !sectionColors.Has(secName)
+            sectionColors[secName] := []
+        sectionColors[secName].Push(item)
     }
 
-    groupCount := sectionGroups.Count
-    colorCount := p.colors.Length
-    blockSize := 0
-    for sec, items in sectionGroups {
-        groupNameLen := StrLen(sec) + 1
-        blockSize += 2 + 4 + (groupNameLen * 2)
-        for item in items {
+    dataSize := 12
+    blockCount := 0
+
+    for secName, colors in sectionColors {
+        if colors.Length = 0
+            continue
+
+        blockCount += 2
+        dataSize += 2 + 4 + (StrLen(secName) + 1) * 2
+
+        for item in colors {
             nameLen := StrLen(item.name) + 1
-            blockSize += 2 + 4 + (nameLen * 2) + 4 + 8 + 12
+            dataSize += 2 + 4 + (nameLen * 2) + 4 + 8 + 12
         }
-        blockSize += 2 + 4
     }
 
-    dataSize := 12 + (groupCount * 4) + blockSize
     data := Buffer(dataSize)
     offset := 0
 
@@ -274,23 +281,26 @@ ExportPaletteAse(app, p, path) {
     offset += 2
     NumPut("Int16", 0, data, offset)
     offset += 2
-    NumPut("Int32", colorCount, data, offset)
+    NumPut("Int32", blockCount, data, offset)
     offset += 4
 
-    for sec, items in sectionGroups {
-        groupNameLen := StrLen(sec) + 1
-        groupByteLen := (groupNameLen * 2) + 4
+    for secName, colors in sectionColors {
+        if colors.Length = 0
+            continue
 
-        NumPut("Int16", 0xC001, data, offset)
+        NumPut("Int16", 2, data, offset)
         offset += 2
-        NumPut("Int32", groupByteLen, data, offset)
+        groupName := secName
+        groupNameLen := StrLen(groupName) + 1
+        groupBlockSize := (groupNameLen * 2) + 2
+        NumPut("Int32", groupBlockSize, data, offset)
         offset += 4
         NumPut("Int16", groupNameLen, data, offset)
         offset += 2
-        StrPut(sec, data.Offset(offset), groupNameLen, "UTF-16")
+        StrPut(groupName, data.Offset(offset), groupNameLen, "UTF-16")
         offset += groupNameLen * 2
 
-        for item in items {
+        for item in colors {
             rgb := StrSplit(item.rgb, ",")
             r := Integer(rgb[1])
             gv := Integer(rgb[2])
@@ -303,8 +313,10 @@ ExportPaletteAse(app, p, path) {
             byteLen := (nameLen * 2) + 4 + 8 + 12
             NumPut("Int32", byteLen, data, offset)
             offset += 4
+
             NumPut("Int16", nameLen, data, offset)
             offset += 2
+
             StrPut(item.name, data.Offset(offset), nameLen, "UTF-16")
             offset += nameLen * 2
 
@@ -312,15 +324,19 @@ ExportPaletteAse(app, p, path) {
             StrPut(modeStr, data.Offset(offset), 5, "UTF-16")
             offset += 8
 
-            NumPut("Float", r / 255.0, data, offset)
+            rf := r / 255.0
+            gf := gv / 255.0
+            bf := b / 255.0
+
+            NumPut("Float", rf, data, offset)
             offset += 4
-            NumPut("Float", gv / 255.0, data, offset)
+            NumPut("Float", gf, data, offset)
             offset += 4
-            NumPut("Float", b / 255.0, data, offset)
+            NumPut("Float", bf, data, offset)
             offset += 4
         }
 
-        NumPut("Int16", 0xC002, data, offset)
+        NumPut("Int16", 3, data, offset)
         offset += 2
         NumPut("Int32", 0, data, offset)
         offset += 4
@@ -330,12 +346,16 @@ ExportPaletteAse(app, p, path) {
     f.WriteRaw(data)
     f.Close()
 
-    ShowToast(app, "Exported " p.name " as ASE (grouped by section)")
+    ShowToast(app, "Exported " p.name " as ASE")
 }
 
 CsvEscape(value) {
     value := StrReplace(value, '"', '""')
     return '"' value '"'
+}
+
+GetPalettePngExportScript() {
+    return FileRead(A_ScriptDir "\src\features\palette_png_export.ps1")
 }
 
 GetPalettePngExportCharacterScript() {

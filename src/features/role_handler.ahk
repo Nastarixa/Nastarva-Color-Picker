@@ -73,6 +73,8 @@ OpenRoleSubMenu(app, token, targetIds) {
     g := Gui("+AlwaysOnTop -Caption +ToolWindow")
     g.BackColor := "323338"
     g.SetFont("s9", "Consolas")
+    g.MarginX := 8
+    g.MarginY := 8
 
     label := (targetIds.Length > 1)
         ? "Set Role (" targetIds.Length " colors):"
@@ -80,35 +82,59 @@ OpenRoleSubMenu(app, token, targetIds) {
     g.AddText("cFFFFFF", label)
 
     g.SetFont("s7", "Consolas")
-    g.AddText("cFFFFFF", "Click 2x to close")
+    g.AddText("cAAAAAA", "Arrow Up/Down to change, Enter to confirm")
 
     g.SetFont("s9", "Consolas")
-    roles := app.activePalette.HasOwnProp("roleOrder")
-        ? app.activePalette.roleOrder
-        : DefaultRoleOrder()
+    roles := DefaultRoleOrder()
 
     if targetIds.Length = 1 {
         item := GetItemById(app, targetIds[1])
         hex := item ? item.hex : ""
         itemId := item ? item.id : ""
-        for r in roles {
-            role := NormalizeRoleName(r)
-            btn := g.AddButton("w160", GetRoleButtonLabel(role))
-            btn.role := role
-            btn.OnEvent("Click", RoleBtnClick.Bind(app, role, itemId, hex))
+        currentRole := item ? NormalizeRoleName(item.role) : "Base"
+        currentIdx := 1
+        for i, r in roles {
+            if NormalizeRoleName(r) = currentRole {
+                currentIdx := i
+                break
+            }
         }
     } else {
-        for r in roles {
-            role := NormalizeRoleName(r)
-            btn := g.AddButton("w160", GetRoleButtonLabel(role))
-            btn.role := role
+        currentIdx := 1
+    }
+
+    g.currentIdx := currentIdx
+    g.app := app
+    g.token := token
+    g.hex := hex
+    g.itemId := itemId
+    g.targetIds := targetIds
+    g.roles := roles
+
+    for r in roles {
+        role := NormalizeRoleName(r)
+        btn := g.AddButton("w160", GetRoleButtonLabel(role))
+        btn.role := role
+        if targetIds.Length = 1 {
+            btn.OnEvent("Click", RoleBtnClick.Bind(app, role, token, hex))
+        } else {
             btn.targetIds := targetIds
             btn.OnEvent("Click", BatchRoleBtnClickFromMenu.Bind(app, role, targetIds))
         }
     }
 
+    g.upBtn := g.AddButton("w77", "▲ Up")
+    g.upBtn.OnEvent("Click", (*) => RoleMenuChangeRole(app, g, -1))
+    g.downBtn := g.AddButton("w77 x+6", "▼ Down")
+    g.downBtn.OnEvent("Click", (*) => RoleMenuChangeRole(app, g, 1))
+
     cancelBtn := g.AddButton("w160", "Cancel")
-    cancelBtn.OnEvent("Click", (*) => g.Destroy())
+    cancelBtn.OnEvent("Click", (*) => CloseRoleMenu(app))
+
+    g.OnEvent("Escape", (*) => CloseRoleMenu(app))
+    g.OnEvent("Close", (*) => CloseRoleMenu(app))
+
+    UpdateRoleMenuHighlight(g)
 
     GetCursorPosForCapture(app, &x, &y)
 
@@ -124,7 +150,25 @@ OpenRoleSubMenu(app, token, targetIds) {
 
     app.roleMenuGui := g
     g.Show("x" xPos " y" yPos)
-    g.OnEvent("Escape", (*) => CloseRoleMenu(app))
+}
+
+RoleMenuChangeRole(app, g, dir) {
+    roles := g.roles
+    newIdx := g.currentIdx + dir
+    if (newIdx < 1)
+        newIdx := roles.Length
+    if (newIdx > roles.Length)
+        newIdx := 1
+
+    g.currentIdx := newIdx
+    UpdateRoleMenuHighlight(g)
+}
+
+UpdateRoleMenuHighlight(g) {
+    roles := g.roles
+    idx := g.currentIdx
+    g.upBtn.Text := "Up: " NormalizeRoleName(roles[idx])
+    g.downBtn.Text := "Down: " NormalizeRoleName(roles[idx])
 }
 
 CloseRoleMenu(app) {

@@ -9,6 +9,7 @@ Add-Type -AssemblyName System.Windows.Forms
 $data = Get-Content $JsonPath -Raw | ConvertFrom-Json
 
 $showInfo = if ($data.showInfo -eq 1) { $true } else { $false }
+$rowExtraH = if ($showInfo) { 22 } else { 0 }
 $cellSize = 60
 $cellGap = 4
 $headerH = 30
@@ -37,7 +38,6 @@ foreach ($sec in $groups.Keys) {
     $totalRows += $rows
 }
 
-$rowExtraH = if ($showInfo) { 22 } else { 0 }
 $rowHeight = $cellSize + $rowExtraH
 $totalHeight = $headerH + ($totalRows * ($rowHeight + $cellGap)) + ($totalSections * ($sectionHeaderH + $cellGap)) + $padding * 2
 $totalWidth = ($cellSize + $cellGap) * $cols + $cellGap + $padding * 2
@@ -80,6 +80,7 @@ foreach ($sec in $groups.Keys) {
 
         $rect = New-Object System.Drawing.Rectangle($x, $y, $cellSize, $cellSize)
         $g.FillRectangle((New-Object System.Drawing.SolidBrush($c)), $rect)
+        $g.DrawRectangle([System.Drawing.Pens]::DarkGray, $rect)
 
         if ($showInfo) {
             $infoY = $y + $cellSize + 2
@@ -89,7 +90,7 @@ foreach ($sec in $groups.Keys) {
             $rgbText = "$r,$gr,$b"
             $g.DrawString($rgbText, $font, $brushGray, $x, $infoY)
             $infoY += 9
-            $roleText = $color.role
+            $roleText = if ($color.role) { $color.role } else { "Other" }
             $g.DrawString($roleText, $font, $brushGold, $x, $infoY)
         }
 

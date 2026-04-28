@@ -814,6 +814,7 @@ MovePinnedColor(app, token, dir) {
     }
 
     SaveHistory(app)
+    RebuildUI(app)
     if app.historyVisible {
         Emit(app, "history_changed")
     }
@@ -834,6 +835,7 @@ BatchMovePinnedColor(app, targetIds, dir) {
     }
 
     SaveHistory(app)
+    RebuildUI(app)
     if app.historyVisible {
         Emit(app, "history_changed")
     }
@@ -1413,9 +1415,10 @@ ShowHotkeyHelp(app) {
     "Drag            → Reorder Colors`n"
     "Clipboard HEX   → Auto-add color`n`n"
     "Keyboard Navigation:`n"
-    "Arrows / Home / End → Navigate`n"
-    "Enter            → Copy (current mode)`n"
-    "Space            → Toggle selection`n`n"
+    "← / →          → Navigate cells`n"
+    "↑ / ↓           → Change role`n"
+    "Home / End      → Navigate`n"
+    "Enter          → Copy (current mode)`n`n"
     "Display Mode (in Manager):`n"
     "HEX Mode: Click=HEX, Ctrl=RGB`n"
     "RGB Mode: Click=RGB, Ctrl=HEX"

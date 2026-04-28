@@ -710,6 +710,14 @@ DoHighlight(app, token) {
     p.highlightHex := item.hex
     p.highlightToken := token
 
+    tokens := GetVisibleOrderedTokens(app)
+    for i, t in tokens {
+        if t = token {
+            app.navIndex := i
+            break
+        }
+    }
+
     if !app.ui.controls.Has(token)
         return
 
@@ -2015,10 +2023,7 @@ NavigateOrPinCell(app, dir) {
         return
 
     for token, ctrl in app.ui.controls {
-        if ctrl.selected {
-            ctrl.selected := false
-            try ctrl.bg.Opt("-Border")
-        }
+        ctrl.selected := false
     }
 
     if app.navIndex < 1
@@ -2037,8 +2042,13 @@ NavigateOrPinCell(app, dir) {
     if newIdx = curIdx
         return
 
-    app.navIndex := newIdx
+app.navIndex := newIdx
     newToken := tokens[newIdx]
+    
     NavigateToToken(app, newToken)
+    
+    if app.ui.controls.Has(newToken) {
+        app.ui.controls[newToken].selected := true
+    }
 }
 

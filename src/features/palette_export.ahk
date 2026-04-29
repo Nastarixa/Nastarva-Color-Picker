@@ -10,7 +10,7 @@ ExportActivePalette(app, format, name?, pngStyle?, showInfo?) {
     )
 
     defaultName := (IsSet(name) && name != "") ? name : p.name
-    path := FileSelect("S", A_ScriptDir "\" defaultName ext, "Export Palette as " StrUpper(format), filters[format])
+    path := PickExportFilePath(app, "Export Palette as " StrUpper(format), defaultName ext, filters[format], ext)
     if (path = "")
         return
 
@@ -35,11 +35,68 @@ ExportActivePalette(app, format, name?, pngStyle?, showInfo?) {
 ExportActivePaletteCharacterSheet(app, showInfo := 1) {
     p := app.activePalette
     defaultName := p.name ".png"
-    path := FileSelect("S", A_ScriptDir "\" defaultName, "Export Character Sheet Style", "PNG Files (*.png)")
+    path := PickExportFilePath(app, "Export Character Sheet Style", defaultName, "PNG Files (*.png)", ".png")
     if (path = "")
         return
 
     ExportPalettePngCharacter(app, p, path, showInfo)
+}
+
+PickExportFilePath(app, title, defaultName, filter, defaultExt := "") {
+    initialPath := A_ScriptDir "\" defaultName
+    try {
+        path := FileSelect("S", initialPath, title, filter)
+        if (path != "")
+            return path
+    } catch {
+        ShowToast(app, "File picker unavailable, use path input")
+    }
+
+    return ShowExportPathDialog(app, title, initialPath, defaultExt)
+}
+
+ShowExportPathDialog(app, title, initialPath, defaultExt := "") {
+    result := ""
+    g := Gui("+AlwaysOnTop +ToolWindow +Border", title)
+    g.BackColor := "323338"
+    g.SetFont("s9", "Consolas")
+    g.MarginX := 16
+    g.MarginY := 12
+
+    g.AddText("cFFFFFF w380", "Enter export file path:")
+    g.pathEdit := g.AddEdit("w380 y+6", initialPath)
+    if (defaultExt != "")
+        g.AddText("c909090 w380 y+6", "Default extension: " defaultExt)
+
+    g.AddButton("w120 h28 y+14", "Save").OnEvent("Click", (*) => ConfirmExportPathDialog(app, g, defaultExt, &result))
+    g.AddButton("w120 h28 x+10", "Cancel").OnEvent("Click", (*) => g.Destroy())
+
+    g.Show("AutoSize Center")
+    WinWaitClose("ahk_id " g.Hwnd)
+    return result
+}
+
+ConfirmExportPathDialog(app, g, defaultExt, &result) {
+    path := Trim(g.pathEdit.Value)
+    if (path = "") {
+        ShowToast(app, "Enter export path")
+        return
+    }
+
+    if (defaultExt != "" && InStr(path, ".") = 0)
+        path .= defaultExt
+
+    SplitPath(path, , &dir)
+    if (dir != "" && !DirExist(dir)) {
+        try DirCreate(dir)
+        catch {
+            ShowToast(app, "Cannot create export folder")
+            return
+        }
+    }
+
+    result := path
+    g.Destroy()
 }
 
 ExportPalettePng(app, p, path, style := 1, showInfo := 1) {
@@ -322,6 +379,6 @@ TestExport() {
     While !result.Status {
         Sleep(100)
     }
-    
-    MsgBox("Done. Check Desktop for test.png")
+
+    TrayTip("Nastarxa Export", "Done. Check Desktop for test.png")
 }

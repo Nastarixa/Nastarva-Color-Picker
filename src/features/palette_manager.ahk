@@ -787,7 +787,7 @@ MovePalette(app, g, dir) {
 }
 
 ImportPaletteImageUI(app) {
-    path := FileSelect(1, , "Import Palette", "Images (*.png;*.jpg;*.jpeg;*.bmp)|PNG (*.png)")
+    path := PickImportImagePath(app)
     if (path = "")
         return
 
@@ -797,6 +797,70 @@ ImportPaletteImageUI(app) {
     if (ext = "png" || ext = "jpg" || ext = "jpeg" || ext = "bmp") {
         ShowImportModeDialog(app, path)
     }
+}
+
+PickImportImagePath(app) {
+    try {
+        path := FileSelect("1", , "Import Palette", "Images (*.png;*.jpg;*.jpeg;*.bmp)")
+        if (path != "")
+            return path
+    } catch {
+        ShowToast(app, "File picker unavailable, use path input")
+    }
+
+    return ShowImportPathDialog(app)
+}
+
+ShowImportPathDialog(app) {
+    result := ""
+    g := Gui("+AlwaysOnTop +ToolWindow +Border", "Import Image Path")
+    g.BackColor := "323338"
+    g.SetFont("s9", "Consolas")
+    g.MarginX := 16
+    g.MarginY := 12
+
+    g.AddText("cFFFFFF w360", "Paste image path or drop an image file here:")
+    g.pathEdit := g.AddEdit("w360 y+6")
+    g.AddText("c909090 w360 y+6", "Supported: PNG, JPG, JPEG, BMP")
+
+    g.OnEvent("DropFiles", (guiObj, files) => ImportPathDialogDropFiles(guiObj, files))
+    g.AddButton("w120 h28 y+14", "Import").OnEvent("Click", (*) => ConfirmImportPathDialog(app, g, &result))
+    g.AddButton("w120 h28 x+10", "Cancel").OnEvent("Click", (*) => g.Destroy())
+
+    g.Show("AutoSize Center")
+    WinWaitClose("ahk_id " g.Hwnd)
+    return result
+}
+
+ImportPathDialogDropFiles(g, files) {
+    first := ""
+    for _, file in files {
+        first := file
+        break
+    }
+    if (first != "")
+        g.pathEdit.Value := first
+}
+
+ConfirmImportPathDialog(app, g, &result) {
+    path := Trim(g.pathEdit.Value)
+    if (path = "") {
+        ShowToast(app, "Enter image path")
+        return
+    }
+    if !FileExist(path) {
+        ShowToast(app, "Image file not found")
+        return
+    }
+
+    ext := StrLower(SubStr(path, InStr(path, ".",, -1) + 1))
+    if !(ext = "png" || ext = "jpg" || ext = "jpeg" || ext = "bmp") {
+        ShowToast(app, "Unsupported image type")
+        return
+    }
+
+    result := path
+    g.Destroy()
 }
 
 ImportFolderImages(app) {
@@ -1063,6 +1127,7 @@ ShowImportModeDialog(app, imagePath) {
 ImportPaletteImage(app, imagePath) {
     outPath := A_Temp "\nastarxa_palette_import.txt"
     scriptPath := A_Temp "\nastarxa_palette_import.ps1"
+    trainingPath := GetImportTrainingPath()
 
     if FileExist(outPath)
         FileDelete(outPath)
@@ -1072,10 +1137,11 @@ ImportPaletteImage(app, imagePath) {
     FileAppend(GetPaletteImageImportScript(), scriptPath, "UTF-8")
 
     cmd := Format(
-        'powershell -NoProfile -ExecutionPolicy Bypass -File "{}" "{}" "{}"',
+        'powershell -NoProfile -ExecutionPolicy Bypass -File "{}" "{}" "{}" "{}"',
         scriptPath,
         imagePath,
-        outPath
+        outPath,
+        trainingPath
     )
 
     RunWait(cmd, , "Hide")
@@ -1098,7 +1164,7 @@ ImportPaletteImage(app, imagePath) {
     isTemp := (imagePath != "" && InStr(imagePath, A_Temp) = 1)
     importMode := app.HasOwnProp("importMode") ? app.importMode : "new"
     app.importMode := ""
-    ShowImportReview(app, imported, outPath, isTemp, importMode)
+    ShowImportReview(app, imported, outPath, imagePath, isTemp, importMode)
 }
 
 GetPaletteImageImportScript() {

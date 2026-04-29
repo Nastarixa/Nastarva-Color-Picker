@@ -6,8 +6,7 @@ ExportActivePalette(app, format, name?, pngStyle?, showInfo?) {
         "json", "JSON Files (*.json)",
         "ini", "INI Files (*.ini)",
         "csv", "CSV Files (*.csv)",
-        "png", "PNG Files (*.png)",
-        "ase", "Adobe Swatch Exchange (*.ase)"
+        "png", "PNG Files (*.png)"
     )
 
     defaultName := (IsSet(name) && name != "") ? name : p.name
@@ -28,11 +27,6 @@ ExportActivePalette(app, format, name?, pngStyle?, showInfo?) {
 
     if FileExist(path)
         FileDelete(path)
-
-    if (format = "ase") {
-        ExportPaletteAse(app, p, path)
-        return
-    }
 
     FileAppend(content, path, "UTF-8")
     ShowToast(app, "Exported " p.name " as " StrUpper(format))
@@ -173,7 +167,7 @@ ExportPalettePngCharacter(app, p, path, showInfo := 1) {
 }
 
 BuildPaletteExportContent(p, version, format) {
-    switch format {
+switch format {
         case "txt":
             return BuildPaletteTxt(p, version)
         case "json":
@@ -182,8 +176,6 @@ BuildPaletteExportContent(p, version, format) {
             return BuildPaletteIni(p, version)
         case "csv":
             return BuildPaletteCsv(p, version)
-        case "ase":
-            return ""
         default:
             return ""
     }
@@ -296,116 +288,6 @@ JoinJsonStringArray(items) {
         text .= (index > 1 ? "," : "") '"' JsonEscape(val) '"'
     }
     return text
-}
-
-ExportPaletteAse(app, p, path) {
-    sections := p.HasOwnProp("sections") ? p.sections : []
-    groups := Map()
-    sectionColors := Map()
-
-    for section in sections {
-        sectionName := IsObject(section) ? section.name : section
-        sectionColors[sectionName] := []
-    }
-
-    for item in p.colors {
-        secName := item.HasOwnProp("section") ? item.section : "Default"
-        if !sectionColors.Has(secName)
-            sectionColors[secName] := []
-        sectionColors[secName].Push(item)
-    }
-
-    dataSize := 12
-    blockCount := 0
-
-    for secName, colors in sectionColors {
-        if colors.Length = 0
-            continue
-
-        blockCount += 2
-        dataSize += 2 + 4 + (StrLen(secName) + 1) * 2
-
-        for item in colors {
-            nameLen := StrLen(item.name) + 1
-            dataSize += 2 + 4 + (nameLen * 2) + 4 + 8 + 12
-        }
-    }
-
-    data := Buffer(dataSize)
-    offset := 0
-
-    NumPut("Int", 0x41534546, data, offset)
-    offset += 4
-    NumPut("Int16", 1, data, offset)
-    offset += 2
-    NumPut("Int16", 0, data, offset)
-    offset += 2
-    NumPut("Int32", blockCount, data, offset)
-    offset += 4
-
-    for secName, colors in sectionColors {
-        if colors.Length = 0
-            continue
-
-        NumPut("Int16", 2, data, offset)
-        offset += 2
-        groupName := secName
-        groupNameLen := StrLen(groupName) + 1
-        groupBlockSize := (groupNameLen * 2) + 2
-        NumPut("Int32", groupBlockSize, data, offset)
-        offset += 4
-        NumPut("Int16", groupNameLen, data, offset)
-        offset += 2
-        StrPut(groupName, data.Offset(offset), groupNameLen, "UTF-16")
-        offset += groupNameLen * 2
-
-        for item in colors {
-            rgb := StrSplit(item.rgb, ",")
-            r := Integer(rgb[1])
-            gv := Integer(rgb[2])
-            b := Integer(rgb[3])
-
-            NumPut("Int16", 1, data, offset)
-            offset += 2
-
-            nameLen := StrLen(item.name) + 1
-            byteLen := (nameLen * 2) + 4 + 8 + 12
-            NumPut("Int32", byteLen, data, offset)
-            offset += 4
-
-            NumPut("Int16", nameLen, data, offset)
-            offset += 2
-
-            StrPut(item.name, data.Offset(offset), nameLen, "UTF-16")
-            offset += nameLen * 2
-
-            modeStr := "RGB "
-            StrPut(modeStr, data.Offset(offset), 5, "UTF-16")
-            offset += 8
-
-            rf := r / 255.0
-            gf := gv / 255.0
-            bf := b / 255.0
-
-            NumPut("Float", rf, data, offset)
-            offset += 4
-            NumPut("Float", gf, data, offset)
-            offset += 4
-            NumPut("Float", bf, data, offset)
-            offset += 4
-        }
-
-        NumPut("Int16", 3, data, offset)
-        offset += 2
-        NumPut("Int32", 0, data, offset)
-        offset += 4
-    }
-
-    f := FileOpen(path, "w")
-    f.WriteRaw(data)
-    f.Close()
-
-    ShowToast(app, "Exported " p.name " as ASE")
 }
 
 CsvEscape(value) {

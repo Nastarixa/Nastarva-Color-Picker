@@ -787,7 +787,7 @@ MovePalette(app, g, dir) {
 }
 
 ImportPaletteImageUI(app) {
-    path := FileSelect(1, , "Import Palette", "All Supported (*.png;*.txt;*.json;*.csv;*.ini)|Images (*.png;*.jpg;*.jpeg;*.bmp)|Text Files (*.txt)|JSON Files (*.json)|CSV Files (*.csv)|INI Files (*.ini)")
+    path := FileSelect(1, , "Import Palette", "Images (*.png;*.jpg;*.jpeg;*.bmp)|PNG (*.png)")
     if (path = "")
         return
 
@@ -796,51 +796,7 @@ ImportPaletteImageUI(app) {
 
     if (ext = "png" || ext = "jpg" || ext = "jpeg" || ext = "bmp") {
         ShowImportModeDialog(app, path)
-    } else if (ext = "txt") {
-        ImportPaletteTxtFile(app, path)
-    } else if (ext = "json") {
-        ImportPaletteJsonFile(app, path)
-    } else if (ext = "csv") {
-        ImportPaletteCsvFile(app, path)
-    } else if (ext = "ini") {
-        ImportPaletteIniFile(app, path)
     }
-}
-
-ImportPaletteTxtFile(app, path) {
-    content := FileRead(path, "UTF-8")
-    if (Trim(content) = "") {
-        ShowToast(app, "Empty file")
-        return
-    }
-    ShowImportReview(app, content, path, false, "new")
-}
-
-ImportPaletteJsonFile(app, path) {
-    content := FileRead(path, "UTF-8")
-    if (Trim(content) = "") {
-        ShowToast(app, "Empty file")
-        return
-    }
-    ShowImportReview(app, content, path, false, "new")
-}
-
-ImportPaletteCsvFile(app, path) {
-    content := FileRead(path, "UTF-8")
-    if (Trim(content) = "") {
-        ShowToast(app, "Empty file")
-        return
-    }
-    ShowImportReview(app, content, path, false, "new")
-}
-
-ImportPaletteIniFile(app, path) {
-    content := FileRead(path, "UTF-8")
-    if (Trim(content) = "") {
-        ShowToast(app, "Empty file")
-        return
-    }
-    ShowImportReview(app, content, path, false, "new")
 }
 
 ImportFolderImages(app) {

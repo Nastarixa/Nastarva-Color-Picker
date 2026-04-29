@@ -668,7 +668,10 @@ MergeSectionUI(app, sectionName, menuGui := 0) {
         return
     }
 
-    ShowChoiceDialog(app, "Merge Section", "Merge '" sectionName "' into:", names, (target) => MergeSection(app, sectionName, target))
+    ShowChoiceDialog(app, "Merge Section", "Merge '" sectionName "' into:", names, (target) => (
+        MergeSection(app, sectionName, target),
+        QueueHistoryRebuild(app)
+    ))
 }
 
 CrossRefFromSection(app, sectionName, menuGui) {

@@ -1655,6 +1655,8 @@ ShowChoiceDialog(app, title, prompt, items, callback) {
     btnCancel.OnEvent("Click", (*) => g.Destroy())
 
     g.Show("AutoSize Center")
+        
+    QueueHistoryRebuild(app)
 }
 
 InitKeyboardNav(app) {

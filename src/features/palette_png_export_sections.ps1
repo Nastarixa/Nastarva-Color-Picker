@@ -4,139 +4,212 @@ param(
 )
 
 Add-Type -AssemblyName System.Drawing
-Add-Type -AssemblyName System.Windows.Forms
 
-$data = Get-Content $JsonPath -Raw | ConvertFrom-Json
+$jsonContent = Get-Content $JsonPath -Raw
+$data = $jsonContent | ConvertFrom-Json
 
-$debugFile = $env:TEMP + "\nastarxa_debug.txt"
-$debugInfo = "Colors: " + ($data.colors | ConvertTo-Json -Compress) + "`nmaxCols: " + $data.maxCols + "`nSections: " + ($data.sections | ConvertTo-Json -Compress)
-Set-Content -Path $debugFile -Value $debugInfo
+$showInfo = $false
+if ($data.PSObject.Properties.Name -contains "showInfo") {
+    $showInfo = $data.showInfo -eq 1
+}
 
 $colors = @($data.colors)
-$groups = @{}
+$sections = @($data.sections)
 
-foreach ($color in $colors) {
-    $sec = if ($color.section) { $color.section } else { "Default" }
+# =========================
+# LAYOUT CONFIG
+# =========================
+$cols = if ($data.maxCols) { $data.maxCols } else { 8 }
+
+$cellW = 90
+$cellH = 90
+$cellGap = 7
+
+$padding = 30
+$headerH = 60
+$sectionHeaderH = 30
+$sectionPadding = 16
+$sectionGap = 5
+
+$infoH = if ($showInfo) { 5 } else { 0 }
+$rowH = $cellH + $infoH
+
+# =========================
+# GROUP COLORS
+# =========================
+$groups = @{}
+foreach ($c in $colors) {
+    $sec = if ($c.section) { $c.section } else { "Default" }
     if (-not $groups.ContainsKey($sec)) {
         $groups[$sec] = @()
     }
-    $groups[$sec] += $color
+    $groups[$sec] += $c
 }
 
 $orderedSections = @()
-foreach ($secName in $data.sections) {
-    if ($groups.ContainsKey($secName)) {
-        $orderedSections += $secName
-    }
+foreach ($s in $sections) {
+    if ($groups.ContainsKey($s)) { $orderedSections += $s }
 }
-foreach ($sec in $groups.Keys) {
-    if ($orderedSections -notcontains $sec) {
-        $orderedSections += $sec
-    }
+foreach ($s in $groups.Keys) {
+    if ($orderedSections -notcontains $s) { $orderedSections += $s }
 }
 
-$rowsPerSection = @{}
+# =========================
+# SIZE CALC
+# =========================
+$totalWidth = ($cols * $cellW) + (($cols - 1) * $cellGap) + ($padding * 2)
+
 $totalHeight = $headerH + $padding
+
 foreach ($sec in $orderedSections) {
-    $rows = [Math]::Ceiling($groups[$sec].Count / $cols)
-    if ($rows -eq 0) { $rows = 1 }
-    $rowsPerSection[$sec] = $rows
-    $totalHeight += $sectionHeaderH + ($rows * $rowHeight) + ([Math]::Max(0, $rows - 1) * $cellGap) + $sectionGap
+    $count = $groups[$sec].Count
+    $rows = [Math]::Ceiling($count / $cols)
+    if ($rows -lt 1) { $rows = 1 }
+
+    $secH = $sectionHeaderH +
+            ($rows * $rowH) +
+            (($rows - 1) * $cellGap) +
+            ($sectionPadding * 2)
+
+    $totalHeight += $secH + $sectionGap
 }
+
 $totalHeight += $padding
-$totalWidth = ($cellW * $cols) + ([Math]::Max(0, $cols - 1) * $cellGap) + ($padding * 2)
 
-$bitmap = New-Object System.Drawing.Bitmap($totalWidth, $totalHeight)
-$bitmap.SetResolution(120, 120)
-$g = [System.Drawing.Graphics]::FromImage($bitmap)
-$g.SmoothingMode = 'AntiAlias'
-$g.Clear([System.Drawing.Color]::White)
+# =========================
+# CANVAS
+    # =========================
+    $bmp = New-Object System.Drawing.Bitmap($totalWidth, $totalHeight)
+    $bmp.SetResolution(120, 120)
+    $g = [System.Drawing.Graphics]::FromImage($bmp)
+$g.SmoothingMode = "None"
+$g.TextRenderingHint = "ClearTypeGridFit"
 
-$font = New-Object System.Drawing.Font("Consolas", 8)
-$fontSmall = New-Object System.Drawing.Font("Consolas", 7)
-$fontBold = New-Object System.Drawing.Font("Consolas", 9, [System.Drawing.FontStyle]::Bold)
-$fontTitle = New-Object System.Drawing.Font("Segoe UI", 16, [System.Drawing.FontStyle]::Bold)
-$brushDark = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(25, 25, 25))
-$brushGray = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(90, 90, 90))
-$brushWhite = [System.Drawing.Brushes]::White
-$penBlue = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(0, 0, 255), 1.5)
-$penSection = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(195, 195, 195), 1)
+# Background (soft gray)
+$bgColor = [System.Drawing.Color]::FromArgb(245,245,247)
+$g.Clear($bgColor)
 
-$g.DrawString($data.name, $fontTitle, $brushDark, $padding, 10)
+# =========================
+# STYLES
+# =========================
+$fontTitle   = New-Object System.Drawing.Font("Segoe UI", 16, [System.Drawing.FontStyle]::Bold)
+$fontSection = New-Object System.Drawing.Font("Segoe UI", 10, [System.Drawing.FontStyle]::Bold)
+$fontHex     = New-Object System.Drawing.Font("Consolas", 8)
+$fontMeta    = New-Object System.Drawing.Font("Segoe UI", 7)
 
-$y = $headerH + $padding
+$brushText   = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(40,40,40))
+$brushSubtle = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(120,120,120))
 
+$penBorder   = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(210,210,210), 1)
+
+# =========================
+# HELPERS
+# =========================
+function HexToColor($hex) {
+    if ($hex -notmatch '^[0-9A-Fa-f]{6}$') { return $null }
+    $r = [Convert]::ToInt32($hex.Substring(0,2),16)
+    $g = [Convert]::ToInt32($hex.Substring(2,2),16)
+    $b = [Convert]::ToInt32($hex.Substring(4,2),16)
+    return [System.Drawing.Color]::FromArgb(255,$r,$g,$b)
+}
+
+function GetTextBrush($hex) {
+    $c = HexToColor $hex
+    if (!$c) { return $brushText }
+
+    $brightness = ($c.R*299 + $c.G*587 + $c.B*114) / 1000
+    if ($brightness -lt 140) {
+        return [System.Drawing.Brushes]::White
+    }
+    return [System.Drawing.Brushes]::Black
+}
+
+# =========================
+# TITLE
+# =========================
+$g.DrawString($data.name, $fontTitle, $brushText, $padding, 12)
+
+$y = $headerH
+
+# =========================
+# DRAW SECTIONS
+# =========================
 foreach ($sec in $orderedSections) {
-    $g.DrawString($sec, $fontBold, $brushDark, $padding, $y)
-    $lineY = $y + 22
-    $g.DrawLine($penSection, $padding, $lineY, $totalWidth - $padding, $lineY)
-    $y += $sectionHeaderH
 
     $secColors = $groups[$sec]
-    $x = $padding
-    $count = 0
+    $count = $secColors.Count
+    $rows = [Math]::Ceiling($count / $cols)
+    if ($rows -lt 1) { $rows = 1 }
 
-    foreach ($color in $secColors) {
-        if ($count -gt 0 -and $count % $cols -eq 0) {
-            $x = $padding
-            $y += $rowHeight + $cellGap
+    $secHeight = $sectionHeaderH +
+                 ($rows * $rowH) +
+                 (($rows - 1) * $cellGap) +
+                 ($sectionPadding * 2)
+
+    # --- section card background ---
+    $cardRect = New-Object System.Drawing.Rectangle($padding, $y, $totalWidth - ($padding*2), $secHeight)
+    $cardBrush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::White)
+    $g.FillRectangle($cardBrush, $cardRect)
+    $g.DrawRectangle($penBorder, $cardRect)
+    $cardBrush.Dispose()
+
+    # --- section title ---
+    $g.DrawString($sec, $fontSection, $brushText, $padding + 12, $y + 6)
+
+    # --- grid start ---
+    $gx = $padding + $sectionPadding
+    $gy = $y + $sectionHeaderH
+
+    $x = $gx
+    $rowIndex = 0
+
+    for ($i = 0; $i -lt $count; $i++) {
+
+        if ($i -gt 0 -and $i % $cols -eq 0) {
+            $x = $gx
+            $rowIndex++
         }
 
-        $r = [Convert]::ToInt32($color.hex.Substring(0, 2), 16)
-        $gr = [Convert]::ToInt32($color.hex.Substring(2, 2), 16)
-        $b = [Convert]::ToInt32($color.hex.Substring(4, 2), 16)
-        $c = [System.Drawing.Color]::FromArgb(255, $r, $gr, $b)
-        $brightness = (($r * 299) + ($gr * 587) + ($b * 114)) / 1000
-        $textBrush = if ($brightness -lt 150) { $brushWhite } else { $brushDark }
+        $cy = $gy + ($rowIndex * ($rowH + $cellGap))
+        $color = $secColors[$i]
+        $hex = $color.hex
 
-        $rect = New-Object System.Drawing.Rectangle($x, $y, $cellW, $cellH)
-        $swatchBrush = New-Object System.Drawing.SolidBrush($c)
-        $g.FillRectangle($swatchBrush, $rect)
-        $g.DrawRectangle($penBlue, $rect)
-        $swatchBrush.Dispose()
+        $c = HexToColor $hex
+        if ($c) {
 
-        $roleText = if ($color.role) { $color.role } else { "Base" }
-        $roleSize = $g.MeasureString($roleText, $font)
-        $roleX = $x + (($cellW - $roleSize.Width) / 2)
-        $roleY = $y + $cellH - 18
-        $g.DrawString($roleText, $font, $textBrush, $roleX, $roleY)
+            $brush = New-Object System.Drawing.SolidBrush($c)
+            $g.FillRectangle($brush, $x, $cy, $cellW, $cellH)
+            $g.DrawRectangle($penBorder, $x, $cy, $cellW, $cellH)
+            $brush.Dispose()
 
-        $infoY = $y + $cellH + 3
-        $hexText = "#" + $color.hex
-        $hexSize = $g.MeasureString($hexText, $fontBold)
-        $hexX = $x + (($cellW - $hexSize.Width) / 2)
-        $g.DrawString($hexText, $fontBold, $brushDark, $hexX, $infoY)
+            if ($showInfo) {
+                $textBrush = GetTextBrush $hex
 
-        if ($showInfo) {
-            $rgbText = "$r,$gr,$b"
-            $rgbSize = $g.MeasureString($rgbText, $fontSmall)
-            $rgbX = $x + (($cellW - $rgbSize.Width) / 2)
-            $g.DrawString($rgbText, $fontSmall, $brushGray, $rgbX, $infoY + 14)
+                    # HEX (top)
+                    $g.DrawString("#" + $hex.ToUpper(), $fontHex, $textBrush, $x + 6, $cy + 6)
+
+                    # RGB (middle)
+                    $rgbText = $color.rgb
+                    if (-not $rgbText) {
+                        $rgbText = "rgb($($c.R), $($c.G), $($c.B))"
+                    }
+                    $g.DrawString($rgbText, $fontMeta, $textBrush, $x + 6, $cy + 20)
+
+                    # ROLE (bottom)
+                    $g.DrawString($color.role, $fontMeta, $textBrush, $x + 6, $cy + 35)
+            }
         }
 
         $x += $cellW + $cellGap
-        $count++
     }
 
-    if ($secColors.Count -eq 0) {
-        $g.DrawString("No colors in this section", $font, $brushGray, $padding, $y + 4)
-        $y += 24
-    } else {
-        $rowsUsed = $rowsPerSection[$sec]
-        $y += ($rowsUsed * $rowHeight) + ([Math]::Max(0, $rowsUsed - 1) * $cellGap)
-    }
-
-    $y += $sectionGap
+    $y += $secHeight + $sectionGap
 }
 
-$bitmap.Save($OutPath, [System.Drawing.Imaging.ImageFormat]::Png)
-$penBlue.Dispose()
-$penSection.Dispose()
-$brushDark.Dispose()
-$brushGray.Dispose()
-$font.Dispose()
-$fontSmall.Dispose()
-$fontBold.Dispose()
-$fontTitle.Dispose()
+# =========================
+# SAVE
+# =========================
+$bmp.Save($OutPath, [System.Drawing.Imaging.ImageFormat]::Png)
 $g.Dispose()
-$bitmap.Dispose()
+$bmp.Dispose()
+

@@ -457,7 +457,8 @@ GetBuiltInTemplates() {
                         "Outline", Map(
                             "items", Map(
                                 "Black", "141414|20,20,20|Black",
-                                "Outline", "0F0F0F|15,15,15|Outline"
+                                "Outline", "0F0F0F|15,15,15|Outline",
+                                "Mask", "ff00ff|255,0,255|Mask"
                             )
                     )
                 )

@@ -3,285 +3,243 @@ param(
     [string]$OutPath
 )
 
-Add-Type -AssemblyName System.Drawing
-Add-Type -AssemblyName System.Windows.Forms
+try {
+    Add-Type -AssemblyName System.Drawing
 
-$data = Get-Content $JsonPath -Raw | ConvertFrom-Json
+    $jsonContent = Get-Content $JsonPath -Raw -ErrorAction Stop
+    $data = $jsonContent | ConvertFrom-Json -ErrorAction Stop
 
-function Get-SectionNames {
-    param($Data, $Groups)
+    $showInfo = $false
+    if ($data.PSObject.Properties.Name -contains "showInfo") {
+        $showInfo = $data.showInfo -ne 0
+    }
 
-    $names = @()
-    foreach ($section in $Data.sections) {
-        if ($Groups.ContainsKey($section)) {
-            $names += $section
+    $colors = @($data.colors)
+
+    # =========================
+    # LAYOUT CONFIG
+    # =========================
+    $cardW = 350
+    $cardH = 200
+    $gapX = 20
+    $gapY = 20
+    $padding = 40
+    $cols = 4
+
+    # =========================
+    # GROUP COLORS
+    # =========================
+    $groups = @{}
+
+    foreach ($c in $colors) {
+        $sec = $c.section
+        if (!$sec) { $sec = "Default" }
+
+        $role = $c.role
+        if (!$role) { $role = "Base" }
+
+        $role = $role.Trim()
+        if ($role -match '^BL$') { $role = "Black" }
+        if ($role -match 'Hi[\s-]*Shadow|High[\s-]*Shadow') { $role = "Hi Shadow" }
+        if ($role -match "2.*Shadow|Shadow.*2|Second Shadow") { $role = "2 Shadow" }
+
+        if (-not $groups.ContainsKey($sec)) {
+            $groups[$sec] = @{}
         }
+
+        $groups[$sec][$role] = $c
     }
-    foreach ($name in $Groups.Keys) {
-        if ($names -notcontains $name) {
-            $names += $name
+
+    $orderedSections = @($data.sections | Where-Object { $groups.ContainsKey($_)})
+    if (-not $orderedSections) {
+        $orderedSections = $groups.Keys | Sort-Object
+    }
+
+    $rows = [math]::Ceiling($orderedSections.Count / $cols)
+
+    $totalWidth  = ($cardW * $cols) + ($gapX * ($cols - 1)) + ($padding * 2)
+    $totalHeight = ($cardH * $rows) + ($gapY * ($rows - 1)) + ($padding * 2)
+
+    # =========================
+    # CANVAS
+    # =========================
+    $bmp = New-Object System.Drawing.Bitmap($totalWidth, $totalHeight)
+    $bmp.SetResolution(120, 120)
+    $g = [System.Drawing.Graphics]::FromImage($bmp)
+    $g.SmoothingMode = "None"
+    $g.Clear([System.Drawing.Color]::FromArgb(245,245,245))
+
+    # =========================
+    # FONTS
+    # =========================
+    $fHex = New-Object System.Drawing.Font("Consolas", 6)
+    $fTitle = New-Object System.Drawing.Font("Segoe UI", 9, [System.Drawing.FontStyle]::Bold)
+    $fMain = New-Object System.Drawing.Font("Segoe UI", 16, [System.Drawing.FontStyle]::Bold)
+    $fSmall = New-Object System.Drawing.Font("Consolas", 6)
+    $fLabel = New-Object System.Drawing.Font("Consolas", 9)
+
+    $brushText = [System.Drawing.Brushes]::Black
+    $brushWhite = [System.Drawing.Brushes]::White
+    $penBlue = New-Object System.Drawing.Pen([System.Drawing.Color]::Blue, 2)
+
+    # subtle card background
+    $cardBrush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(255,255,255))
+    $cardBorder = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(220,220,220),1)
+
+    function HexToColor($hex) {
+        if ($hex -notmatch '^[0-9A-Fa-f]{6}$') { return $null }
+        $r = [Convert]::ToInt32($hex.Substring(0,2),16)
+        $g = [Convert]::ToInt32($hex.Substring(2,2),16)
+        $b = [Convert]::ToInt32($hex.Substring(4,2),16)
+        return [System.Drawing.Color]::FromArgb(255,$r,$g,$b)
+    }
+
+    function GetTextColor($hex) {
+        $c = HexToColor $hex
+        if (!$c) { return $brushText }
+        $brightness = ($c.R * 299 + $c.G * 587 + $c.B * 114) / 1000
+        if ($brightness -lt 128) { return $brushWhite }
+        return $brushText
+    }
+
+    function GetRgbText($hex) {
+        $c = HexToColor $hex
+        if (!$c) { return "" }
+        return "$($c.R), $($c.G), $($c.B)"
+    }
+
+    function DrawBlock($g, $x, $y, $w, $h, $hex, $label) {
+        $c = HexToColor $hex
+        if (!$c) { return }
+
+        $brush = New-Object System.Drawing.SolidBrush($c)
+        $g.FillRectangle($brush, $x, $y, $w, $h)
+        $g.DrawRectangle($penBlue, $x, $y, $w, $h)
+
+        if ($label) {
+            $textBrush = GetTextColor $hex
+            $g.DrawString($label, $fLabel, $textBrush, $x + 3, $y + 2)
         }
-    }
-    return $names
-}
 
-function Get-ColorObject {
-    param([string]$Hex)
-    if ([string]::IsNullOrWhiteSpace($Hex) -or $Hex.Length -lt 6) {
-        return [System.Drawing.Color]::FromArgb(255, 128, 128, 128)
-    }
-    $r = [Convert]::ToInt32($Hex.Substring(0, 2), 16)
-    $g = [Convert]::ToInt32($Hex.Substring(2, 2), 16)
-    $b = [Convert]::ToInt32($Hex.Substring(4, 2), 16)
-    return [System.Drawing.Color]::FromArgb(255, $r, $g, $b)
-}
-
-function Normalize-ExportRole {
-    param([string]$Role)
-
-    if ([string]::IsNullOrWhiteSpace($Role)) {
-        return "Base"
+        $brush.Dispose()
     }
 
-    $clean = $Role.Trim()
-    if ($clean -eq "BL") {
-        return "Black"
-    }
+    # =========================
+    # TITLE
+    # =========================
+    $g.DrawString($data.name, $fMain, $brushText, $padding, 5)
 
-    return $clean
-}
+    # =========================
+    # DRAW SECTIONS
+    # =========================
+    $i = 0
 
-function Get-TextBrush {
-    param([System.Drawing.Color]$Color)
-    $luma = (($Color.R * 299) + ($Color.G * 587) + ($Color.B * 114)) / 1000
-    if ($luma -lt 150) {
-        return [System.Drawing.Brushes]::White
-    }
-    return [System.Drawing.Brushes]::Black
-}
+    foreach ($sec in $orderedSections) {
 
-function Draw-CenteredText {
-    param(
-        [System.Drawing.Graphics]$Graphics,
-        [string]$Text,
-        [System.Drawing.Font]$Font,
-        [System.Drawing.Brush]$Brush,
-        [System.Drawing.RectangleF]$Rect
-    )
+        $col = $i % $cols
+        $row = [math]::Floor($i / $cols)
 
-    $fmt = New-Object System.Drawing.StringFormat
-    $fmt.Alignment = [System.Drawing.StringAlignment]::Center
-    $fmt.LineAlignment = [System.Drawing.StringAlignment]::Center
-    $Graphics.DrawString($Text, $Font, $Brush, $Rect, $fmt)
-    $fmt.Dispose()
-}
+        $x = $padding + $col * ($cardW + $gapX)
+        $y = $padding + $row * ($cardH + $gapY) + 30
 
-function Draw-MainSwatch {
-    param(
-        [System.Drawing.Graphics]$Graphics,
-        $ColorItem,
-        [float]$X,
-        [float]$Y,
-        [float]$W,
-        [float]$H,
-        [System.Drawing.Pen]$PenBlue,
-        [System.Drawing.Font]$HexFont,
-        [System.Drawing.Font]$RgbFont
-    )
+        # --- CARD BACKGROUND ---
+        $g.FillRectangle($cardBrush, $x-5, $y-5, $cardW, $cardH)
+        $g.DrawRectangle($cardBorder, $x-5, $y-5, $cardW, $cardH)
 
-    $colorObj = Get-ColorObject $ColorItem.hex
-    $brush = New-Object System.Drawing.SolidBrush($colorObj)
-    $rect = New-Object System.Drawing.RectangleF($X, $Y, $W, $H)
-    $Graphics.FillRectangle($brush, $rect)
-    $Graphics.DrawRectangle($PenBlue, $X, $Y, $W, $H)
+        $group = $groups[$sec]
 
-    $textBrush = Get-TextBrush $colorObj
-    $hexRect = New-Object System.Drawing.RectangleF($X, $Y + 8, $W, 18)
-    $rgbRect = New-Object System.Drawing.RectangleF($X, $Y + 28, $W, 16)
-    Draw-CenteredText $Graphics $ColorItem.hex $HexFont $textBrush $hexRect
-    Draw-CenteredText $Graphics $ColorItem.rgb $RgbFont $textBrush $rgbRect
-    $brush.Dispose()
-}
+        # ==== LEFT CLUSTER ====
+        $lx = $x + 5
+        $ly = $y + 30
 
-function Draw-SideSwatch {
-    param(
-        [System.Drawing.Graphics]$Graphics,
-        $ColorItem,
-        [float]$X,
-        [float]$Y,
-        [float]$W,
-        [float]$H,
-        [float]$TextX,
-        [System.Drawing.Pen]$PenBlue,
-        [System.Drawing.Font]$HexFont,
-        [System.Drawing.Font]$RgbFont
-    )
+        # --- MASK ---
+        if ($group["Mask"]) {
+            $hex = $group["Mask"].hex
 
-    $colorObj = Get-ColorObject $ColorItem.hex
-    $brush = New-Object System.Drawing.SolidBrush($colorObj)
-    $Graphics.FillRectangle($brush, $X, $Y, $W, $H)
-    $Graphics.DrawRectangle($PenBlue, $X, $Y, $W, $H)
+            # TEXT ABOVE
+            $g.DrawString("Mask", $fLabel, $brushText, $lx, ($ly + 30) - 18)
 
-    $Graphics.DrawString($ColorItem.hex, $HexFont, [System.Drawing.Brushes]::Black, $TextX, $Y + 2)
-    $Graphics.DrawString($ColorItem.rgb, $RgbFont, [System.Drawing.Brushes]::Black, $TextX, $Y + 18)
-    $brush.Dispose()
-}
-
-function Draw-Connector {
-    param(
-        [System.Drawing.Graphics]$Graphics,
-        [System.Drawing.Pen]$PenBlue,
-        [float]$X1,
-        [float]$Y1,
-        [float]$X2,
-        [float]$Y2
-    )
-    $Graphics.DrawLine($PenBlue, $X1, $Y1, $X2, $Y2)
-}
-
-function Draw-RoleBoard {
-    param(
-        [System.Drawing.Graphics]$Graphics,
-        $SectionColors,
-        [float]$CardX,
-        [float]$CardY,
-        [System.Drawing.Pen]$PenBlue,
-        [System.Drawing.Font]$HexFont,
-        [System.Drawing.Font]$RgbFont,
-        [System.Drawing.Font]$SectionFont,
-        [System.Drawing.Pen]$PenDivider
-    )
-
-    $byRole = @{}
-    foreach ($color in $SectionColors) {
-        $role = if ($color.role) { [string]$color.role } else { "Base" }
-        $byRole[$role] = $color
-    }
-
-    $base = if ($byRole.ContainsKey("Base")) { $byRole["Base"] } else { $null }
-    $shadow = if ($byRole.ContainsKey("Shadow")) { $byRole["Shadow"] } else { $null }
-    $shadow2 = if ($byRole.ContainsKey("2 Shadow")) { $byRole["2 Shadow"] } else { $null }
-    $highlight = if ($byRole.ContainsKey("Highlight")) { $byRole["Highlight"] } else { $null }
-    $hiShadow = if ($byRole.ContainsKey("Hi Shadow")) { $byRole["Hi Shadow"] } else { $null }
-
-    $stackX = $CardX + 24
-    $stackY = $CardY + 36
-    $mainW = 98
-    $mainH = 38
-    $smallW = 42
-    $smallH = 34
-    $smallX = $stackX + $mainW - 2
-
-    if ($base) {
-        Draw-MainSwatch $Graphics $base $stackX $stackY $mainW $mainH $PenBlue $HexFont $RgbFont
-    }
-    if ($shadow) {
-        Draw-MainSwatch $Graphics $shadow $stackX ($stackY + $mainH - 1) $mainW $mainH $PenBlue $HexFont $RgbFont
-    }
-    if ($shadow2) {
-        Draw-MainSwatch $Graphics $shadow2 $stackX ($stackY + ($mainH * 2) - 2) $mainW $mainH $PenBlue $HexFont $RgbFont
-    }
-
-    if ($highlight) {
-        $highlightY = $stackY - 10
-        Draw-SideSwatch $Graphics $highlight $smallX $highlightY $smallW $smallH ($smallX + $smallW + 8) $PenBlue $HexFont $RgbFont
-        Draw-Connector $Graphics $PenBlue ($stackX + $mainW) ($stackY + 4) $smallX ($highlightY + 18)
-    }
-
-    if ($hiShadow) {
-        $hiShadowY = $stackY + $mainH - 2
-        Draw-SideSwatch $Graphics $hiShadow $smallX $hiShadowY $smallW $smallH ($smallX + $smallW + 8) $PenBlue $HexFont $RgbFont
-        Draw-Connector $Graphics $PenBlue ($stackX + $mainW) ($stackY + $mainH + 8) $smallX ($hiShadowY + 16)
-    }
-
-    $extraRoles = @("Outline", "Black", "Mask", "BL")
-    $extraIndex = 0
-    foreach ($extraRole in $extraRoles) {
-        if (-not $byRole.ContainsKey($extraRole)) {
-            continue
+            # BLOCK
+            DrawBlock $g $lx ($ly + 30) 60 40 $hex ""
         }
-        $extra = $byRole[$extraRole]
-        $extraX = $CardX + 150
-        $extraY = $CardY + 28 + ($extraIndex * 92)
-        $Graphics.DrawString($extraRole, $HexFont, [System.Drawing.Brushes]::Black, $extraX, $extraY)
-        Draw-MainSwatch $Graphics $extra ($extraX + 2) ($extraY + 20) 88 44 $PenBlue $HexFont $RgbFont
-        $extraIndex++
+
+        # --- OUTLINE ---
+        if ($group["Outline"]) {
+            $hex = $group["Outline"].hex
+
+            $g.DrawString("Outline", $fLabel, $brushText, ($lx + 70), $ly - 18)
+
+            DrawBlock $g ($lx + 70) $ly 60 40 $hex ""
+        }
+
+        # --- BLACK ---
+        if ($group["Black"]) {
+            $hex = $group["Black"].hex
+
+            $g.DrawString("BL", $fLabel, $brushText, ($lx + 70), ($ly + 65) - 18)
+
+            DrawBlock $g ($lx + 70) ($ly + 65) 60 40 $hex ""
+        }
+
+        # ==== MAIN STACK ====
+        $mx = $x + 150
+        $cursorY = $y + 28
+
+        foreach ($role in @("Base","Shadow","2 Shadow")) {
+            if ($group[$role]) {
+                $hex = $group[$role].hex
+                DrawBlock $g $mx $cursorY 90 45 $hex
+
+                if ($showInfo) {
+                    $textBrush = GetTextColor $hex
+                    $g.DrawString("#" + $hex.ToUpper(), $fHex, $textBrush, $mx + 4, $cursorY + 12)
+                    $g.DrawString((GetRgbText $hex), $fHex, $textBrush, $mx + 4, $cursorY + 24)
+                }
+
+                $cursorY += 46
+            }
+        }
+
+        # ==== SIDE MINI ====
+        $sx = $mx + 90
+        $sy = $y + 20
+
+        foreach ($pair in @("Highlight","Hi Shadow")) {
+            if ($group[$pair]) {
+                $hex = $group[$pair].hex
+                DrawBlock $g $sx $sy 25 25 $hex
+
+                if ($showInfo) {
+                    $g.DrawString("#" + $hex.ToUpper(), $fSmall, $brushText, $sx + 26, $sy)
+                    $g.DrawString((GetRgbText $hex), $fSmall, $brushText, $sx + 26, $sy + 10)
+                }
+
+                $sy += 44
+            }
+        }
+
+        # ==== SECTION LABEL ====
+        $g.DrawString($sec, $fTitle, $brushText, $x, $y + 160)
+        $g.DrawLine([System.Drawing.Pens]::Gray, $x, $y + 185, $x + $cardW - 10, $y + 185)
+
+        $i++
     }
+
+    # =========================
+    # SAVE
+    # =========================
+    $bmp.Save($OutPath, [System.Drawing.Imaging.ImageFormat]::Png)
+
+    $g.Dispose()
+    $bmp.Dispose()
+
+    $penBlue.Dispose()
+    $cardBrush.Dispose()
+    $cardBorder.Dispose()
+
+    Write-Host "SUCCESS: $OutPath"
+
+} catch {
+    Write-Error $_
+    exit 1
 }
-
-$groups = @{}
-foreach ($color in $data.colors) {
-    $sec = if ($color.section) { $color.section } else { "Default" }
-    $color.role = Normalize-ExportRole $color.role
-    if (-not $groups.ContainsKey($sec)) {
-        $groups[$sec] = @()
-    }
-    $groups[$sec] += $color
-}
-
-$sectionNames = Get-SectionNames $data $groups
-$cardCols = 4
-$cardW = 260
-$cardH = 250
-$gapX = 26
-$gapY = 44
-$padding = 34
-$headerH = 58
-
-$rows = [Math]::Ceiling([Math]::Max(1, $sectionNames.Count) / $cardCols)
-$totalWidth = ($cardCols * $cardW) + (($cardCols - 1) * $gapX) + ($padding * 2)
-$totalHeight = $headerH + ($rows * $cardH) + ([Math]::Max(0, $rows - 1) * $gapY) + ($padding * 2)
-
-$bitmap = New-Object System.Drawing.Bitmap($totalWidth, $totalHeight)
-$bitmap.SetResolution(120, 120)
-$g = [System.Drawing.Graphics]::FromImage($bitmap)
-$g.SmoothingMode = 'AntiAlias'
-$g.TextRenderingHint = 'AntiAliasGridFit'
-$g.Clear([System.Drawing.Color]::FromArgb(208, 208, 208))
-
-$titleFont = New-Object System.Drawing.Font("Segoe UI", 16, [System.Drawing.FontStyle]::Bold)
-$sectionFont = New-Object System.Drawing.Font("Segoe UI", 10)
-$hexFont = New-Object System.Drawing.Font("Consolas", 8, [System.Drawing.FontStyle]::Bold)
-$rgbFont = New-Object System.Drawing.Font("Consolas", 7)
-$penBlue = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(32, 64, 255), 2)
-$penDivider = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(120, 120, 120), 1)
-$brushBlack = [System.Drawing.Brushes]::Black
-$brushGray = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(90, 90, 90))
-
-$g.DrawString($data.name, $titleFont, $brushBlack, $padding, 20)
-
-$index = 0
-foreach ($sectionName in $sectionNames) {
-    $row = [Math]::Floor($index / $cardCols)
-    $col = $index % $cardCols
-    $cardX = $padding + ($col * ($cardW + $gapX))
-    $cardY = $headerH + $padding + ($row * ($cardH + $gapY))
-
-    $sectionColors = $groups[$sectionName]
-    if (-not $sectionColors) {
-        $sectionColors = @()
-    }
-
-    if ($sectionColors.Count -eq 0) {
-        $g.DrawString("No colors in this section", $rgbFont, $brushGray, $cardX + 12, $cardY + 100)
-    } else {
-        Draw-RoleBoard $g $sectionColors $cardX $cardY $penBlue $hexFont $rgbFont $sectionFont $penDivider
-    }
-
-    $sectionLabelY = $cardY + 178
-    $g.DrawString("Section: " + $sectionName, $sectionFont, $brushBlack, $cardX + 12, $sectionLabelY)
-    $g.DrawLine($penDivider, $cardX, $sectionLabelY + 20, $cardX + $cardW - 20, $sectionLabelY + 20)
-
-    $index++
-}
-
-$bitmap.Save($OutPath, [System.Drawing.Imaging.ImageFormat]::Png)
-$penBlue.Dispose()
-$penDivider.Dispose()
-$brushGray.Dispose()
-$titleFont.Dispose()
-$sectionFont.Dispose()
-$hexFont.Dispose()
-$rgbFont.Dispose()
-$g.Dispose()
-$bitmap.Dispose()

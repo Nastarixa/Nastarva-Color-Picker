@@ -38,85 +38,138 @@ ExportActivePalette(app, format, name?, pngStyle?, showInfo?) {
     ShowToast(app, "Exported " p.name " as " StrUpper(format))
 }
 
-ExportActivePaletteCharacterSheet(app) {
+ExportActivePaletteCharacterSheet(app, showInfo := 1) {
     p := app.activePalette
     defaultName := p.name ".png"
     path := FileSelect("S", A_ScriptDir "\" defaultName, "Export Character Sheet Style", "PNG Files (*.png)")
     if (path = "")
         return
 
-    ExportPalettePngCharacter(app, p, path)
+    ExportPalettePngCharacter(app, p, path, showInfo)
 }
 
 ExportPalettePng(app, p, path, style := 1, showInfo := 1) {
-    tempDir := A_Temp
-    jsonPath := tempDir . "\nastarxa_palette_export.json"
-    scriptPath := tempDir . "\nastarxa_palette_export.ps1"
+    jsonPath := A_Temp . "\nastarxa_palette_export.json"
+    scriptPath := A_Temp . "\nastarxa_palette_export.ps1"
 
-json := BuildPaletteJson(p, app.version)
+    ; Validate palette has colors
+    if (!p.HasOwnProp("colors") || !p.colors.Length) {
+        ShowToast(app, "No colors to export")
+        return
+    }
+
+    if (style = 2)
+        scriptContent := FileRead(A_ScriptDir . "\src\features\palette_png_export_character.ps1")
+    else
+        scriptContent := FileRead(A_ScriptDir . "\src\features\palette_png_export_sections.ps1")
+
+    if (scriptContent = "") {
+        ShowToast(app, "Export script missing")
+        return
+    }
+
+    ; Clean up old files
+    if FileExist(scriptPath)
+        FileDelete(scriptPath)
+    if FileExist(jsonPath)
+        FileDelete(jsonPath)
+
+    json := BuildPaletteJson(p, app.version)
+    
+    if (json = "") {
+        ShowToast(app, "Failed: empty JSON")
+        return
+    }
+    
+    ; Inject showInfo before the closing brace so JSON stays valid
+    showInfoKey := Chr(34) . "showInfo" . Chr(34)
     originalJson := json
-    injectCRLF := Format(',`r`n  "showInfo": {1}`r`n}', showInfo)
-    injectLF := Format(',`n  "showInfo": {1}`n}', showInfo)
-    json := StrReplace(json, "`r`n}", injectCRLF)
+    json := StrReplace(json, "`r`n}", ",`r`n  " . showInfoKey . ": " . showInfo . "`r`n}")
     if (json = originalJson)
-        json := StrReplace(json, "`n}", injectLF)
+        json := StrReplace(json, "`n}", ",`n  " . showInfoKey . ": " . showInfo . "`n}")
 
-    MsgBox("JSON sample: " . SubStr(json, 1, 300))
+    if !InStr(json, "showInfo") || (json = originalJson) {
+        ShowToast(app, "JSON format issue")
+        return
+    }
 
     FileAppend(json, jsonPath, "UTF-8")
+    FileAppend(scriptContent, scriptPath, "UTF-8")
 
-    if (style = 2) {
-        FileAppend(GetPalettePngExportCharacterScript(), scriptPath, "UTF-8")
-    } else {
-        FileAppend(GetPalettePngExportSectionScript(), scriptPath, "UTF-8")
+    ; Verify files created
+    Sleep 100
+    if !FileExist(jsonPath) {
+        ShowToast(app, "JSON file error")
+        return
+    }
+    if !FileExist(scriptPath) {
+        ShowToast(app, "Script file error")
+        return
     }
 
     q := Chr(34)
-    cmd := "powershell -NoProfile -ExecutionPolicy Bypass -File " q . scriptPath . q . " " . q . jsonPath . q . " " . q . path . q . " 2>" . A_Temp . "\export_err.txt"
+    psArgs := "-NoProfile -ExecutionPolicy Bypass -File "
+        . q scriptPath q " "
+        . q jsonPath q " "
+        . q path q
+    RunWait("powershell.exe " psArgs, , "Hide")
 
-    RunWait(cmd, , "Hide")
+    Sleep 500
 
-    errFile := A_Temp . "\export_err.txt"
-    If FileExist(errFile) {
-        errContent := FileRead(errFile)
-        If (errContent != "") {
-            MsgBox("Error: " . errContent)
-        }
-        FileDelete(errFile)
-    }
+    Sleep 300
 
     if FileExist(path) {
-        styleName := style = 2 ? "Character Sheet" : "Grid with Sections"
-        ShowToast(app, "Exported " p.name " as PNG (" styleName ")")
+        ShowToast(app, "Exported " p.name)
     } else {
-        ShowToast(app, "PNG export failed")
+        ShowToast(app, "Export failed")
     }
 }
 
-ExportPalettePngCharacter(app, p, path) {
-    jsonPath := A_Temp "\nastarxa_palette_export_char.json"
-    scriptPath := A_Temp "\nastarxa_palette_export_character.ps1"
+ExportPalettePngCharacter(app, p, path, showInfo := 1) {
+    jsonPath := A_Temp . "\nastarxa_palette_export_char.json"
+    scriptPath := A_Temp . "\nastarxa_palette_export_character.ps1"
+
+    scriptContent := GetPalettePngExportCharacterScript()
+    if (scriptContent = "") {
+        ShowToast(app, "Export script missing")
+        return
+    }
 
     if FileExist(jsonPath)
         FileDelete(jsonPath)
     if FileExist(scriptPath)
         FileDelete(scriptPath)
 
-FileAppend(BuildPaletteJson(p, app.version), jsonPath, "UTF-8")
-    FileAppend(GetPalettePngExportCharacterScript(), scriptPath, "UTF-8")
-
-q := Chr(34)
-    cmd := "powershell -NoProfile -ExecutionPolicy Bypass -File " q . scriptPath . q . " " . q . jsonPath . q . " " . q . path . q
-
-    MsgBox("Command: " . cmd)
-
-    RunWait(cmd, , "Hide")
-
-    if FileExist(path) {
-        ShowToast(app, "Exported " p.name " as Character Sheet PNG")
-    } else {
-        ShowToast(app, "Character sheet PNG export failed")
+    json := BuildPaletteJson(p, app.version)
+    if (json = "" || !InStr(json, "colors")) {
+        ShowToast(app, "Export failed: no colors")
+        return
     }
+
+    json := SubStr(json, 1, -1) . ",`n  `"showInfo`": " . showInfo . "`n}"
+
+    FileAppend(json, jsonPath, "UTF-8")
+    FileAppend(scriptContent, scriptPath, "UTF-8")
+
+    if !FileExist(jsonPath) || !FileExist(scriptPath) {
+        ShowToast(app, "File creation failed")
+        return
+    }
+
+    q := Chr(34)
+    psArgs := "-NoProfile -ExecutionPolicy Bypass -File "
+        . q scriptPath q " "
+        . q jsonPath q " "
+        . q path q
+
+    RunWait("powershell.exe " psArgs, , "Hide")
+
+    Sleep 500
+
+    if FileExist(path)
+        ShowToast(app, "Exported " p.name)
+    else
+        ShowToast(app, "Export failed")
 }
 
 BuildPaletteExportContent(p, version, format) {
@@ -151,28 +204,27 @@ BuildPaletteTxt(p, version) {
 }
 
 BuildPaletteJson(p, version) {
+    q := Chr(34)
     json := "{"
-    . "`n  " . Chr(34) . "name" . Chr(34) . ": " . Chr(34) . JsonEscape(p.name) . Chr(34) . ","
-    . "`n  " . Chr(34) . "version" . Chr(34) . ": " . Chr(34) . JsonEscape(version) . Chr(34) . ","
-    . "`n  " . Chr(34) . "historyMax" . Chr(34) . ": " . p.historyMax . ","
-    . "`n  " . Chr(34) . "maxCols" . Chr(34) . ": " . p.maxCols . ","
-    . "`n  " . Chr(34) . "sections" . Chr(34) . ": [" . JoinJsonStringArray(p.sections) . "],"
-    . "`n  " . Chr(34) . "colors" . Chr(34) . ": ["
+    . "`n  " . q . "name" . q . ": " . q . JsonEscape(p.name) . q . ","
+    . "`n  " . q . "version" . q . ": " . q . JsonEscape(version) . q . ","
+    . "`n  " . q . "historyMax" . q . ": " . p.historyMax . ","
+    . "`n  " . q . "maxCols" . q . ": " . p.maxCols . ","
+    . "`n  " . q . "sections" . q . ": [" . JoinJsonStringArray(p.sections) . "],"
+    . "`n  " . q . "colors" . q . ": ["
 
     for index, item in p.colors {
         suffix := (index < p.colors.Length) ? "," : ""
         json .= "`n    {"
-        . ChR(34) . "hex" . Chr(34) . ": " . Chr(34) . JsonEscape(item.hex) . Chr(34) . ", "
-        . Chr(34) . "rgb" . Chr(34) . ": " . Chr(34) . JsonEscape(item.rgb) . Chr(34) . ", "
-        . Chr(34) . "name" . Chr(34) . ": " . Chr(34) . JsonEscape(item.name) . Chr(34) . ", "
-        . Chr(34) . "role" . Chr(34) . ": " . Chr(34) . JsonEscape(item.role) . Chr(34) . ", "
-        . Chr(34) . "section" . Chr(34) . ": " . Chr(34) . JsonEscape(item.section) . Chr(34) . ", "
-        . Chr(34) . "pinned" . Chr(34) . ": " . (item.pinned ? "true" : "false") . "}" . suffix
+        . q . "hex" . q . ": " . q . item.hex . q . ", "
+        . q . "rgb" . q . ": " . q . item.rgb . q . ", "
+        . q . "name" . q . ": " . q . JsonEscape(item.name) . q . ", "
+        . q . "role" . q . ": " . q . JsonEscape(item.role) . q . ", "
+        . q . "section" . q . ": " . q . JsonEscape(GetItemSectionNameForState(item)) . q . ", "
+        . q . "pinned" . q . ": " . (item.pinned ? "true" : "false") . "}" . suffix
     }
 
     json .= "`n  ]`n}"
-
-    MsgBox("JSON: " . json)
 
     return json
 }
@@ -371,4 +423,23 @@ GetPalettePngExportCharacterScript() {
 
 GetPalettePngExportSectionScript() {
     return FileRead(A_ScriptDir "\src\features\palette_png_export_sections.ps1")
+}
+
+TestExport() {
+    testScriptPath := A_ScriptDir . "\src\features\test_export.ps1"
+    testJsonPath := A_Temp . "\test_export.json"
+    testOutPath := A_Desktop . "\test.png"
+    
+    testJson := '{"colors":[{"hex":"FF0000","name":"Red"}]}'
+    FileAppend(testJson, testJsonPath, "UTF-8")
+    
+    shell := ComObject("WScript.Shell")
+    cmd := "powershell -NoProfile -ExecutionPolicy Bypass -File " . Chr(34) . testScriptPath . Chr(34) . " " . Chr(34) . testJsonPath . Chr(34) . " " . Chr(34) . testOutPath . Chr(34)
+    result := shell.Exec(cmd)
+    
+    While !result.Status {
+        Sleep(100)
+    }
+    
+    MsgBox("Done. Check Desktop for test.png")
 }

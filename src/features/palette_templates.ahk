@@ -5,6 +5,27 @@ GetBuiltInTemplates() {
             "sections", Map(
                 "Greyscale", Map(
                     "items", Map(
+                        "White",        "FFFFFF|255,255,255|Base",
+                        "Grey 95",      "F2F2F2|242,242,242|Base",
+                        "Grey 90",      "E6E6E6|230,230,230|Base",
+                        "Grey 80",      "CCCCCC|204,204,204|Base",
+                        "Grey 70",      "B3B3B3|179,179,179|Base",
+                        "Grey 60",      "999999|153,153,153|Base",
+                        "Grey 50",      "808080|128,128,128|Base",
+                        "Grey 40",      "666666|102,102,102|Base",
+                        "Grey 30",      "4D4D4D|77,77,77|Base",
+                        "Grey 20",      "333333|51,51,51|Base",
+                        "Grey 10",      "1A1A1A|26,26,26|Base",
+                        "Black",        "000000|0,0,0|Base"
+                    )
+                )
+            )
+        ),
+        "CSS Neutral Colors", Map(
+            "isBuiltIn", true,
+            "sections", Map(
+                "CSS Neutral Colors", Map(
+                    "items", Map(
                         "White", "FFFFFF|255,255,255|Base",
                         "Snow", "FFFAFA|255,250,250|Base",
                         "White Smoke", "F5F5F5|245,245,245|Base",
@@ -17,7 +38,7 @@ GetBuiltInTemplates() {
                         "Light Slate Grey", "778899|119,136,153|Base",
                         "Slate Grey", "708090|112,128,144|Base",
                         "Dark Slate Grey", "2F4F4F|47,79,79|Base",
-                        "Black", "000000|0,0,0|Base"
+                        "Black", "000000|0,0,0|Base"   
                     )
                 )
             )

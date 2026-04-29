@@ -329,6 +329,7 @@ ShowSectionPanel(app, g, sectionOrName, panelIndex, totalW, totalH, dockOffset :
     x -= btnW
     try g.target.Move(x, 0, btnW, headerH)
 
-    try g.Show("x" showX " y" showY " w" totalW " h" totalH)
+        try g.Show("x" showX " y" showY " w" totalW " h" totalH)
+
     g.hasShown := true
 }

@@ -33,7 +33,7 @@ OpenPaletteManager(app) {
         return
     }
 
-    g := Gui("+AlwaysOnTop +Resize +OwnDialogs", "🎨 Nastarva Palette Manager v" app.version)
+    g := Gui("+AlwaysOnTop +Resize +OwnDialogs", "🎨 Nastarxa Palette Manager v" app.version)
     g.BackColor := "323338"
     g.SetFont("s9", "Consolas")
 
@@ -978,7 +978,7 @@ ShowImportFolderPreview(app, folderPath, imageFiles) {
 
     totalColors := 0
     for imgPath in imageFiles {
-        tempPath := A_Temp "\nastarva_import_" A_Index ".png"
+        tempPath := A_Temp "\nastarxa_import_" A_Index ".png"
         colors := ExtractColorsFromImage(imgPath, tempPath)
         if colors.Length > 0
             totalColors += colors.Length
@@ -999,7 +999,7 @@ DoImportFolderImages(app, g, folderPath, imageFiles) {
     successCount := 0
     for imgPath in imageFiles {
         try {
-            tempPath := A_Temp "\nastarva_import_" A_Index ".png"
+            tempPath := A_Temp "\nastarxa_import_" A_Index ".png"
             if ProcessSingleImageImport(app, imgPath, tempPath) {
                 successCount++
             }
@@ -1017,7 +1017,7 @@ DoImportFolderImages(app, g, folderPath, imageFiles) {
 
 ExtractColorsFromImage(imgPath, tempPath) {
     colors := []
-    scriptPath := A_Temp "\nastarva_color_extract.ps1"
+    scriptPath := A_Temp "\nastarxa_color_extract.ps1"
 
     script := "param([string]`$ImagePath, [string]`$OutPath)`nAdd-Type -AssemblyName System.Drawing`ntry {`n`$img = [System.Drawing.Image]::FromFile(`$ImagePath)`n`$bmp = New-Object System.Drawing.Bitmap(`$img)`n`$colors = @{}`nfor (`$y = 0; `$y -lt `$bmp.Height; `$y += 5) {`nfor (`$x = 0; `$x -lt `$bmp.Width; `$x += 5) {`n`$c = `$bmp.GetPixel(`$x, `$y)`n`$key = (`"{0:X2}{1:X2}{2:X2}`" -f `$c.R, `$c.G, `$c.B)`nif (-not `$colors.ContainsKey(`$key)) { `$colors[`$key] = 1 } else { `$colors[`$key]++ } } } }`n`$sorted = `$colors.GetEnumerator() | Sort-Object Value -Descending | Select-Object -First 10`n`$result = (`$sorted | ForEach-Object { `$_.Key }) -join `,`n`$result | Out-File -FilePath `$OutPath -Encoding UTF8`n`$bmp.Dispose()`n`$img.Dispose()`nexit 0 } catch { exit 1 }"
 
@@ -1025,7 +1025,7 @@ ExtractColorsFromImage(imgPath, tempPath) {
         FileDelete(scriptPath)
     FileAppend(script, scriptPath, "UTF-8")
 
-    outputPath := A_Temp "\nastarva_colors_output.txt"
+    outputPath := A_Temp "\nastarxa_colors_output.txt"
     if FileExist(outputPath)
         FileDelete(outputPath)
 
@@ -1045,14 +1045,14 @@ ExtractColorsFromImage(imgPath, tempPath) {
 }
 
 ProcessSingleImageImport(app, imgPath, tempPath) {
-    scriptPath := A_Temp "\nastarva_single_import.ps1"
+    scriptPath := A_Temp "\nastarxa_single_import.ps1"
 
     script := "param([string]`$ImagePath, [string]`$OutPath)`nAdd-Type -AssemblyName System.Drawing`ntry {`n`$img = [System.Drawing.Image]::FromFile(`$ImagePath)`n`$bmp = New-Object System.Drawing.Bitmap(`$img)`n`$colors = @{}`nfor (`$y = 0; `$y -lt `$bmp.Height; `$y += 5) {`nfor (`$x = 0; `$x -lt `$bmp.Width; `$x += 5) {`n`$c = `$bmp.GetPixel(`$x, `$y)`n`$key = (`"{0:X2}{1:X2}{2:X2}`" -f `$c.R, `$c.G, `$c.B)`nif (-not `$colors.ContainsKey(`$key)) { `$colors[`$key] = 1 } else { `$colors[`$key]++ } } } }`n`$sorted = `$colors.GetEnumerator() | Sort-Object Value -Descending | Select-Object -First 10`n`$result = (`$sorted | ForEach-Object { `$_.Key }) -join `,`n`$result | Out-File -FilePath `$OutPath -Encoding UTF8`n`$bmp.Dispose()`n`$img.Dispose()`nexit 0 } catch { exit 1 }"
 
     FileDelete(scriptPath)
     FileAppend(script, scriptPath, "UTF-8")
 
-    outputPath := A_Temp "\nastarva_colors_output.txt"
+    outputPath := A_Temp "\nastarxa_colors_output.txt"
     FileDelete(outputPath)
 
     cmd := Format('powershell -NoProfile -ExecutionPolicy Bypass -File "{}" "{}" "{}"', scriptPath, imgPath, outputPath)
@@ -1105,8 +1105,8 @@ ShowImportModeDialog(app, imagePath) {
 }
 
 ImportPaletteImage(app, imagePath) {
-    outPath := A_Temp "\nastarva_palette_import.txt"
-    scriptPath := A_Temp "\nastarva_palette_import.ps1"
+    outPath := A_Temp "\nastarxa_palette_import.txt"
+    scriptPath := A_Temp "\nastarxa_palette_import.ps1"
 
     if FileExist(outPath)
         FileDelete(outPath)
@@ -1162,7 +1162,7 @@ StartPaletteScreenshotImport(app) {
     app.screenshotCapture.active := true
     app.screenshotCapture.noSnipTicks := 0
     app.screenshotCapture.deadline := A_TickCount + 120000
-    app.screenshotCapture.tempPath := A_Temp "\nastarva_palette_capture.png"
+    app.screenshotCapture.tempPath := A_Temp "\nastarxa_palette_capture.png"
 
     A_Clipboard := ""
     ShowToast(app, "Snip the palette area, then release mouse")
@@ -1232,7 +1232,7 @@ ClipboardHasImage() {
 }
 
 SaveClipboardImageToFile(path) {
-    scriptPath := A_Temp "\nastarva_clipboard_image_save.ps1"
+    scriptPath := A_Temp "\nastarxa_clipboard_image_save.ps1"
 
     if FileExist(scriptPath)
         FileDelete(scriptPath)
@@ -1394,6 +1394,8 @@ DoPaletteMerge(app, g) {
     }
 
     g.Destroy()
+    if app.historyVisible
+        QueueHistoryRebuild(app)
     msg := "Merged: " added " added, " skipped " skipped"
     if deleteSrc
         msg .= ". Deleted " srcName
@@ -2221,8 +2223,6 @@ OpenColorBlindDialog(app) {
     g.cbDrop := g.AddDropDownList("x10 y" rowY " w230", cbTypes)
     g.cbDrop.Value := 1
     rowY += 28
-    g.targetPreview := g.AddProgress("x10 y" rowY " w230 h30 Background" colors[1])
-    rowY += 34
     g.previewLabel := g.AddText("x10 y" rowY " cFFFFFF", "Preview: " colors.Length " colors")
     rowY += 26
     g.AddText("x10 y" rowY " cAAAAAA", "Actions")
@@ -2233,7 +2233,7 @@ OpenColorBlindDialog(app) {
     g.btnApply.OnEvent("Click", (*) => AddColorBlindColors(app, g, colors))
     g.cbDrop.OnEvent("Change", (*) => UpdateColorBlindPreview(g, colors, g.cbDrop.Text))
 
-    g.previewStartY := g.previewLabel.Y + 26
+    g.previewStartY := rowY + 40
 
     UpdateColorBlindPreview(g, colors, g.cbDrop.Text)
 
@@ -2329,10 +2329,10 @@ RenderColorBlindPreview(g, colors, cbType) {
         c1 := g.AddText("x" startX " y" y " w" boxW " h" boxH " Background" cleanHex " Border")
 
         ; SIMULATED
-        c2 := g.AddText("x" (startX + boxW + 10) " y" y " w" boxW " h" boxH " Background" simHex " Border")
+        c2 := g.AddText("x" (startX + boxW + 7) " y" y " w" boxW " h" boxH " Background" simHex " Border")
 
         ; HEX LABEL (optional but useful)
-        t := g.AddText("x" (startX + boxW*2 + 20) " y" y " w150 h" boxH " cAAAAAA"
+        t := g.AddText("x" (startX + boxW*2 + 15) " y" y " w120 h" boxH " cAAAAAA"
             , "#" cleanHex " → #" simHex)
 
         g.previewCtrls.Push(c1)

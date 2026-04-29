@@ -339,12 +339,8 @@ SetSectionTagColor(app, sectionName, tag) {
     if !changed
         return false
     SaveHistory(app)
-    if app.historyVisible {
-        RefreshSectionBySectionName(app, sectionName)
-        Emit(app, "history_changed")
-    } else if app.ui.HasOwnProp("sectionGuis") && app.ui.sectionGuis.Has(sectionName) {
-        RefreshSectionBySectionName(app, sectionName)
-    }
+    app.ui.generation++
+    RebuildUI(app)
     ShowToast(app, tag = "" ? "Cleared section tag" : "Updated section tag")
     return true
 }
@@ -369,11 +365,7 @@ SetSectionNote(app, sectionName, note) {
     if !changed
         return false
     SaveHistory(app)
-    if app.historyVisible {
-        Emit(app, "history_changed")
-    } else if app.ui.HasOwnProp("sectionGuis") && app.ui.sectionGuis.Has(sectionName) {
-        RefreshSectionBySectionName(app, sectionName)
-    }
+    QueueHistoryRebuild(app)
     ShowToast(app, "Updated section note")
     return true
 }
@@ -572,10 +564,7 @@ CreateSection(app, sectionName) {
     }
 
     SaveHistory(app)
-    if app.historyVisible {
-        Emit(app, "history_changed")
-
-    }
+    QueueHistoryRebuild(app)
 
     ShowToast(app, "Created section: " sectionName)
     SetSelectedSection(app, sectionName, true)
@@ -597,10 +586,7 @@ RenameSection(app, oldName, newName) {
     }
 
     SaveHistory(app)
-    if app.historyVisible {
-        Emit(app, "history_changed")
-
-    }
+    QueueHistoryRebuild(app)
 
     ShowToast(app, "Renamed section: " newName)
     return true
@@ -649,10 +635,7 @@ DuplicateSection(app, sourceName) {
     }
 
     SaveHistory(app)
-    if app.historyVisible {
-        Emit(app, "history_changed")
-
-    }
+    QueueHistoryRebuild(app)
 
     ShowToast(app, "Duplicated section: " newName)
     return true
@@ -723,10 +706,7 @@ DeleteSection(app, sectionName) {
     }
 
     SaveHistory(app)
-    if app.historyVisible {
-        Emit(app, "history_changed")
-
-    }
+    QueueHistoryRebuild(app)
 
     ShowToast(app, "Deleted section: " sectionName)
     return true
@@ -780,7 +760,7 @@ DeleteSectionMutation(p, sectionName) {
 TogglePin(app, token) {
     Mutate(app, (p) => TogglePinMutation(p, token))
     Commit(app)
-}
+    }
 
 TogglePinMutation(p, token) {
     maxOrder := GetMaxPinOrder(p)
@@ -814,10 +794,7 @@ MovePinnedColor(app, token, dir) {
     }
 
     SaveHistory(app)
-    RebuildUI(app)
-    if app.historyVisible {
-        Emit(app, "history_changed")
-    }
+    QueueHistoryRebuild(app)
 }
 
 BatchMovePinnedColor(app, targetIds, dir) {
@@ -835,9 +812,8 @@ BatchMovePinnedColor(app, targetIds, dir) {
     }
 
     SaveHistory(app)
-    RebuildUI(app)
     if app.historyVisible {
-        Emit(app, "history_changed")
+        QueueHistoryRebuild(app)
     }
 
     ShowToast(app, "Moved " targetIds.Length " pinned color" (targetIds.Length > 1 ? "s" : ""))
@@ -947,9 +923,9 @@ ReorderPinnedColorToTarget(app, sourceToken, targetToken) {
 
     SaveHistory(app)
     if app.historyVisible {
-        RefreshSectionBySectionName(app, sourceSection)
+        RefreshSectionCells(app, sourceSection)
         if (targetSection != sourceSection)
-            RefreshSectionBySectionName(app, targetSection)
+            RefreshSectionCells(app, targetSection)
         Emit(app, "history_changed")
     }
 }
@@ -975,9 +951,7 @@ MoveColorToSection(app, sourceToken, sectionName, sourceSection := "") {
 
     SaveHistory(app)
     if app.historyVisible {
-        RefreshSectionBySectionName(app, sourceSection)
-        RefreshSectionBySectionName(app, sectionName)
-        Emit(app, "history_changed")
+        QueueHistoryRebuild(app)
     }
 
     ShowToast(app, "Moved to " sectionName)
@@ -1017,18 +991,14 @@ BatchMoveColorToSection(app, targetIds, sectionName) {
         }
     }
 
-    if movedCount = 0 {
+if movedCount = 0 {
         ShowToast(app, "Could not move colors")
         return false
     }
 
     SaveHistory(app)
     if app.historyVisible {
-        for _, srcSection in sourceSections {
-            RefreshSectionBySectionName(app, srcSection)
-        }
-        RefreshSectionBySectionName(app, sectionName)
-        Emit(app, "history_changed")
+        QueueHistoryRebuild(app)
     }
 
     ShowToast(app, "Moved " movedCount " color" (movedCount > 1 ? "s" : "") " to " sectionName)
@@ -1235,8 +1205,7 @@ DeleteColor(app, token) {
 
     SaveHistory(app)
     if app.historyVisible {
-        Emit(app, "history_changed")
-
+        QueueHistoryRebuild(app)
     }
 
     ShowToast(app, "Deleted #" removed.hex)
@@ -1302,10 +1271,8 @@ MoveColorToPalette(app, token, targetName) {
     SavePalette(source, app.version)
     SavePalette(target, app.version)
 
-    if app.historyVisible {
-        Emit(app, "history_changed")
-
-    }
+    app.ui.generation++
+    RebuildUI(app)
 
     ShowToast(app, "Moved #" item.hex " -> " targetName)
     return true
@@ -1353,21 +1320,8 @@ BatchMoveColorToPalette(app, targetIds, targetName) {
     SavePalette(source, app.version)
     SavePalette(target, app.version)
 
-    if app.historyVisible {
-        affectedSections := []
-        for _, token in targetIds {
-            item := GetItemByToken(app, token)
-            if item {
-                section := GetItemSectionNameForState(item)
-                if section != "" && !affectedSections.Has(section)
-                    affectedSections.Push(section)
-            }
-        }
-        for _, section in affectedSections {
-            RefreshSectionBySectionName(app, section)
-        }
-        Emit(app, "history_changed")
-    }
+    app.ui.generation++
+    RebuildUI(app)
 
     ShowToast(app, "Moved " movedCount " color" (movedCount > 1 ? "s" : "") " -> " targetName)
     return true
@@ -1393,7 +1347,7 @@ ShowHotkeyHelp(app) {
 
     text :=
     (
-    "🎨 Nastarva Palette Manager v" app.version "`n`n"
+    "🎨 Nastarxa Palette Manager v" app.version "`n`n"
     "Ctrl + Alt + P   → Toggle Color Picker`n"
     "Ctrl + Alt + O   → Toggle Color Palette`n"
     "Ctrl + Alt + U   → Screenshot Palette Import`n"

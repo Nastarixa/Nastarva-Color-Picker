@@ -18,7 +18,7 @@ OpenExportDialog(app) {
     g.pngStyle := g.AddDropDownList("w200 y+4 +Hidden", ["Grid with Sections", "Character Sheet"])
     g.pngStyle.Value := 1
 
-    g.showInfo := g.AddCheckBox("cFFFFFF y+10 +Hidden", "Show color info (Hex, RGB, Role)")
+    g.showInfo := g.AddCheckBox("cFFFFFF y+10 +Hidden", "Show info (Hex, RGB, Role)")
     g.showInfo.Value := 1
 
     g.fmtDrop.OnEvent("Change", (*) => ExportFormatChanged(g))

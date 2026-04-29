@@ -289,7 +289,7 @@ SaveColor(app) {
     SaveHistory(app)
 
     ApplyHighlight(app, hex)
-    RefreshSectionByName(app, section)
+    RefreshSectionCells(app, section)
 
     ShowToast(app, "Saved #" hex " to " section)
 }

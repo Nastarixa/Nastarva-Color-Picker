@@ -25,7 +25,7 @@ LoadFavorites(app) {
 SaveFavorites(app) {
     favPath := A_ScriptDir "\color\favorites.txt"
     lines := []
-    lines.Push("; Nastarva Favorite Colors")
+    lines.Push("; Nastarxa Favorite Colors")
     lines.Push("; Format: HEX|RGB|Name|Role|Tag")
     
     for fav in app.favorites {

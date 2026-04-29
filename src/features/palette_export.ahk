@@ -11,7 +11,7 @@ ExportActivePalette(app, format, name?, pngStyle?, showInfo?) {
     )
 
     defaultName := (IsSet(name) && name != "") ? name : p.name
-    path := FileSelect("S16", A_ScriptDir "\" defaultName ext, "Export Palette as " StrUpper(format), filters[format])
+    path := FileSelect("S", A_ScriptDir "\" defaultName ext, "Export Palette as " StrUpper(format), filters[format])
     if (path = "")
         return
 
@@ -41,7 +41,7 @@ ExportActivePalette(app, format, name?, pngStyle?, showInfo?) {
 ExportActivePaletteCharacterSheet(app) {
     p := app.activePalette
     defaultName := p.name ".png"
-    path := FileSelect("S16", A_ScriptDir "\" defaultName, "Export Character Sheet Style", "PNG Files (*.png)")
+    path := FileSelect("S", A_ScriptDir "\" defaultName, "Export Character Sheet Style", "PNG Files (*.png)")
     if (path = "")
         return
 
@@ -49,17 +49,21 @@ ExportActivePaletteCharacterSheet(app) {
 }
 
 ExportPalettePng(app, p, path, style := 1, showInfo := 1) {
-    jsonPath := A_Temp "\nastarva_palette_export.json"
-    scriptPath := A_Temp "\nastarva_palette_export.ps1"
+    tempDir := A_Temp
+    jsonPath := tempDir . "\nastarxa_palette_export.json"
+    scriptPath := tempDir . "\nastarxa_palette_export.ps1"
 
-    if FileExist(jsonPath)
-        FileDelete(jsonPath)
-    if FileExist(scriptPath)
-        FileDelete(scriptPath)
+json := BuildPaletteJson(p, app.version)
+    originalJson := json
+    injectCRLF := Format(',`r`n  "showInfo": {1}`r`n}', showInfo)
+    injectLF := Format(',`n  "showInfo": {1}`n}', showInfo)
+    json := StrReplace(json, "`r`n}", injectCRLF)
+    if (json = originalJson)
+        json := StrReplace(json, "`n}", injectLF)
 
-    json := BuildPaletteJson(p, app.version)
-    json.Push('  "showInfo": ' showInfo ',')
-    FileAppend(JoinLines(json), jsonPath, "UTF-8")
+    MsgBox("JSON sample: " . SubStr(json, 1, 300))
+
+    FileAppend(json, jsonPath, "UTF-8")
 
     if (style = 2) {
         FileAppend(GetPalettePngExportCharacterScript(), scriptPath, "UTF-8")
@@ -67,14 +71,19 @@ ExportPalettePng(app, p, path, style := 1, showInfo := 1) {
         FileAppend(GetPalettePngExportSectionScript(), scriptPath, "UTF-8")
     }
 
-    cmd := Format(
-        'powershell -NoProfile -ExecutionPolicy Bypass -File "{}" "{}" "{}"',
-        scriptPath,
-        jsonPath,
-        path
-    )
+    q := Chr(34)
+    cmd := "powershell -NoProfile -ExecutionPolicy Bypass -File " q . scriptPath . q . " " . q . jsonPath . q . " " . q . path . q . " 2>" . A_Temp . "\export_err.txt"
 
     RunWait(cmd, , "Hide")
+
+    errFile := A_Temp . "\export_err.txt"
+    If FileExist(errFile) {
+        errContent := FileRead(errFile)
+        If (errContent != "") {
+            MsgBox("Error: " . errContent)
+        }
+        FileDelete(errFile)
+    }
 
     if FileExist(path) {
         styleName := style = 2 ? "Character Sheet" : "Grid with Sections"
@@ -85,23 +94,21 @@ ExportPalettePng(app, p, path, style := 1, showInfo := 1) {
 }
 
 ExportPalettePngCharacter(app, p, path) {
-    jsonPath := A_Temp "\nastarva_palette_export_char.json"
-    scriptPath := A_Temp "\nastarva_palette_export_character.ps1"
+    jsonPath := A_Temp "\nastarxa_palette_export_char.json"
+    scriptPath := A_Temp "\nastarxa_palette_export_character.ps1"
 
     if FileExist(jsonPath)
         FileDelete(jsonPath)
     if FileExist(scriptPath)
         FileDelete(scriptPath)
 
-    FileAppend(BuildPaletteJson(p, app.version), jsonPath, "UTF-8")
+FileAppend(BuildPaletteJson(p, app.version), jsonPath, "UTF-8")
     FileAppend(GetPalettePngExportCharacterScript(), scriptPath, "UTF-8")
 
-    cmd := Format(
-        'powershell -NoProfile -ExecutionPolicy Bypass -File "{}" "{}" "{}"',
-        scriptPath,
-        jsonPath,
-        path
-    )
+q := Chr(34)
+    cmd := "powershell -NoProfile -ExecutionPolicy Bypass -File " q . scriptPath . q . " " . q . jsonPath . q . " " . q . path . q
+
+    MsgBox("Command: " . cmd)
 
     RunWait(cmd, , "Hide")
 
@@ -144,30 +151,30 @@ BuildPaletteTxt(p, version) {
 }
 
 BuildPaletteJson(p, version) {
-    json := []
-    json.Push("{")
-    json.Push('  "name": "' JsonEscape(p.name) '",')
-    json.Push('  "version": "' JsonEscape(version) '",')
-    json.Push('  "historyMax": ' p.historyMax ',')
-    json.Push('  "maxCols": ' p.maxCols ',')
-    json.Push('  "sections": [' JoinJsonStringArray(p.sections) '],')
-    json.Push('  "colors": [')
+    json := "{"
+    . "`n  " . Chr(34) . "name" . Chr(34) . ": " . Chr(34) . JsonEscape(p.name) . Chr(34) . ","
+    . "`n  " . Chr(34) . "version" . Chr(34) . ": " . Chr(34) . JsonEscape(version) . Chr(34) . ","
+    . "`n  " . Chr(34) . "historyMax" . Chr(34) . ": " . p.historyMax . ","
+    . "`n  " . Chr(34) . "maxCols" . Chr(34) . ": " . p.maxCols . ","
+    . "`n  " . Chr(34) . "sections" . Chr(34) . ": [" . JoinJsonStringArray(p.sections) . "],"
+    . "`n  " . Chr(34) . "colors" . Chr(34) . ": ["
 
     for index, item in p.colors {
         suffix := (index < p.colors.Length) ? "," : ""
-        json.Push("    {")
-        json.Push('      "hex": "' JsonEscape(item.hex) '",')
-        json.Push('      "rgb": "' JsonEscape(item.rgb) '",')
-        json.Push('      "name": "' JsonEscape(item.name) '",')
-        json.Push('      "role": "' JsonEscape(item.role) '",')
-        json.Push('      "section": "' JsonEscape(item.section) '",')
-        json.Push('      "pinned": ' (item.pinned ? "true" : "false"))
-        json.Push("    }" suffix)
+        json .= "`n    {"
+        . ChR(34) . "hex" . Chr(34) . ": " . Chr(34) . JsonEscape(item.hex) . Chr(34) . ", "
+        . Chr(34) . "rgb" . Chr(34) . ": " . Chr(34) . JsonEscape(item.rgb) . Chr(34) . ", "
+        . Chr(34) . "name" . Chr(34) . ": " . Chr(34) . JsonEscape(item.name) . Chr(34) . ", "
+        . Chr(34) . "role" . Chr(34) . ": " . Chr(34) . JsonEscape(item.role) . Chr(34) . ", "
+        . Chr(34) . "section" . Chr(34) . ": " . Chr(34) . JsonEscape(item.section) . Chr(34) . ", "
+        . Chr(34) . "pinned" . Chr(34) . ": " . (item.pinned ? "true" : "false") . "}" . suffix
     }
 
-    json.Push("  ]")
-    json.Push("}")
-    return JoinLines(json)
+    json .= "`n  ]`n}"
+
+    MsgBox("JSON: " . json)
+
+    return json
 }
 
 BuildPaletteIni(p, version) {

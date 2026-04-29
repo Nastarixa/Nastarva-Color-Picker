@@ -1,37 +1,22 @@
+QueueHistoryRebuild(app) {
+    static pending := false
+
+    if pending
+        return
+
+    pending := true
+    SetTimer(() => (
+        pending := false,
+        app.ui.generation++,
+        RebuildUI(app),
+        Emit(app, "history_changed")
+    ), -1)
+}
+
 RefreshSectionBySectionId(app, sectionId) {
-    if sectionId = ""
+    if !app.historyVisible
         return
-
-    sectionName := ""
-    if app.activePalette.HasOwnProp("sections") {
-        for section in app.activePalette.sections {
-            if IsObject(section) && section.HasOwnProp("id") && section.id = sectionId {
-                sectionName := section.name
-                break
-            }
-        }
-    }
-
-    if sectionName = ""
-        return
-
-    tokens := []
-    for token, ctrl in app.ui.controls {
-        if !ctrl.HasOwnProp("sectionId") || ctrl.sectionId = ""
-            continue
-        if ctrl.sectionId = sectionId
-            tokens.Push(token)
-    }
-
-    for token in tokens {
-        if app.ui.controls.Has(token)
-            UpdateCellDisplay(app, token)
-    }
-
-    sectionGui := GetSectionGuiByName(app, sectionName)
-    if IsObject(sectionGui) {
-        try UpdateSectionPanelChrome(app, sectionGui, sectionName)
-    }
+    QueueHistoryRebuild(app)
 }
 
 StartSectionPanelMove(app, sectionName) {
@@ -64,35 +49,166 @@ StartSectionPanelMove(app, sectionName) {
 }
 
 RefreshSectionByItemId(app, itemId) {
-    item := GetItemById(app, itemId)
+    if !app.historyVisible
+        return
+    QueueHistoryRebuild(app)
+}
+
+RefreshCellByIdHandler(app, id) {
+    if !app.historyVisible
+        return
+    item := GetItemById(app, id)
     if !item
         return
-    sectionName := GetItemSectionNameForState(item)
-    sectionId := GetSectionId(app.activePalette, sectionName)
-    RefreshSectionBySectionId(app, sectionId)
+    token := GetItemToken(item)
+    if app.ui.controls.Has(token)
+        UpdateCellDisplay(app, token)
+}
+
+RefreshCellByTokenHandler(app, token) {
+    if !app.historyVisible
+        return
+    if app.ui.controls.Has(token)
+        UpdateCellDisplay(app, token)
 }
 
 RefreshSectionByToken(app, token) {
-    sectionId := GetSectionIdFromToken(app, token)
-    if sectionId
-        RefreshSectionBySectionId(app, sectionId)
+    if !app.historyVisible
+        return
+    QueueHistoryRebuild(app)
 }
 
 RefreshSectionByName(app, sectionName) {
-    sectionId := GetSectionId(app.activePalette, sectionName)
-    RefreshSectionBySectionId(app, sectionId)
+    if !app.historyVisible
+        return
+    QueueHistoryRebuild(app)
+}
+
+RefreshSectionCells(app, sectionName) {
+    if !app.historyVisible
+        return
+    if !app.ui.HasOwnProp("sectionGuis") || !app.ui.sectionGuis.Has(sectionName)
+        return
+
+    g := app.ui.sectionGuis[sectionName]
+    if !IsObject(g) || !SafeGetGuiHwnd(g)
+        return
+
+    for token, ctrl in app.ui.controls {
+        if ctrl.section = sectionName {
+            try ctrl.bg.Destroy()
+            if ctrl.txt != ctrl.bg
+                try ctrl.txt.Destroy()
+            app.ui.controls.Delete(token)
+        }
+    }
+
+    for item in app.activePalette.colors {
+        itemSection := item.HasOwnProp("section") && item.section != "" ? item.section : "Default"
+        if itemSection = sectionName {
+            CreateCell(app, item)
+        }
+    }
+
+    LayoutSectionOnly(app, sectionName)
+}
+
+LayoutSectionOnly(app, sectionName) {
+    if !app.ui.HasOwnProp("sectionGuis") || !app.ui.sectionGuis.Has(sectionName)
+        return
+    
+    g := app.ui.sectionGuis[sectionName]
+    if !IsObject(g) || !SafeGetGuiHwnd(g)
+        return
+
+    sectionItems := []
+    for item in app.activePalette.colors {
+        itemSection := item.HasOwnProp("section") && item.section != "" ? item.section : "Default"
+        if itemSection = sectionName {
+            sectionItems.Push(item)
+        }
+    }
+
+    headerH := 28
+    gap := app.ui.gap
+    baseCols := app.activePalette.HasOwnProp("maxCols") ? app.activePalette.maxCols : app.ui.cols
+    if baseCols < 1
+        baseCols := 1
+    
+    layout := app.activePalette.HasOwnProp("layout") ? app.activePalette.layout : "normal"
+    fullCompact := app.HasOwnProp("fullCompactMode") && app.fullCompactMode
+    compact := !fullCompact && app.HasOwnProp("compactMode") && app.compactMode
+    
+    if layout = "grid"
+        cols := 3
+    else if layout = "vertical"
+        cols := 1
+    else
+        cols := baseCols
+    
+    if fullCompact {
+        itemW := 24
+        itemH := 24
+    } else if compact {
+        itemW := 120
+        itemH := 22
+    } else {
+        itemW := app.ui.itemW
+        itemH := app.ui.itemH
+    }
+
+    sectionItems := []
+    for item in app.activePalette.colors {
+        itemSection := item.HasOwnProp("section") && item.section != "" ? item.section : "Default"
+        if itemSection = sectionName {
+            sectionItems.Push(item)
+        }
+    }
+
+    idx := 0
+    for item in sectionItems {
+        token := GetItemToken(item)
+        if !app.ui.controls.Has(token)
+            continue
+        ctrl := app.ui.controls[token]
+        if !SafeGetControlHwnd(ctrl.bg)
+            continue
+        col := Mod(idx, cols)
+        row := Floor(idx / cols)
+        x := col * (itemW + gap)
+        y := headerH + row * (itemH + gap)
+        try ctrl.bg.Move(x, y)
+        if ctrl.txt != ctrl.bg && SafeGetControlHwnd(ctrl.txt) {
+            lblH := fullCompact ? 0 : (compact ? 12 : 14)
+            try ctrl.txt.Move(x + 2, y + 2, itemW - 4, lblH)
+        }
+        idx++
+    }
+
+    usedRows := idx > 0 ? Floor((idx - 1) / cols) + 1 : 1
+    totalH := IsSectionCollapsed(app.activePalette, sectionName) ? headerH : headerH + Max(itemH + gap, usedRows * (itemH + gap))
+    totalW := cols * itemW + Max(0, cols - 1) * gap
+
+    try g.Show("w" totalW " h" totalH)
 }
 
 RefreshSectionChromeByName(app, sectionName) {
     g := GetSectionGuiByName(app, sectionName)
     if !g
         return
-    UpdateSectionPanelChrome(app, g, sectionName)
+
+    state := GetSectionChromeState(app, sectionName)
+
+    if (!g.HasOwnProp("lastState") || g.lastState != state) {
+        UpdateSectionPanelChrome(app, g, sectionName)
+        g.lastState := state
+    }
 }
 
 RefreshSectionBySectionName(app, sectionName) {
-    RefreshSectionChromeByName(app, sectionName)
-    RefreshSectionByName(app, sectionName)
+    if !app.historyVisible
+        return
+    QueueHistoryRebuild(app)
 }
 
 OpenSectionMenu(app, sectionName) {
@@ -379,8 +495,8 @@ DeleteSectionUI(app, sectionName, menuGui) {
     g.AddText("cFFFFFF", "Delete section " sectionName "?")
     g.AddText("cAAAAAA", "Colors will be removed from palette.")
 
-    g.AddButton("w80 h28", "Cancel").OnEvent("Click", (*) => g.Destroy())
-    g.AddButton("x+10 w80 h28", "Delete").OnEvent("Click", (*) => DeleteSectionConfirm(app, sectionName, g))
+    g.AddButton("w80 h28", "Delete").OnEvent("Click", (*) => DeleteSectionConfirm(app, sectionName, g))
+    g.AddButton("x+10 w80 h28", "Cancel").OnEvent("Click", (*) => g.Destroy())
 
     g.Show("Center")
 }
@@ -486,14 +602,6 @@ RemoveEmptySectionPanels(app, visibleSections) {
 
         try app.ui.sectionGuis[sectionName].Destroy()
         app.ui.sectionGuis.Delete(sectionName)
-    }
-
-    app.historyGui := 0
-    for _, g in app.ui.sectionGuis {
-        if SafeGetGuiHwnd(g) {
-            app.historyGui := g
-            break
-        }
     }
 }
 

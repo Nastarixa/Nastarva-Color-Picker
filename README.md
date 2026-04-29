@@ -1,4 +1,4 @@
-# 🎨 Nastarva Color Picker
+# 🎨 Nastarxa Color Picker
 
 A **color palette manager** for game developers, digital artists, and designers — built with [AutoHotkey v2](https://www.autohotkey.com/).
 
@@ -10,7 +10,7 @@ A **color palette manager** for game developers, digital artists, and designers 
 
 ## ✨ Overview
 
-Nastarva Color Picker is a powerful color workflow tool for fast creative iteration:
+Nastarxa Color Picker is a powerful color workflow tool for fast creative iteration:
 
 - Capture colors directly from screen
 - Organize into structured palettes
@@ -146,7 +146,7 @@ Apply as:
 ## 🧱 Project Structure
 
 ```
-Nastarva Color Picker.ahk
+Nastarxa Color Picker.ahk
 src/
   core/
   features/
@@ -176,7 +176,7 @@ https://www.autohotkey.com/
 
 ```bash
 git clone <repo-url>
-cd nastarva-color-picker
+cd nastarxa-color-picker
 ```
 
 Run:

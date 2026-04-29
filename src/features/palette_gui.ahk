@@ -7,9 +7,8 @@ TogglePalette(app) {
             RebuildUI(app)
         } else {
             PrepareSectionPanelsForRestore(app)
+            Layout(app)
         }
-
-        Layout(app)
     } else {
         HideHistoryPanels(app)
     }
@@ -23,13 +22,11 @@ GetHistoryGui(app) {
 
 InitHistoryGui(app) {
     DestroyHistoryPanels(app)
-
+    
     app.ui.controls := Map()
     app.ui.sectionHeaders := Map()
-    app.ui.sectionGuis := Map()
     app.ui.panelDragHwnds := Map()
     app.ui.controlHexByHwnd := Map()
-    app.ui.sectionByHwnd := Map()
     app.ui.batchLastSelected := ""
     app.ui.lastSingleSelected := ""
     app.historyGui := 0
@@ -63,7 +60,12 @@ RefreshCellById(app, id) {
         return
 
     token := GetItemToken(item)
-if app.ui.controls.Has(token)
+    if app.ui.controls.Has(token)
+        UpdateCellDisplay(app, token)
+}
+
+RefreshCellByToken(app, token) {
+    if app.ui.controls.Has(token)
         UpdateCellDisplay(app, token)
 }
 
@@ -174,7 +176,13 @@ Layout(app) {
             try g.dragStrip.Move(0, totalH - stripH, totalW, stripH)
         }
 
-        UpdateSectionPanelChrome(app, g, sectionName)
+        state := GetSectionChromeState(app, sectionName)
+
+        if (!g.HasOwnProp("lastState") || g.lastState != state) {
+            UpdateSectionPanelChrome(app, g, sectionName)
+            g.lastState := state
+        }
+
         RegisterSectionPanelDrag(app, g)
 
         panelIndex++
@@ -291,11 +299,19 @@ SaveSectionPanelPositions(app) {
         }
     }
 }
+GetSectionChromeState(app, sectionName) {
+    p := app.activePalette
 
+    isTarget := GetSelectedSectionName(p) = sectionName
+    isCollapsed := IsSectionCollapsed(p, sectionName)
+    isLocked := IsSectionLocked(p, sectionName)
+    tag := GetSectionTagColor(p, sectionName)
+
+    return sectionName "|" isTarget "|" isCollapsed "|" isLocked "|" tag
+}
 UpdateSectionPanelChrome(app, g, sectionName) {
     headerCompact := app.HasOwnProp("headerCompactMode") && app.headerCompactMode
     isTarget := GetSelectedSectionName(app.activePalette) = sectionName
-    isDragTarget := app.ui.drag.active && app.ui.drag.targetSection = sectionName
     tag := GetSectionTagColor(app.activePalette, sectionName)
     
     if headerCompact {
@@ -311,10 +327,6 @@ UpdateSectionPanelChrome(app, g, sectionName) {
         try g.refresh.Hide()
         try g.close.Hide()
         
-        if isDragTarget {
-            if g.HasOwnProp("tag") && SafeGetControlHwnd(g.tag)
-                try g.tag.Opt("Background2A6A3A cFFFFFF")
-        }
         return
     }
     
@@ -323,12 +335,6 @@ UpdateSectionPanelChrome(app, g, sectionName) {
     isLocked := IsSectionLocked(app.activePalette, sectionName)
 
     try g.header.Text := headerText
-    if isDragTarget {
-        try g.header.Opt("Background2A6A3A cFFFFFF")
-        try g.target.Text := "◎"
-        try g.target.Opt("Background4CA35F cFFFFFF")
-        return
-    }
 
     try g.header.Opt((isTarget ? "Background6E5919 cFFFFFF" : "Background323338 cFFFFFF"))
     if g.HasOwnProp("tag") && SafeGetControlHwnd(g.tag) {
@@ -360,7 +366,12 @@ RefreshAllSectionChrome(app) {
 
     for sectionName, g in app.ui.sectionGuis {
         if SafeGetGuiHwnd(g)
-            UpdateSectionPanelChrome(app, g, sectionName)
+            state := GetSectionChromeState(app, sectionName)
+
+            if (!g.HasOwnProp("lastState") || g.lastState != state) {
+                UpdateSectionPanelChrome(app, g, sectionName)
+                g.lastState := state
+            }
     }
 }
 
@@ -383,7 +394,7 @@ ShouldItemComeAfter(app, left, right) {
         return leftOrder > rightOrder
     }
 
-    return GetRoleRank(app, left.role) > GetRoleRank(app, right.role)
+    return false
 }
 
 GetRoleRank(app, role) {
@@ -619,21 +630,38 @@ GetSelectedIds(app, clickedToken) {
     if !app.ui.HasOwnProp("controls") || app.ui.controls.Count = 0
         return selectedIds
 
-    clickedItem := GetItemByToken(app, clickedToken)
-    if clickedItem && clickedItem.HasOwnProp("id") {
-        selectedIds.Push(clickedItem.id)
+    highlightToken := app.activePalette.highlightToken
+    
+    if highlightToken != "" && app.ui.controls.Has(highlightToken) {
+        highlightItem := GetItemByToken(app, highlightToken)
+        if highlightItem && highlightItem.HasOwnProp("id")
+            selectedIds.Push(highlightItem.id)
     }
 
-    for token, ctrl in app.ui.controls {
-        if ctrl.selected && token != clickedToken {
-            item := GetItemByToken(app, token)
-            if item && item.HasOwnProp("id") {
-                selectedIds.Push(item.id)
+    if clickedToken != "" && (!app.ui.controls.Has(highlightToken) || clickedToken != highlightToken) {
+        clickedItem := GetItemByToken(app, clickedToken)
+        if clickedItem && clickedItem.HasOwnProp("id") {
+            alreadyAdded := false
+            for id in selectedIds {
+                if id = clickedItem.id {
+                    alreadyAdded := true
+                    break
+                }
             }
+            if !alreadyAdded
+                selectedIds.Push(clickedItem.id)
         }
     }
 
-return selectedIds
+    for token, ctrl in app.ui.controls {
+        if ctrl.selected {
+            item := GetItemByToken(app, token)
+            if item && item.HasOwnProp("id")
+                selectedIds.Push(item.id)
+        }
+    }
+
+    return selectedIds
 }
 
 BatchTogglePin(app, ids) {
@@ -651,22 +679,17 @@ BatchTogglePin(app, ids) {
         try app.roleMenuGui.Hide()
 
     ShowToast(app, "Toggled " ids.Length " color(s)")
-    for _, id in ids {
-        RefreshSectionByItemId(app, id)
-    }
+
+    if app.historyVisible
+        QueueHistoryRebuild(app)
 }
 
 BatchDeleteColor(app, ids) {
-    affectedSections := []
-    
     for _, id in ids {
         item := GetItemById(app, id)
         if !item
             continue
         token := GetItemToken(item)
-        section := GetItemSectionNameForState(item)
-        if section != "" && !affectedSections.Has(section)
-            affectedSections.Push(section)
         DeleteColor(app, token)
     }
 
@@ -676,10 +699,6 @@ BatchDeleteColor(app, ids) {
         try app.roleMenuGui.Hide()
 
     ShowToast(app, "Deleted " ids.Length " color" (ids.Length > 1 ? "s" : ""))
-    
-    for _, section in affectedSections {
-        RefreshSectionBySectionName(app, section)
-    }
 }
 
 DoHighlight(app, token) {
@@ -890,10 +909,6 @@ MovePinnedColorFromMenu(app, token, dir) {
         try app.roleMenuGui.Hide()
 
     MovePinnedColor(app, token, dir)
-    item := GetItemByToken(app, token)
-    if item && item.HasOwnProp("id") {
-        RefreshSectionByItemId(app, item.id)
-    }
 }
 
 BatchMovePinnedFromMenu(app, targetIds, dir) {
@@ -903,13 +918,6 @@ BatchMovePinnedFromMenu(app, targetIds, dir) {
         try app.roleMenuGui.Hide()
 
     BatchMovePinnedColor(app, targetIds, dir)
-    
-    for _, token in targetIds {
-        item := GetItemByToken(app, token)
-        if item && item.HasOwnProp("id") {
-            RefreshSectionByItemId(app, item.id)
-        }
-    }
 }
 
 DeleteColorFromMenu(app, token) {
@@ -921,7 +929,7 @@ DeleteColorFromMenu(app, token) {
     DeleteColor(app, token)
     item := GetItemByToken(app, token)
     if item && item.HasOwnProp("id") {
-        RefreshSectionByItemId(app, item.id)
+        RefreshCellById(app, item.id)
     }
 }
 
@@ -963,15 +971,8 @@ ConfirmMoveColor(app, token, g) {
         return
 
     targetName := g.list.Text
-    moved := MoveColorToPalette(app, token, targetName)
-
-    if moved {
-        g.Destroy()
-        item := GetItemByToken(app, token)
-        if item && item.HasOwnProp("id") {
-            RefreshSectionByItemId(app, item.id)
-        }
-    }
+    g.Destroy()
+    MoveColorToPalette(app, token, targetName)
 }
 
 OpenMovePaletteDialog(app, targetIds) {
@@ -1010,16 +1011,7 @@ ConfirmBatchMovePalette(app, targetIds, g) {
     targetName := g.list.Text
     g.Destroy()
     
-    moved := BatchMoveColorToPalette(app, targetIds, targetName)
-    
-    if moved {
-        for _, token in targetIds {
-            item := GetItemByToken(app, token)
-            if item && item.HasOwnProp("id") {
-                RefreshSectionByItemId(app, item.id)
-            }
-        }
-    }
+    BatchMoveColorToPalette(app, targetIds, targetName)
 }
 
 ConfirmMoveSection(app, token, g) {
@@ -1028,15 +1020,8 @@ ConfirmMoveSection(app, token, g) {
         return
 
     sectionName := g.list.Text
-    moved := MoveColorToSection(app, token, sectionName)
-
-    if moved {
-        g.Destroy()
-        item := GetItemByToken(app, token)
-        if item && item.HasOwnProp("id") {
-            RefreshSectionByItemId(app, item.id)
-        }
-    }
+    MoveColorToSection(app, token, sectionName)
+    g.Destroy()
 }
 
 ConfirmBatchMoveSection(app, targetIds, g) {
@@ -1047,16 +1032,7 @@ ConfirmBatchMoveSection(app, targetIds, g) {
     sectionName := g.list.Text
     g.Destroy()
     
-    moved := BatchMoveColorToSection(app, targetIds, sectionName)
-    
-    if moved {
-        for _, token in targetIds {
-            item := GetItemByToken(app, token)
-            if item && item.HasOwnProp("id") {
-                RefreshSectionByItemId(app, item.id)
-            }
-        }
-    }
+    BatchMoveColorToSection(app, targetIds, sectionName)
 }
 
 OpenMoveSectionDialog(app, token, targetIds := 0) {
@@ -1299,9 +1275,8 @@ ReferenceAddToSection(app, g, token) {
             AddColor(p, newItem)
         ))
         SaveHistory(app)
-        if app.historyVisible {
-            Emit(app, "history_changed")
-        }
+        app.ui.generation++
+        RebuildUI(app)
         ShowToast(app, "➕ Added #" hex " to " targetSection)
     }
 }
@@ -1351,44 +1326,12 @@ HistoryDragMouseDown(app, wParam, lParam, msg, hwnd) {
     token := GetHistoryTokenFromHwnd(app, hwnd)
     if (token = "")
         return
-
-    item := GetItemByToken(app, token)
-    if !item || !item.pinned
-        return
-
-    sourceSection := GetItemSectionNameForState(item)
-    if IsSectionLocked(app.activePalette, sourceSection) {
-        ShowToast(app, "Unlock the section first")
-        return
-    }
-
-    app.ui.drag.active := true
-    app.ui.drag.hex := token
-    app.ui.drag.targetHex := ""
-    app.ui.drag.targetSection := GetItemSectionNameForState(item)
-    app.ui.drag.captureHwnd := hwnd
-    SetCursor("SizeAll")
-    DllCall("SetCapture", "Ptr", hwnd)
 }
 
 HistoryMouseMove(app, wParam, lParam, msg, hwnd) {
-    if app.ui.panelMove.pending {
+if app.ui.panelMove.pending {
         if !GetKeyState("LButton", "P") {
             CancelSectionPanelMove(app)
-            return
-        }
-
-        MouseGetPos(&mx, &my)
-        dragDistance := Abs(mx - app.ui.panelMove.startMouseX) + Abs(my - app.ui.panelMove.startMouseY)
-        if (dragDistance >= 4)
-            StartQueuedSectionPanelMove(app, mx, my)
-        else
-            return
-    }
-
-    if app.ui.panelMove.active {
-        if !GetKeyState("LButton", "P") {
-            FinishSectionPanelMove(app)
             return
         }
 
@@ -1413,87 +1356,17 @@ HistoryMouseMove(app, wParam, lParam, msg, hwnd) {
                 app.ui.panelMove.lastY := newY
             }
         }
-        return
     }
-
-    if !app.ui.drag.active
-        return
-
-    if !GetKeyState("LButton", "P") {
-        HistoryDragMouseUp(app, wParam, lParam, msg, hwnd)
-        return
-    }
-
-    targetToken := GetHistoryTokenFromHwnd(app, hwnd)
-    targetSection := GetHistorySectionFromHwnd(app, hwnd)
-    
-    if (targetToken = app.ui.drag.hex)
-        targetToken := ""
-
-    if (targetToken != "" && targetSection = "") {
-        item := GetItemByToken(app, targetToken)
-        if item
-            targetSection := GetItemSectionNameForState(item)
-    }
-    
-    if (targetSection = "" && targetToken = "") {
-        MouseGetPos(,,, &mouseHwnd, 2)
-        sectionFromMouse := GetHistorySectionFromHwnd(app, mouseHwnd)
-        if (sectionFromMouse != "")
-            targetSection := sectionFromMouse
-    }
-
-    if (targetToken != app.ui.drag.targetHex || targetSection != app.ui.drag.targetSection) {
-        oldTargetSection := app.ui.drag.targetSection
-        app.ui.drag.targetHex := targetToken
-        app.ui.drag.targetSection := targetSection
-        if targetToken != "" {
-            targetItem := GetItemByToken(app, targetToken)
-            if targetItem && targetItem.HasOwnProp("id") {
-                RefreshCellById(app, targetItem.id)
-            }
-        }
-        if oldTargetSection != "" && oldTargetSection != targetSection {
-            RefreshSectionChromeByName(app, oldTargetSection)
-        }
-        if targetSection != "" && targetSection != oldTargetSection {
-            RefreshSectionChromeByName(app, targetSection)
-        }
-    }
-
-    SetCursor((targetToken = "" && targetSection = "") ? "SizeAll" : "Hand")
 }
 
 HistoryDragMouseUp(app, wParam, lParam, msg, hwnd) {
     if app.ui.panelMove.pending || app.ui.panelMove.active
         FinishSectionPanelMove(app)
 
-    if !app.ui.drag.active
-        return
-
-    sourceToken := app.ui.drag.hex
-    targetToken := app.ui.drag.targetHex
-    targetSection := app.ui.drag.targetSection
-    sourceSection := GetItemSectionNameForState(GetItemByToken(app, sourceToken))
-    
-    if app.ui.drag.HasOwnProp("captureHwnd") && app.ui.drag.captureHwnd
-        DllCall("ReleaseCapture")
-    
-    app.ui.drag.active := false
-    app.ui.drag.hex := ""
-    app.ui.drag.targetHex := ""
-    app.ui.drag.targetSection := ""
-    SetCursor("Arrow")
-
-    if (targetToken != "" && targetToken != sourceToken) {
-        ReorderPinnedColorToTarget(app, sourceToken, targetToken)
-        return
+if app.ui.HasOwnProp("panelDragHwnds") && app.ui.panelDragHwnds.Has(hwnd) {
+        panelHwnd := app.ui.panelDragHwnds[hwnd]
+        FinishSectionPanelMove(app)
     }
-
-    if (targetSection != "" && targetSection != sourceSection)
-        MoveColorToSection(app, sourceToken, targetSection, sourceSection)
-    else if (targetSection != "")
-        MoveColorToSection(app, sourceToken, targetSection)
 }
 
 GetHistoryTokenFromHwnd(app, hwnd) {
@@ -2002,19 +1875,17 @@ ChangeRoleByKeyboard(app, dir) {
 
     newRole := roles[newIdx]
 
-    selectedIds := GetSelectedIds(app, token)
-    for _, id in selectedIds {
-        ApplyRoleMutationById(app.activePalette, newRole, id)
-        RefreshSectionByItemId(app, id)
+    item := GetItemByToken(app, token)
+    if item && item.HasOwnProp("id") {
+        ApplyRoleMutationById(app.activePalette, newRole, item.id)
+        RefreshCellById(app, item.id)
     }
 
     SaveHistory(app)
-    count := selectedIds.Length
-    label := count > 1 ? " (" count " colors)" : ""
-    ShowToast(app, "Role: " newRole label)
+    ShowToast(app, "Role: " newRole)
 }
 
-NavigateOrPinCell(app, dir) {
+NavigateColorCell(app, dir) {
     if !app.ui.HasOwnProp("controls") || app.ui.controls.Count = 0
         return
 
@@ -2023,7 +1894,10 @@ NavigateOrPinCell(app, dir) {
         return
 
     for token, ctrl in app.ui.controls {
-        ctrl.selected := false
+        if ctrl.selected {
+            ctrl.selected := false
+            try ctrl.bg.Opt("-Border")
+        }
     }
 
     if app.navIndex < 1
@@ -2048,7 +1922,10 @@ app.navIndex := newIdx
     NavigateToToken(app, newToken)
     
     if app.ui.controls.Has(newToken) {
-        app.ui.controls[newToken].selected := true
+        try {
+            app.ui.controls[newToken].selected := true
+            try app.ui.controls[newToken].bg.Opt("+Border")
+        }
     }
 }
 

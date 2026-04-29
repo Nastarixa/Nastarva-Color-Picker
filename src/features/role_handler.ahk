@@ -55,20 +55,31 @@ ApplyRoleMutationById(p, role, itemId) {
 
 OpenRoleMenu(app, token) {
     targetIds := GetSelectedIds(app, token)
+    
+    if targetIds.Length = 0
+        return
 
     item := GetItemById(app, targetIds[1])
     if !item
         return
 
-    app.activePalette.selectedHex := item.hex
+    hex := item.hex
+    itemId := item.id
+
+    app.activePalette.selectedHex := hex
     app.activePalette.highlightToken := token
 
     DoHighlight(app, token)
 
-    OpenRoleSubMenu(app, token, targetIds)
+    OpenRoleSubMenu(app, token, targetIds, hex, itemId)
 }
 
-OpenRoleSubMenu(app, token, targetIds) {
+OpenRoleSubMenu(app, token, targetIds, hex?, itemId?) {
+
+    if !IsSet(hex)
+        hex := ""
+    if !IsSet(itemId)
+        itemId := ""
 
     g := Gui("+AlwaysOnTop -Caption +ToolWindow")
     g.BackColor := "323338"
@@ -82,7 +93,7 @@ OpenRoleSubMenu(app, token, targetIds) {
     g.AddText("cFFFFFF", label)
 
     g.SetFont("s7", "Consolas")
-    g.AddText("cAAAAAA", "Arrow Up/Down to change, Enter to confirm")
+    g.AddText("cAAAAAA", "2x Click to Close")
 
     g.SetFont("s9", "Consolas")
     roles := DefaultRoleOrder()
@@ -123,13 +134,8 @@ OpenRoleSubMenu(app, token, targetIds) {
         }
     }
 
-    g.upBtn := g.AddButton("w77", "▲ Up")
-    g.upBtn.OnEvent("Click", (*) => RoleMenuChangeRole(app, g, -1))
-    g.downBtn := g.AddButton("w77 x+6", "▼ Down")
-    g.downBtn.OnEvent("Click", (*) => RoleMenuChangeRole(app, g, 1))
-
     cancelBtn := g.AddButton("w160", "Cancel")
-    cancelBtn.OnEvent("Click", (*) => CloseRoleMenu(app))
+    cancelBtn.OnEvent("Click", (*) => g.Destroy())
 
     g.OnEvent("Escape", (*) => CloseRoleMenu(app))
     g.OnEvent("Close", (*) => CloseRoleMenu(app))
@@ -167,8 +173,6 @@ RoleMenuChangeRole(app, g, dir) {
 UpdateRoleMenuHighlight(g) {
     roles := g.roles
     idx := g.currentIdx
-    g.upBtn.Text := "Up: " NormalizeRoleName(roles[idx])
-    g.downBtn.Text := "Down: " NormalizeRoleName(roles[idx])
 }
 
 CloseRoleMenu(app) {
@@ -193,7 +197,7 @@ RoleBtnClick(app, role, itemId, hex, ctrl, *) {
     ApplyRoleMutationById(app.activePalette, role, itemId)
     Commit(app)
     if itemId != ""
-        RefreshSectionByItemId(app, itemId)
+        RefreshCellById(app, itemId)
     ShowToast(app, "Set " role)
 }
 
@@ -207,7 +211,7 @@ BatchRoleBtnClickFromMenu(app, role, targetIds, ctrl, *) {
     Commit(app)
 
     for _, id in targetIds {
-        RefreshSectionByItemId(app, id)
+        RefreshCellById(app, id)
     }
     ShowToast(app, "Set " targetIds.Length " color(s) to " role)
 }

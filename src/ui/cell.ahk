@@ -172,13 +172,9 @@ GetOrCreateSectionGui(app, sectionOrName) {
 
     if app.ui.sectionGuis.Has(sectionName) {
         g := app.ui.sectionGuis[sectionName]
-        if SafeGetGuiHwnd(g) {
-            try {
-                if g.HasOwnProp("target")
-                    return g
-                try g.Destroy()
-            }
-        }
+        if SafeGetGuiHwnd(g)
+            return g
+        try g.Destroy()
         app.ui.sectionGuis.Delete(sectionName)
     }
 

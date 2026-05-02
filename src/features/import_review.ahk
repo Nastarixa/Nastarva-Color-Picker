@@ -102,8 +102,10 @@ ShowImportReview(app, importedData, reviewPath, imagePath := "", isTemp := false
     g.trainingCheck := g.AddCheckBox("x" rightX " y" (settingsY + 102) " w250 Checked cAAAAAA", "Learn from manual corrections")
     g.trainingInfo := g.AddText("x" rightX " y" (settingsY + 126) " w" rightW " c777777", "Corrections are saved and used to improve future role and section detection.")
     g.imageMeta := g.AddText("x" rightX " y" (settingsY + 166) " w" rightW " cAAAAAA", "Image: " g.importData.imageWidth "x" g.importData.imageHeight "  Source: " g.importData.sourceName)
-    g.btnSavePreset := g.AddButton("x" rightX " y" (settingsY + 194) " w200 h28", "Save Training Preset")
+    g.btnSavePreset := g.AddButton("x" rightX " y" (settingsY + 194) " w145 h28", "Save Training Preset")
+    g.btnOpenTrainer := g.AddButton("x" (rightX + 155) " y" (settingsY + 194) " w145 h28", "Open Trainer Canvas")
     g.btnSavePreset.OnEvent("Click", (*) => ImportReviewSaveTrainingPreset(app, g))
+    g.btnOpenTrainer.OnEvent("Click", (*) => OpenImportTrainingCanvas(app, g))
     g.importMode.OnEvent("Change", (*) => ImportModeChanged(g))
 
     bottomY := 560
@@ -783,6 +785,496 @@ ImportReviewSaveTrainingPresetConfirm(app, g, newName) {
     ImportReviewToast(app, "Saved training preset: " presetName)
 }
 
+OpenImportTrainingCanvas(app, reviewGui) {
+    imagePath := reviewGui.sourceImagePath
+    if (imagePath = "" || !FileExist(imagePath)) {
+        ImportReviewToast(app, "No source image available for training")
+        return
+    }
+
+    CloseImportTrainingCanvas()
+
+    data := {
+        sections: Map(),
+        sectionOrder: [],
+        sectionTags: Map(),
+        imageWidth: reviewGui.importData.imageWidth,
+        imageHeight: reviewGui.importData.imageHeight,
+        sourceName: reviewGui.importData.sourceName != "" ? reviewGui.importData.sourceName : RegExReplace(imagePath, "^.*\\")
+    }
+
+    imageW := Max(1, data.imageWidth)
+    imageH := Max(1, data.imageHeight)
+    maxW := 760
+    maxH := 560
+    scale := Min(maxW / imageW, maxH / imageH)
+    if (scale <= 0)
+        scale := 1
+    displayW := Max(120, Round(imageW * scale))
+    displayH := Max(120, Round(imageH * scale))
+
+    g := Gui("+AlwaysOnTop +Resize +ToolWindow +Border", "Training Canvas")
+    g.BackColor := "2B2D31"
+    g.SetFont("s9", "Consolas")
+    g.MarginX := 12
+    g.MarginY := 10
+    g.parentReview := reviewGui
+    g.trainingData := data
+    g.sourceImagePath := imagePath
+    g.displayW := displayW
+    g.displayH := displayH
+    g.imageWidth := imageW
+    g.imageHeight := imageH
+    g.selectedBlockRow := 0
+
+    g.AddText("x10 y10 cFFFFFF", "Use the X and Y rulers to define the block area.")
+    g.AddText("x10 y28 c909090", "Click image = set X/Y start  |  Ctrl+Click image = set X/Y end  |  colored ruler markers show the exact aligned positions.")
+
+    imageX := 92
+    picY := 118
+    rulerTopY := 50
+    g.AddText("x" imageX " y" rulerTopY " cAAAAAA", "X Start")
+    g.xStartSlider := g.AddSlider("x" imageX " y" (rulerTopY + 16) " w" displayW " h20 Range0-" imageW " TickInterval50", 0)
+    g.xStartValue := g.AddText("x" (imageX + displayW - 60) " y" rulerTopY " w60 Right cFFFFFF", "0")
+    g.AddText("x" imageX " y" (rulerTopY + 38) " cAAAAAA", "X End")
+    g.xEndSlider := g.AddSlider("x" imageX " y" (rulerTopY + 54) " w" displayW " h20 Range0-" imageW " TickInterval50", imageW)
+    g.xEndValue := g.AddText("x" (imageX + displayW - 60) " y" (rulerTopY + 38) " w60 Right cFFFFFF", imageW "")
+    g.xStartBar := g.AddText("x" imageX " y" (rulerTopY + 78) " w" displayW " h3 Background666666")
+    g.xEndBar := g.AddText("x" imageX " y" (rulerTopY + 84) " w" displayW " h3 Background666666")
+    g.xStartMarker := g.AddText("x" imageX " y" (rulerTopY + 74) " w2 h11 Background00C8FF")
+    g.xEndMarker := g.AddText("x" imageX " y" (rulerTopY + 80) " w2 h11 BackgroundFFD24A")
+
+    g.AddText("x10 y" picY " cAAAAAA", "Y Start")
+    g.yStartSlider := g.AddSlider("x10 y" (picY + 18) " w20 h" displayH " Vertical Range0-" imageH " TickInterval50", 0)
+    g.yStartValue := g.AddText("x8 y" (picY + displayH + 22) " w30 Center cFFFFFF", "0")
+    g.AddText("x36 y" picY " cAAAAAA", "Y End")
+    g.yEndSlider := g.AddSlider("x36 y" (picY + 18) " w20 h" displayH " Vertical Range0-" imageH " TickInterval50", imageH)
+    g.yEndValue := g.AddText("x34 y" (picY + displayH + 22) " w30 Center cFFFFFF", imageH "")
+    g.yStartBar := g.AddText("x61 y" picY " w3 h" displayH " Background666666")
+    g.yEndBar := g.AddText("x66 y" picY " w3 h" displayH " Background666666")
+    g.yStartMarker := g.AddText("x58 y" picY " w11 h2 Background00C8FF")
+    g.yEndMarker := g.AddText("x63 y" picY " w11 h2 BackgroundFFD24A")
+
+    g.imageCtrl := g.AddPicture("x" imageX " y" picY " w" displayW " h" displayH " +Border", imagePath)
+    g.imageCtrl.OnEvent("Click", (*) => ImportTrainingCanvasImageClick(g))
+
+    for _, ctrl in [g.xStartSlider, g.xEndSlider, g.yStartSlider, g.yEndSlider]
+        ctrl.OnEvent("Change", (*) => ImportTrainingCanvasSliderChanged(g))
+
+    sideX := imageX + displayW + 28
+    g.AddText("x" sideX " y" picY " cAAAAAA", "Block Data")
+    g.preview := g.AddProgress("x" sideX " y" (picY + 20) " w54 h42 Background808080")
+    g.hexText := g.AddText("x" (sideX + 64) " y" (picY + 20) " w180 cFFFFFF", "#808080")
+    g.rgbText := g.AddText("x" (sideX + 64) " y" (picY + 40) " w180 cAAAAAA", "0,0,0")
+
+    formY := picY + 74
+    g.AddText("x" sideX " y" formY " cAAAAAA", "Section")
+    g.sectionNameEdit := g.AddEdit("x" sideX " y" (formY + 16) " w180 h22", "Default")
+    g.AddText("x" (sideX + 190) " y" formY " cAAAAAA", "Section Tag")
+    g.sectionTagEdit := g.AddEdit("x" (sideX + 190) " y" (formY + 16) " w120 h22")
+
+    g.AddText("x" sideX " y" (formY + 48) " cAAAAAA", "Name")
+    g.nameEdit := g.AddEdit("x" sideX " y" (formY + 64) " w180 h22", "Block")
+    g.AddText("x" (sideX + 190) " y" (formY + 48) " cAAAAAA", "Role")
+    g.roleEdit := g.AddDropDownList("x" (sideX + 190) " y" (formY + 64) " w120", DefaultImportReviewRoles())
+
+    g.AddText("x" sideX " y" (formY + 96) " cAAAAAA", "HEX")
+    g.hexEdit := g.AddEdit("x" sideX " y" (formY + 112) " w180 h22")
+    g.AddText("x" (sideX + 190) " y" (formY + 96) " cAAAAAA", "RGB")
+    g.rgbEdit := g.AddEdit("x" (sideX + 190) " y" (formY + 112) " w120 h22")
+    g.hexEdit.OnEvent("Change", (*) => ImportTrainingCanvasHexChanged(g))
+
+    g.AddText("x" sideX " y" (formY + 144) " cAAAAAA", "X, Y, W, H")
+    g.xEdit := g.AddEdit("x" sideX " y" (formY + 160) " w55 h22")
+    g.yEdit := g.AddEdit("x" (sideX + 60) " y" (formY + 160) " w55 h22")
+    g.wEdit := g.AddEdit("x" (sideX + 120) " y" (formY + 160) " w55 h22")
+    g.hEdit := g.AddEdit("x" (sideX + 180) " y" (formY + 160) " w55 h22")
+
+    btnY := formY + 196
+    g.btnAdd := g.AddButton("x" sideX " y" btnY " w150 h28", "Add Block")
+    g.btnDelete := g.AddButton("x" (sideX + 160) " y" btnY " w150 h28", "Delete Block")
+    g.btnAdd.OnEvent("Click", (*) => ImportTrainingCanvasAddBlock(app, g))
+    g.btnDelete.OnEvent("Click", (*) => ImportTrainingCanvasDeleteBlock(app, g))
+
+    listY := btnY + 40
+    g.AddText("x" sideX " y" listY " cAAAAAA", "Training Blocks")
+    g.blockList := g.AddListView("x" sideX " y" (listY + 18) " w310 h220 Grid", ["Section", "Role", "HEX", "Bounds"])
+    g.blockList.ModifyCol(1, 88)
+    g.blockList.ModifyCol(2, 76)
+    g.blockList.ModifyCol(3, 76)
+    g.blockList.ModifyCol(4, 88)
+    g.blockList.OnEvent("ItemFocus", (ctrl, item) => ImportTrainingCanvasFocusBlock(g, item))
+
+    bottomY := Max(picY + displayH + 42, listY + 252)
+    g.btnApplyReview := g.AddButton("x10 y" bottomY " w180 h30", "Apply To Review")
+    g.btnSavePreset := g.AddButton("x200 y" bottomY " w180 h30", "Save Training Preset")
+    g.btnClose := g.AddButton("x390 y" bottomY " w180 h30", "Close")
+    g.btnApplyReview.OnEvent("Click", (*) => ImportTrainingCanvasApplyToReview(app, g))
+    g.btnSavePreset.OnEvent("Click", (*) => ImportTrainingCanvasSavePreset(app, g))
+    g.btnClose.OnEvent("Click", (*) => CloseImportTrainingCanvas(g))
+    g.OnEvent("Close", (*) => CloseImportTrainingCanvas(g))
+    g.OnEvent("Escape", (*) => CancelImportTrainingCanvasSelection(g))
+
+    g.Show("w" (sideX + 330) " h" (bottomY + 50) " Center")
+    state := GetImportTrainerState()
+    state.gui := g
+    state.app := app
+    state.selection := 0
+
+    if (g.roleEdit.Text = "")
+        g.roleEdit.Choose(1)
+    ImportTrainingCanvasSliderChanged(g)
+}
+
+GetImportTrainerState() {
+    static state := { gui: 0, app: 0, selection: 0 }
+    return state
+}
+
+CloseImportTrainingCanvas(g := 0) {
+    state := GetImportTrainerState()
+    target := g
+    if !IsObject(target)
+        target := state.gui
+    if IsObject(target) {
+        try target.Destroy()
+    }
+    state.gui := 0
+    state.app := 0
+    state.selection := 0
+}
+
+ImportTrainingCanvasHexChanged(g) {
+    hex := NormalizeImportReviewHex(g.hexEdit.Value)
+    if (hex = "")
+        return
+    rgb := ImportReviewGetRGBFromHex(hex)
+    g.rgbEdit.Value := rgb
+    g.hexText.Value := "#" hex
+    g.rgbText.Value := rgb
+    g.preview.Opt("Background" hex)
+    if (Trim(g.nameEdit.Value) = "" || RegExMatch(g.nameEdit.Value, "^Block( [0-9A-F]{6})?$"))
+        g.nameEdit.Value := "Block " hex
+}
+
+ImportTrainingCanvasSliderChanged(g) {
+    x1 := g.xStartSlider.Value
+    x2 := g.xEndSlider.Value
+    y1 := g.yStartSlider.Value
+    y2 := g.yEndSlider.Value
+
+    g.xStartValue.Value := x1
+    g.xEndValue.Value := x2
+    g.yStartValue.Value := y1
+    g.yEndValue.Value := y2
+    ImportTrainingCanvasUpdateRulerMarkers(g, x1, x2, y1, y2)
+
+    x := Min(x1, x2)
+    y := Min(y1, y2)
+    w := Max(1, Abs(x2 - x1))
+    h := Max(1, Abs(y2 - y1))
+
+    state := GetImportTrainerState()
+    state.selection := { x: x, y: y, w: w, h: h }
+    ImportTrainingCanvasPopulateSelectionFields(g)
+}
+
+ImportTrainingCanvasUpdateRulerMarkers(g, x1, x2, y1, y2) {
+    g.imageCtrl.GetPos(&imgX, &imgY)
+    g.xStartMarker.GetPos(, &xStartY)
+    g.xEndMarker.GetPos(, &xEndY)
+    g.yStartMarker.GetPos(&yStartX)
+    g.yEndMarker.GetPos(&yEndX)
+    scaleX := g.displayW / g.imageWidth
+    scaleY := g.displayH / g.imageHeight
+    dx1 := Round(x1 * scaleX)
+    dx2 := Round(x2 * scaleX)
+    dy1 := Round(y1 * scaleY)
+    dy2 := Round(y2 * scaleY)
+    g.xStartMarker.Move(imgX + dx1, xStartY, 2, 11)
+    g.xEndMarker.Move(imgX + dx2, xEndY, 2, 11)
+    g.yStartMarker.Move(yStartX, imgY + dy1, 11, 2)
+    g.yEndMarker.Move(yEndX, imgY + dy2, 11, 2)
+}
+
+ImportTrainingCanvasImageClick(g) {
+    rect := GetImportTrainingCanvasControlRect(g.imageCtrl)
+    MouseGetPos(&mx, &my)
+    relX := Max(0, Min(rect.w, mx - rect.x))
+    relY := Max(0, Min(rect.h, my - rect.y))
+    imgX := Round(relX * (g.imageWidth / g.displayW))
+    imgY := Round(relY * (g.imageHeight / g.displayH))
+
+    if GetKeyState("Ctrl", "P") {
+        g.xEndSlider.Value := imgX
+        g.yEndSlider.Value := imgY
+    } else {
+        g.xStartSlider.Value := imgX
+        g.yStartSlider.Value := imgY
+    }
+
+    ImportTrainingCanvasSliderChanged(g)
+}
+
+CancelImportTrainingCanvasSelection(g) {
+    GetImportTrainerState().selection := 0
+}
+
+GetImportTrainingCanvasControlRect(ctrl) {
+    rect := Buffer(16, 0)
+    DllCall("GetWindowRect", "ptr", ctrl.Hwnd, "ptr", rect.Ptr)
+    left := NumGet(rect, 0, "int")
+    top := NumGet(rect, 4, "int")
+    right := NumGet(rect, 8, "int")
+    bottom := NumGet(rect, 12, "int")
+    return { x: left, y: top, w: right - left, h: bottom - top }
+}
+
+ImportTrainingCanvasPopulateSelectionFields(g) {
+    state := GetImportTrainerState()
+    if !IsObject(state.selection)
+        return
+
+    sel := state.selection
+    g.xEdit.Value := sel.x
+    g.yEdit.Value := sel.y
+    g.wEdit.Value := sel.w
+    g.hEdit.Value := sel.h
+
+    rect := GetImportTrainingCanvasControlRect(g.imageCtrl)
+    displayCenterX := Round((sel.x + Floor(sel.w / 2)) * (g.displayW / g.imageWidth))
+    displayCenterY := Round((sel.y + Floor(sel.h / 2)) * (g.displayH / g.imageHeight))
+    centerX := rect.x + displayCenterX
+    centerY := rect.y + displayCenterY
+    pixel := PixelGetColor(centerX, centerY, "RGB")
+    hex := Format("{:06X}", pixel & 0xFFFFFF)
+    rgb := ImportReviewGetRGBFromHex(hex)
+
+    g.hexEdit.Value := hex
+    g.rgbEdit.Value := rgb
+    g.hexText.Value := "#" hex
+    g.rgbText.Value := rgb
+    g.preview.Opt("Background" hex)
+
+    if (Trim(g.nameEdit.Value) = "" || g.nameEdit.Value = "Block")
+        g.nameEdit.Value := "Block " hex
+}
+
+
+ImportTrainingCanvasAddBlock(app, g) {
+    sectionName := Trim(g.sectionNameEdit.Value)
+    if (sectionName = "")
+        sectionName := "Default"
+
+    hex := NormalizeImportReviewHex(g.hexEdit.Value)
+    rgb := NormalizeImportReviewRgb(g.rgbEdit.Value)
+    if (hex = "" && rgb != "")
+        hex := RGBToHexString(rgb)
+    if (rgb = "" && hex != "")
+        rgb := ImportReviewGetRGBFromHex(hex)
+    if (hex = "" || rgb = "") {
+        ImportReviewToast(app, "Select a block and enter valid HEX/RGB")
+        return
+    }
+
+    x := SafeInteger(g.xEdit.Value, -1)
+    y := SafeInteger(g.yEdit.Value, -1)
+    w := SafeInteger(g.wEdit.Value, 0)
+    h := SafeInteger(g.hEdit.Value, 0)
+    if (x < 0 || y < 0 || w <= 0 || h <= 0) {
+        ImportReviewToast(app, "Draw a rectangle first")
+        return
+    }
+
+    role := Trim(g.roleEdit.Text)
+    if (role = "")
+        role := "Base"
+    name := Trim(g.nameEdit.Value)
+    if (name = "")
+        name := sectionName " " role
+
+    if !g.trainingData.sections.Has(sectionName) {
+        g.trainingData.sections[sectionName] := []
+        g.trainingData.sectionOrder.Push(sectionName)
+    }
+    sectionTag := NormalizeImportReviewHex(g.sectionTagEdit.Value)
+    if (sectionTag != "")
+        g.trainingData.sectionTags[sectionName] := sectionTag
+
+    colors := g.trainingData.sections[sectionName]
+    colors.Push({
+        hex: hex,
+        rgb: rgb,
+        name: name,
+        role: role,
+        section: sectionName,
+        pinned: true,
+        pinOrder: colors.Length + 1,
+        x: x,
+        y: y,
+        w: w,
+        h: h
+    })
+
+    PopulateImportTrainingCanvasBlocks(g)
+    ImportReviewToast(app, "Added training block")
+}
+
+PopulateImportTrainingCanvasBlocks(g) {
+    g.blockList.Delete()
+    row := 0
+    for sectionName in g.trainingData.sectionOrder {
+        for color in g.trainingData.sections[sectionName] {
+            row++
+            bounds := color.x "," color.y "," color.w "," color.h
+            g.blockList.Add(, sectionName, color.role, "#" color.hex, bounds)
+        }
+    }
+}
+
+ImportTrainingCanvasFocusBlock(g, row) {
+    g.selectedBlockRow := row
+    block := GetImportTrainingCanvasBlockByRow(g, row)
+    if !IsObject(block)
+        return
+
+    g.sectionNameEdit.Value := block.section
+    g.sectionTagEdit.Value := g.trainingData.sectionTags.Has(block.section) ? g.trainingData.sectionTags[block.section] : ""
+    g.nameEdit.Value := block.name
+    ChooseImportTrainingCanvasRole(g.roleEdit, block.role)
+    g.hexEdit.Value := block.hex
+    g.rgbEdit.Value := block.rgb
+    g.xEdit.Value := block.x
+    g.yEdit.Value := block.y
+    g.wEdit.Value := block.w
+    g.hEdit.Value := block.h
+    g.hexText.Value := "#" block.hex
+    g.rgbText.Value := block.rgb
+    g.preview.Opt("Background" block.hex)
+}
+
+GetImportTrainingCanvasBlockByRow(g, row) {
+    idx := 0
+    for sectionName in g.trainingData.sectionOrder {
+        for color in g.trainingData.sections[sectionName] {
+            idx++
+            if (idx = row)
+                return color
+        }
+    }
+    return 0
+}
+
+ImportTrainingCanvasDeleteBlock(app, g) {
+    row := g.blockList.GetNext(0, "F")
+    if (row = 0)
+        row := g.selectedBlockRow
+    if (row = 0) {
+        ImportReviewToast(app, "Select a block first")
+        return
+    }
+
+    idx := 0
+    for sectionName in g.trainingData.sectionOrder {
+        colors := g.trainingData.sections[sectionName]
+        for colorIdx, color in colors {
+            idx++
+            if (idx = row) {
+                colors.RemoveAt(colorIdx)
+                if (colors.Length = 0) {
+                    g.trainingData.sections.Delete(sectionName)
+                    secIdx := FindImportSectionIndex(g.trainingData, sectionName)
+                    if (secIdx)
+                        g.trainingData.sectionOrder.RemoveAt(secIdx)
+                    if g.trainingData.sectionTags.Has(sectionName)
+                        g.trainingData.sectionTags.Delete(sectionName)
+                }
+                PopulateImportTrainingCanvasBlocks(g)
+                ImportReviewToast(app, "Removed training block")
+                return
+            }
+        }
+    }
+}
+
+ChooseImportTrainingCanvasRole(ctrl, role) {
+    for idx, value in DefaultImportReviewRoles() {
+        if (value = role) {
+            ctrl.Choose(idx)
+            return
+        }
+    }
+}
+
+ImportTrainingCanvasApplyToReview(app, g) {
+    total := 0
+    for sectionName in g.trainingData.sectionOrder
+        total += g.trainingData.sections[sectionName].Length
+    if (total = 0) {
+        ImportReviewToast(app, "No training blocks to apply")
+        return
+    }
+
+    reviewGui := g.parentReview
+    for sectionName in g.trainingData.sectionOrder {
+        EnsureParsedImportSection(reviewGui.importData, sectionName)
+        if g.trainingData.sectionTags.Has(sectionName)
+            reviewGui.importData.sectionTags[sectionName] := g.trainingData.sectionTags[sectionName]
+        for color in g.trainingData.sections[sectionName] {
+            reviewGui.importData.sections[sectionName].Push({
+                hex: color.hex,
+                rgb: color.rgb,
+                name: color.name,
+                role: color.role,
+                section: sectionName,
+                pinned: true,
+                pinOrder: reviewGui.importData.sections[sectionName].Length + 1,
+                x: color.x,
+                y: color.y,
+                w: color.w,
+                h: color.h
+            })
+        }
+    }
+
+    PopulateImportReviewSections(reviewGui)
+    if (reviewGui.importData.sectionOrder.Length > 0) {
+        reviewGui.sectionList.Choose(1)
+        ImportReviewSelectSection(app, reviewGui)
+    }
+    ImportReviewToast(app, "Applied training blocks to review")
+}
+
+ImportTrainingCanvasSavePreset(app, g) {
+    total := 0
+    for sectionName in g.trainingData.sectionOrder
+        total += g.trainingData.sections[sectionName].Length
+    if (total = 0) {
+        ImportReviewToast(app, "No training blocks to save")
+        return
+    }
+
+    defaultName := g.trainingData.sourceName != "" ? g.trainingData.sourceName : "training_canvas"
+    ImportReviewShowInputDialog(app, "Preset/source label:", "Save Training Preset", (newName) => ImportTrainingCanvasSavePresetConfirm(app, g, newName), defaultName)
+}
+
+ImportTrainingCanvasSavePresetConfirm(app, g, newName) {
+    presetName := Trim(newName)
+    if (presetName = "")
+        return
+
+    data := {
+        sections: g.trainingData.sections,
+        sectionOrder: g.trainingData.sectionOrder,
+        sectionTags: g.trainingData.sectionTags,
+        imageWidth: g.trainingData.imageWidth,
+        imageHeight: g.trainingData.imageHeight,
+        sourceName: presetName
+    }
+    SaveImportTrainingSample(app, data, presetName)
+    ImportReviewToast(app, "Saved training preset: " presetName)
+}
+
 ComputeImportSectionBounds(colors) {
     minX := ""
     minY := ""
@@ -821,7 +1313,10 @@ EscapeTrainingField(value) {
 }
 
 ImportReviewToast(app, text) {
-    Func("ShowToast").Call(app, text)
+    try Func("ShowToast").Call(app, text)
+    catch {
+        try TrayTip("Nastarxa", text)
+    }
 }
 
 ImportReviewShowInputDialog(app, prompt, title, callback, defaultValue := "") {

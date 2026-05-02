@@ -8,11 +8,53 @@
 #SECTION|s39727937-2-7553|Hair (Dark)|locked=0|collapsed=0|tag=|note=
 #SECTION|s39727937-3-2034|Hair (Light)|locked=0|collapsed=0|tag=|note=
 #SECTION|s39727937-4-8723|Skin|locked=0|collapsed=0|tag=|note=
+9F9FA2|159,159,162|Gray Gray|Base|1|1|Skin|1008328-78-9984
+323338|50,51,56|Deep Gray Gray|Base|1|1|Default|58132734-56-4619
+FFD35A|255,211,90|Light Vivid Orange|Base|1|2|Skin|1005812-77-8825
+FAC181|250,193,129|Light Vivid Orange|Base|0|0|Skin|2410000-96-9640
+FD971F|253,151,31|Vivid Orange|Base|0|0|Skin|2408515-95-4376
+FFDC7B|255,220,123|Light Vivid Orange|Base|0|0|Outline|2313765-94-2722
+FFD666|255,214,102|Light Vivid Orange|Base|0|0|Outline|2309750-93-4708
+FFDC79|255,220,121|Light Vivid Orange|Base|0|0|Outline|2309062-92-8184
+3B4252|59,66,82|Deep Muted Blue|Base|0|0|Outline|2308406-91-8161
+DBA31A|219,163,26|Vivid Orange|Base|0|0|Outline|2307703-90-4117
+FFD35A|255,211,90|Light Vivid Orange|Base|0|0|Outline|2306750-89-2970
+FFE088|255,224,136|Light Vivid Orange|Base|0|0|Outline|2305765-88-2956
+FFD86B|255,216,107|Light Vivid Orange|Base|0|0|Outline|2305234-87-4930
+FFE494|255,228,148|Light Vivid Orange|Base|0|0|Outline|2304609-86-6548
+FFDF85|255,223,133|Light Vivid Orange|Base|0|0|Outline|2303937-85-8193
+FFD769|255,215,105|Light Vivid Orange|Base|0|0|Outline|2303171-84-1188
+FFDF83|255,223,131|Light Vivid Orange|Base|0|0|Skin|2210890-83-1744
+FFE089|255,224,137|Light Vivid Orange|Base|0|0|Skin|2210500-82-9816
+FFD86C|255,216,108|Light Vivid Orange|Base|0|0|Skin|2210156-81-6831
+FFD96D|255,217,109|Light Vivid Orange|Base|0|0|Hair (Dark)|2209781-80-1086
+FFE18D|255,225,141|Light Vivid Orange|Base|0|0|Skin|2209390-79-2540
+FFDA71|255,218,113|Light Vivid Orange|Base|0|0|Skin|2208984-78-2704
+FFD45F|255,212,95|Light Vivid Orange|Base|0|0|Eyes (Brown)|852437-76-6607
+FFCD44|255,205,68|Vivid Orange|Base|0|0|Eyes (Brown)|852046-75-2063
+FFD86D|255,216,109|Light Vivid Orange|Base|0|0|Eyes (Brown)|851625-74-6036
+FFD664|255,214,100|Light Vivid Orange|Base|0|0|Eyes (Brown)|851218-73-2719
+FFE086|255,224,134|Light Vivid Orange|Base|0|0|Eyes (Brown)|850687-72-9322
+FFDC79|255,220,121|Light Vivid Orange|Base|0|0|Eyes (Brown)|850156-71-9287
+FFD359|255,211,89|Light Vivid Orange|Base|0|0|Outline|629375-70-7750
+FFD35B|255,211,91|Light Vivid Orange|Base|0|0|Hair (Dark)|623406-69-4380
+FFE088|255,224,136|Light Vivid Orange|Base|0|0|Hair (Dark)|622734-68-7148
+FFDC79|255,220,121|Light Vivid Orange|Base|0|0|Hair (Dark)|622296-67-8412
+746444|116,100,68|Deep Muted Orange|Base|0|0|Hair (Dark)|621812-66-1182
+FFDD7E|255,221,126|Light Vivid Orange|Base|0|0|Hair (Dark)|621375-65-4063
+FFD45D|255,212,93|Light Vivid Orange|Base|0|0|Hair (Dark)|620890-64-5198
+FFDA71|255,218,113|Light Vivid Orange|Base|0|0|Hair (Light)|475718-63-1183
+FFD257|255,210,87|Light Vivid Orange|Base|0|0|Hair (Light)|474796-62-9977
+E0EEF9|224,238,249|Bright Vivid Cyan|Base|0|0|Hair (Light)|414125-61-9730
+FFFFFF|255,255,255|White|Base|0|0|Hair (Light)|412015-60-1574
+D9EBF9|217,235,249|Bright Vivid Cyan|Base|0|0|Skin|411484-59-9920
+F3F3F3|243,243,243|Bright Gray Gray|Base|0|0|Hair (Dark)|411000-58-3527
+3B4252|59,66,82|Deep Muted Blue|Base|0|0|Hair (Light)|409406-57-2732
+5F656A|95,101,106|Deep Gray Gray|Base|0|0|Default|49507375-55-1699
 B97A50|185,122,80|Skin Shadow|Shadow|0|0|Skin|39727937-67-6669
-FFDCC2|255,220,194|Skin Highlight|Highlight|0|0|Skin|39727937-66-4509
-D89A6A|216,154,106|Skin Hi-Shadow|Hi-Shadow|0|0|Skin|39727937-65-4727
-6E4630|110,70,48|Skin Deep|2 Shadow|0|0|Skin|39727937-64-1652
-EFA676|239,166,118|Skin Base|Base|0|0|Skin|39727937-63-6392
+D89A6A|216,154,106|Skin Hi-Shadow|Hi Shadow|0|0|Hair (Dark)|39727937-65-4727
+6E4630|110,70,48|Skin Deep|2 Shadow|0|0|Default|39727937-64-1652
+EFA676|239,166,118|Skin Base|Base|0|0|Default|39727937-63-6392
 A3874F|163,135,79|Hair Shadow|Shadow|0|0|Hair (Light)|39727937-59-5527
 FFF2B0|255,242,176|Hair Highlight|Highlight|0|0|Hair (Light)|39727937-58-8048
 CFAE68|207,174,104|Hair Hi-Shadow|Hi-Shadow|0|0|Hair (Light)|39727937-57-1943

@@ -390,6 +390,72 @@ GetBuiltInTemplates() {
                 )
             )
         ),
+      "Uranuri Soft Palette", Map(
+            "isBuiltIn", true,
+            "sections", Map(
+
+                "Uranuri (Base)", Map(
+                    "items", Map(
+                        "Base Warm Light", "F6F7A7|246,247,167|Base",
+                        "Base Neutral Warm", "E9E0D2|233,224,210|Base",
+                        "Base Cool Pale", "D7E6E6|215,230,230|Base",
+                        "Base Pink Soft", "E4CCD9|228,204,217|Base"
+                    )
+                ),
+
+                "Shadow", Map(
+                    "items", Map(
+                        "Shadow Neutral", "B7C3D4|183,195,212|Shadow",
+                        "Shadow Cool Blue", "6EC1DA|110,193,218|Shadow",
+                        "Shadow Magenta Soft", "D9B3D9|217,179,217|Shadow",
+                        "Shadow Green Soft", "6BAF6F|107,175,111|Shadow"
+                    )
+                ),
+
+                "Deep Shadow", Map(
+                    "items", Map(
+                        "Deep Neutral", "8FA1B3|143,161,179|2 Shadow",
+                        "Deep Blue", "3F8FB0|63,143,176|2 Shadow",
+                        "Deep Green", "3F7F3F|63,127,63|2 Shadow",
+                        "Deep Warm", "A87C7C|168,124,124|2 Shadow"
+                    )
+                ),
+
+                "Highlight", Map(
+                    "items", Map(
+                        "Highlight Warm", "FFF9C4|255,249,196|Highlight",
+                        "Highlight Cool", "C6C9E2|198,201,226|Highlight",
+                        "Highlight Cyan", "2BE3E3|43,227,227|Highlight",
+                        "Highlight Pink", "F2A7A7|242,167,167|Highlight"
+                    )
+                ),
+
+                "Accent", Map(
+                    "items", Map(
+                        "Accent Red", "FF2A2A|255,42,42|Highlight",
+                        "Accent Magenta", "E000E0|224,0,224|Highlight",
+                        "Accent Cyan", "2BE3E3|43,227,227|Highlight"
+                    )
+                ),
+
+                "Secondary", Map(
+                    "items", Map(
+                        "Secondary Mint", "BFE3CC|191,227,204|Base",
+                        "Secondary Green", "A8D5A2|168,213,162|Base",
+                        "Secondary Soft Red", "F1B3B3|241,179,179|Base"
+                    )
+                ),
+
+                "Line / Outline / Mask", Map(
+                    "items", Map(
+                        "Line Soft", "2E2E2E|46,46,46|Outline",
+                        "Line Warm", "3B2F2F|59,47,47|Outline",
+                        "Line Cool", "2C3E50|44,62,80|Outline",
+                        "Mask", "FF00FF|255,0,255|Mask"
+                    )
+                )
+            )
+        ),
         "Character Sheet", Map(
             "isBuiltIn", true,
             "sections", Map(

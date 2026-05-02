@@ -1671,13 +1671,21 @@ OpenPaletteTemplateDialog(app) {
 
     ; ===== Initial preview =====
     selName := g.tplList.Text
-    tpl := templates[selName]
-    g.previewLabel.Text := "Preview: " GetTemplateColorCount(tpl) " colors"
+    if selName != "" && templates.Has(selName) {
+        tpl := templates[selName]
+        g.previewLabel.Text := "Preview: " GetTemplateColorCount(tpl) " colors"
+    } else {
+        g.previewLabel.Text := "Preview: 0 colors"
+    }
 
     g.Show("AutoSize Center")
 }
 UpdateTemplatePreview(g, templates) {
     selName := g.tplList.Text
+    if selName = "" || !templates.Has(selName) {
+        g.previewLabel.Text := "Preview: 0 colors"
+        return
+    }
     tpl := templates[selName]
     count := GetTemplateColorCount(tpl)
     g.previewLabel.Text := "Preview: " count " colors"
@@ -1741,7 +1749,7 @@ DoCreatePaletteFromTemplate(app, inputGui, tpl) {
         ShowToast(app, "Name cannot be empty")
         return
     }
-    newFile := newName ".txt"
+    newFile := "color\" newName ".txt"
 
     p := CreatePalette(newName, newFile)
 
@@ -1890,10 +1898,7 @@ SaveCurrentPaletteAsTemplate(app, g) {
 
     inputGui.AddText("cFFFFFF", "Template name:")
     inputGui.AddEdit("w280 y+4", p.name).Name := "nameEdit"
-
-    inputGui.AddText("cAAAAAA y+10", "Section name:")
-    inputGui.AddEdit("w280 y+4", p.name).Name := "sectionEdit"
-
+    
     inputGui.AddButton("w130 h28 y+15", "Save").OnEvent("Click", (*) => DoSaveTemplate(app, g, inputGui))
     inputGui.AddButton("w130 h28 x+10", "Cancel").OnEvent("Click", (*) => inputGui.Destroy())
 
@@ -1902,15 +1907,13 @@ SaveCurrentPaletteAsTemplate(app, g) {
 
 DoSaveTemplate(app, g, inputGui) {
     nameEdit := inputGui["nameEdit"]
-    sectionEdit := inputGui["sectionEdit"]
     tplName := Trim(nameEdit.Value)
-    tplSection := Trim(sectionEdit.Value)
     if tplName = "" {
         ShowToast(app, "Name cannot be empty")
         return
     }
     p := app.activePalette
-    SavePaletteAsTemplateFile(app, tplName, tplSection, p)
+    SavePaletteAsTemplateFile(app, tplName, p)
     inputGui.Destroy()
     ShowToast(app, "Saved template: " tplName)
     RefreshTemplateDialog(app, g)
@@ -1928,15 +1931,13 @@ SaveTemplateButton_Click(*) {
     for gui in App {
         if SafeGetGuiHwnd(gui) = activePaletteGuiHwnd {
             nameEdit := gui["nameEdit"]
-            sectionEdit := gui["sectionEdit"]
             p := App.activePalette
             tplName := Trim(nameEdit.Value)
-            tplSection := Trim(sectionEdit.Value)
             if tplName = "" {
                 ShowToast(App, "Name cannot be empty")
                 return
             }
-            SavePaletteAsTemplateFile(App, tplName, tplSection, p)
+            SavePaletteAsTemplateFile(App, tplName, p)
             gui.Destroy()
             ShowToast(App, "Saved template: " tplName)
             OpenPaletteTemplateDialog(App)
@@ -1986,20 +1987,28 @@ DeleteTemplateFile(tplName) {
         FileDelete(tplPath)
 }
 
-SavePaletteAsTemplateFile(app, tplName, tplSection, p) {
+SavePaletteAsTemplateFile(app, tplName, p) {
     tplDir := A_ScriptDir "\templates"
     DirCreate(tplDir)
     tplPath := tplDir "\" tplName ".txt"
 
     lines := []
     lines.Push("#TEMPLATE|" tplName)
-    if p.HasOwnProp("sections") && IsObject(p.sections) {
-        for sec in p.sections {
-            lines.Push("#SECTION|" sec.name "|" sec.id)
-        }
-    }
+
+    sectionMap := Map()
     for item in p.colors {
-        lines.Push("#COLOR|" item.hex "|" item.rgb "|" item.name "|" item.role "|" item.section)
+        sec := item.HasOwnProp("section") && item.section != "" ? item.section : "Default"
+        if !sectionMap.Has(sec) {
+            sectionMap[sec] := []
+        }
+        sectionMap[sec].Push(item)
+    }
+
+    for secName, items in sectionMap {
+        lines.Push("#SECTION|" secName)
+        for item in items {
+            lines.Push("#COLOR|" item.hex "|" item.rgb "|" item.name "|" item.role "|" secName)
+        }
     }
 
     content := ""
@@ -2057,18 +2066,34 @@ LoadUserTemplates() {
             continue
 
         tplName := Trim(parts[2])
-        tpl := Map("section", "", "items", Map())
+        tpl := Map("section", "", "sections", Map(), "items", Map())
+        currentSection := ""
         for i, line in lines {
             if i = 1
                 continue
+            if InStr(line, "#SECTION|") {
+                sectionParts := StrSplit(line, "|")
+                if sectionParts.Length >= 2 {
+                    currentSection := Trim(sectionParts[2])
+                    if currentSection != "" {
+                        tpl["sections"][currentSection] := Map("items", Map())
+                    }
+                }
+            }
             if InStr(line, "#COLOR|") {
                 cparts := StrSplit(line, "|")
                 if cparts.Length >= 6 {
                     colorData := cparts[2] "|" cparts[4] "|" cparts[5]
-                    section := cparts.Length >= 6 ? cparts[6] : ""
-                    tpl["items"][cparts[3]] := colorData
-                    if section != "" && tpl["section"] = ""
-                        tpl["section"] := section
+                    colorName := cparts[3]
+                    sectionName := cparts.Length >= 6 ? cparts[6] : "Default"
+                    if currentSection != "" && tpl["sections"].Has(currentSection) {
+                        tpl["sections"][currentSection]["items"][colorName] := colorData
+                    } else {
+                        if !tpl["items"].Has(colorName)
+                            tpl["items"][colorName] := colorData
+                        if tpl["section"] = ""
+                            tpl["section"] := sectionName
+                    }
                 }
             }
         }

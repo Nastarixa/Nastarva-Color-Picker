@@ -923,9 +923,7 @@ ReorderPinnedColorToTarget(app, sourceToken, targetToken) {
 
     SaveHistory(app)
     if app.historyVisible {
-        RefreshSectionCells(app, sourceSection)
-        if (targetSection != sourceSection)
-            RefreshSectionCells(app, targetSection)
+        QueueHistoryRebuild(app)
         Emit(app, "history_changed")
     }
 }

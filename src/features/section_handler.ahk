@@ -1,8 +1,29 @@
 QueueHistoryRebuild(app) {
     static pending := false
+    static lastStateHash := ""
 
     if pending
         return
+
+    p := app.activePalette
+    currentHash := p.colors.Length "|"
+    for _, item in p.colors {
+        currentHash .= item.hex "|" item.id "|"
+    }
+    if p.HasOwnProp("sections") {
+        currentHash .= "s" p.sections.Length
+    }
+    if p.HasOwnProp("layout") {
+        currentHash .= "l" p.layout
+    }
+    if p.HasOwnProp("maxCols") {
+        currentHash .= "c" p.maxCols
+    }
+
+    if currentHash = lastStateHash {
+        return
+    }
+    lastStateHash := currentHash
 
     pending := true
     SetTimer(() => (
@@ -82,35 +103,6 @@ RefreshSectionByName(app, sectionName) {
     if !app.historyVisible
         return
     QueueHistoryRebuild(app)
-}
-
-RefreshSectionCells(app, sectionName) {
-    if !app.historyVisible
-        return
-    if !app.ui.HasOwnProp("sectionGuis") || !app.ui.sectionGuis.Has(sectionName)
-        return
-
-    g := app.ui.sectionGuis[sectionName]
-    if !IsObject(g) || !SafeGetGuiHwnd(g)
-        return
-
-    for token, ctrl in app.ui.controls {
-        if ctrl.section = sectionName {
-            try ctrl.bg.Destroy()
-            if ctrl.txt != ctrl.bg
-                try ctrl.txt.Destroy()
-            app.ui.controls.Delete(token)
-        }
-    }
-
-    for item in app.activePalette.colors {
-        itemSection := item.HasOwnProp("section") && item.section != "" ? item.section : "Default"
-        if itemSection = sectionName {
-            CreateCell(app, item)
-        }
-    }
-
-    LayoutSectionOnly(app, sectionName)
 }
 
 LayoutSectionOnly(app, sectionName) {

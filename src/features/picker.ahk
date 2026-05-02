@@ -38,7 +38,7 @@ GetColorUnderCursor(app) {
 }
 
 CreatePickGui(app) {
-    app.pickGui := Gui("+AlwaysOnTop -Caption +ToolWindow")
+    app.pickGui := Gui("+AlwaysOnTop -Caption +ToolWindow +E0x20")
     app.pickGui.BackColor := "323338"
     app.pickGui.SetFont("s9", "Consolas")
     app.pickGui.MarginX := 8
@@ -48,7 +48,7 @@ CreatePickGui(app) {
     app.pickGui.hexText := app.pickGui.AddText("xp+50 yp+2 w140 h18 cFFFFFF", "#FFFFFF")
     app.pickGui.rgbText := app.pickGui.AddText("xp yp+18 w140 h18 cAAAAAA", "RGB: 255,255,255")
 
-    app.pickGuiRole := Gui("+AlwaysOnTop -Caption +ToolWindow")
+    app.pickGuiRole := Gui("+AlwaysOnTop -Caption +ToolWindow +E0x20")
     app.pickGuiRole.BackColor := "323338"
     app.pickGuiRole.SetFont("s9", "Consolas")
     app.pickGuiRole.MarginX := 0
@@ -218,8 +218,8 @@ MovePickGui(app) {
     if app.pickGuiRoleVisible
         app.pickGuiRole.GetPos(,, &w2, &h2)
 
-    offsetX := 20
-    offsetY := 25
+    offsetX := -325
+    offsetY := 90
 
     mon := GetMonitorFromPoint(X, Y)
     MonitorGetWorkArea(mon, &L, &T, &R, &B)
@@ -288,8 +288,7 @@ SaveColor(app) {
     Normalize(palette)
     SaveHistory(app)
 
-    ApplyHighlight(app, hex)
-    RefreshSectionCells(app, section)
+    QueueHistoryRebuild(app)
 
     ShowToast(app, "Saved #" hex " to " section)
 }

@@ -827,47 +827,56 @@ OpenImportTrainingCanvas(app, reviewGui) {
     g.imageHeight := imageH
     g.selectedBlockRow := 0
 
-    g.AddText("x10 y10 cFFFFFF", "Use the X and Y rulers to define the block area.")
-    g.AddText("x10 y28 c909090", "Click image = set X/Y start  |  Ctrl+Click image = set X/Y end  |  colored ruler markers show the exact aligned positions.")
+g.AddText("x10 y10 cFFFFFF", "Click on image to set X/Y position")
+    g.AddText("x10 y28 c909090", "Ctrl+Click = set end position")
 
-    imageX := 92
-    picY := 118
-    rulerTopY := 50
-    g.AddText("x" imageX " y" rulerTopY " cAAAAAA", "X Start")
-    g.xStartSlider := g.AddSlider("x" imageX " y" (rulerTopY + 16) " w" displayW " h20 Range0-" imageW " TickInterval50", 0)
-    g.xStartValue := g.AddText("x" (imageX + displayW - 60) " y" rulerTopY " w60 Right cFFFFFF", "0")
-    g.AddText("x" imageX " y" (rulerTopY + 38) " cAAAAAA", "X End")
-    g.xEndSlider := g.AddSlider("x" imageX " y" (rulerTopY + 54) " w" displayW " h20 Range0-" imageW " TickInterval50", imageW)
-    g.xEndValue := g.AddText("x" (imageX + displayW - 60) " y" (rulerTopY + 38) " w60 Right cFFFFFF", imageW "")
-    g.xStartBar := g.AddText("x" imageX " y" (rulerTopY + 78) " w" displayW " h3 Background666666")
-    g.xEndBar := g.AddText("x" imageX " y" (rulerTopY + 84) " w" displayW " h3 Background666666")
-    g.xStartMarker := g.AddText("x" imageX " y" (rulerTopY + 74) " w2 h11 Background00C8FF")
-    g.xEndMarker := g.AddText("x" imageX " y" (rulerTopY + 80) " w2 h11 BackgroundFFD24A")
+    trackW := 18
 
-    g.AddText("x10 y" picY " cAAAAAA", "Y Start")
-    g.yStartSlider := g.AddSlider("x10 y" (picY + 18) " w20 h" displayH " Vertical Range0-" imageH " TickInterval50", 0)
-    g.yStartValue := g.AddText("x8 y" (picY + displayH + 22) " w30 Center cFFFFFF", "0")
-    g.AddText("x36 y" picY " cAAAAAA", "Y End")
-    g.yEndSlider := g.AddSlider("x36 y" (picY + 18) " w20 h" displayH " Vertical Range0-" imageH " TickInterval50", imageH)
-    g.yEndValue := g.AddText("x34 y" (picY + displayH + 22) " w30 Center cFFFFFF", imageH "")
-    g.yStartBar := g.AddText("x61 y" picY " w3 h" displayH " Background666666")
-    g.yEndBar := g.AddText("x66 y" picY " w3 h" displayH " Background666666")
-    g.yStartMarker := g.AddText("x58 y" picY " w11 h2 Background00C8FF")
-    g.yEndMarker := g.AddText("x63 y" picY " w11 h2 BackgroundFFD24A")
-
-    g.imageCtrl := g.AddPicture("x" imageX " y" picY " w" displayW " h" displayH " +Border", imagePath)
+    g.imageX := 60
+g.imageY := 100
+    g.imageW := displayW
+    g.imageH := displayH
+    g.imageCtrl := g.AddPicture("x" g.imageX " y" g.imageY " w" g.imageW " h" g.imageH, imagePath)
+    g.imageOverlay := g.AddText("x" g.imageX " y" g.imageY " w" g.imageW " h" g.imageH " BackgroundTrans")
+    g.imageOverlay.OnEvent("Click", (*) => ImportTrainingCanvasImageClick(g))
     g.imageCtrl.OnEvent("Click", (*) => ImportTrainingCanvasImageClick(g))
 
-    for _, ctrl in [g.xStartSlider, g.xEndSlider, g.yStartSlider, g.yEndSlider]
-        ctrl.OnEvent("Change", (*) => ImportTrainingCanvasSliderChanged(g))
+    g.xStartValue := 0
+    g.xStartThumb := g.AddPicture("x" g.imageX " y" (g.imageY - 44) " w6 h12")
+    g.xStartThumb.Opt("Background00C8FF")
 
-    sideX := imageX + displayW + 28
-    g.AddText("x" sideX " y" picY " cAAAAAA", "Block Data")
-    g.preview := g.AddProgress("x" sideX " y" (picY + 20) " w54 h42 Background808080")
-    g.hexText := g.AddText("x" (sideX + 64) " y" (picY + 20) " w180 cFFFFFF", "#808080")
-    g.rgbText := g.AddText("x" (sideX + 64) " y" (picY + 40) " w180 cAAAAAA", "0,0,0")
+    g.xEndValue := 100
+    g.xEndThumb := g.AddPicture("x" (g.imageX + g.imageW - 6) " y" (g.imageY - 24) " w6 h12")
+    g.xEndThumb.Opt("BackgroundFFD24A")
 
-    formY := picY + 74
+    g.yStartValue := 0
+    g.yStartThumb := g.AddPicture("x" (g.imageX - 44) " y" g.imageY " w12 h6")
+    g.yStartThumb.Opt("Background00C8FF")
+
+    g.yEndValue := 100
+    g.yEndThumb := g.AddPicture("x" (g.imageX - 24) " y" (g.imageY + g.imageH - 6) " w12 h6")
+    g.yEndThumb.Opt("BackgroundFFD24A")
+
+    infoY := g.imageY + g.imageH + 8
+    g.AddText("x" g.imageX " y" infoY " cAAAAAA", "X Start")
+    g.xStartLabel := g.AddText("x" (g.imageX + 50) " y" infoY " w60 cFFFFFF", "0")
+
+    g.AddText("x" (g.imageX + 120) " y" infoY " cAAAAAA", "X End")
+    g.xEndLabel := g.AddText("x" (g.imageX + 170) " y" infoY " w60 cFFFFFF", imageW "")
+
+    g.AddText("x" g.imageX " y" (infoY + 20) " cAAAAAA", "Y Start")
+    g.yStartLabel := g.AddText("x" (g.imageX + 50) " y" (infoY + 20) " w60 cFFFFFF", "0")
+
+    g.AddText("x" (g.imageX + 120) " y" (infoY + 20) " cAAAAAA", "Y End")
+    g.yEndLabel := g.AddText("x" (g.imageX + 170) " y" (infoY + 20) " w60 cFFFFFF", imageH "")
+
+    sideX := g.imageX + g.imageW + 28
+    g.AddText("x" sideX " y" g.imageY " cAAAAAA", "Block Data")
+    g.preview := g.AddProgress("x" sideX " y" (g.imageY + 20) " w54 h42 Background808080")
+    g.hexText := g.AddText("x" (sideX + 64) " y" (g.imageY + 20) " w180 cFFFFFF", "#808080")
+    g.rgbText := g.AddText("x" (sideX + 64) " y" (g.imageY + 40) " w180 cAAAAAA", "0,0,0")
+
+    formY := g.imageY + 60
     g.AddText("x" sideX " y" formY " cAAAAAA", "Section")
     g.sectionNameEdit := g.AddEdit("x" sideX " y" (formY + 16) " w180 h22", "Default")
     g.AddText("x" (sideX + 190) " y" formY " cAAAAAA", "Section Tag")
@@ -905,7 +914,7 @@ OpenImportTrainingCanvas(app, reviewGui) {
     g.blockList.ModifyCol(4, 88)
     g.blockList.OnEvent("ItemFocus", (ctrl, item) => ImportTrainingCanvasFocusBlock(g, item))
 
-    bottomY := Max(picY + displayH + 42, listY + 252)
+    bottomY := Max(g.imageY + g.imageH + 42, listY + 252)
     g.btnApplyReview := g.AddButton("x10 y" bottomY " w180 h30", "Apply To Review")
     g.btnSavePreset := g.AddButton("x200 y" bottomY " w180 h30", "Save Training Preset")
     g.btnClose := g.AddButton("x390 y" bottomY " w180 h30", "Close")
@@ -958,16 +967,30 @@ ImportTrainingCanvasHexChanged(g) {
 }
 
 ImportTrainingCanvasSliderChanged(g) {
-    x1 := g.xStartSlider.Value
-    x2 := g.xEndSlider.Value
-    y1 := g.yStartSlider.Value
-    y2 := g.yEndSlider.Value
+    x1 := Round(g.xStartValue / 100 * g.imageWidth)
+    x2 := Round(g.xEndValue / 100 * g.imageWidth)
+    y1 := Round(g.yStartValue / 100 * g.imageHeight)
+    y2 := Round(g.yEndValue / 100 * g.imageHeight)
 
-    g.xStartValue.Value := x1
-    g.xEndValue.Value := x2
-    g.yStartValue.Value := y1
-    g.yEndValue.Value := y2
-    ImportTrainingCanvasUpdateRulerMarkers(g, x1, x2, y1, y2)
+    g.xStartLabel.Value := x1
+    g.xEndLabel.Value := x2
+    g.yStartLabel.Value := y1
+    g.yEndLabel.Value := y2
+
+    xThumbW := 6
+    xThumbH := 12
+    yThumbW := 12
+    yThumbH := 6
+
+    x1Pos := g.imageX + ((g.xStartValue / 100) * g.imageW)
+    x2Pos := g.imageX + ((g.xEndValue / 100) * g.imageW)
+    y1Pos := g.imageY + ((g.yStartValue / 100) * g.imageH)
+    y2Pos := g.imageY + ((g.yEndValue / 100) * g.imageH)
+
+    try g.xStartThumb.Move(x1Pos, g.imageY - 44, xThumbW, xThumbH)
+    try g.xEndThumb.Move(x2Pos, g.imageY - 24, xThumbW, xThumbH)
+    try g.yStartThumb.Move(g.imageX - 44, y1Pos, yThumbW, yThumbH)
+    try g.yEndThumb.Move(g.imageX - 24, y2Pos, yThumbW, yThumbH)
 
     x := Min(x1, x2)
     y := Min(y1, y2)
@@ -979,38 +1002,20 @@ ImportTrainingCanvasSliderChanged(g) {
     ImportTrainingCanvasPopulateSelectionFields(g)
 }
 
-ImportTrainingCanvasUpdateRulerMarkers(g, x1, x2, y1, y2) {
-    g.imageCtrl.GetPos(&imgX, &imgY)
-    g.xStartMarker.GetPos(, &xStartY)
-    g.xEndMarker.GetPos(, &xEndY)
-    g.yStartMarker.GetPos(&yStartX)
-    g.yEndMarker.GetPos(&yEndX)
-    scaleX := g.displayW / g.imageWidth
-    scaleY := g.displayH / g.imageHeight
-    dx1 := Round(x1 * scaleX)
-    dx2 := Round(x2 * scaleX)
-    dy1 := Round(y1 * scaleY)
-    dy2 := Round(y2 * scaleY)
-    g.xStartMarker.Move(imgX + dx1, xStartY, 2, 11)
-    g.xEndMarker.Move(imgX + dx2, xEndY, 2, 11)
-    g.yStartMarker.Move(yStartX, imgY + dy1, 11, 2)
-    g.yEndMarker.Move(yEndX, imgY + dy2, 11, 2)
-}
-
 ImportTrainingCanvasImageClick(g) {
     rect := GetImportTrainingCanvasControlRect(g.imageCtrl)
     MouseGetPos(&mx, &my)
     relX := Max(0, Min(rect.w, mx - rect.x))
     relY := Max(0, Min(rect.h, my - rect.y))
-    imgX := Round(relX * (g.imageWidth / g.displayW))
-    imgY := Round(relY * (g.imageHeight / g.displayH))
+    imgX := Round(relX * (g.imageWidth / g.imageW))
+    imgY := Round(relY * (g.imageHeight / g.imageH))
 
     if GetKeyState("Ctrl", "P") {
-        g.xEndSlider.Value := imgX
-        g.yEndSlider.Value := imgY
+        g.xEndValue := Round(imgX / g.imageWidth * 100)
+        g.yEndValue := Round(imgY / g.imageHeight * 100)
     } else {
-        g.xStartSlider.Value := imgX
-        g.yStartSlider.Value := imgY
+        g.xStartValue := Round(imgX / g.imageWidth * 100)
+        g.yStartValue := Round(imgY / g.imageHeight * 100)
     }
 
     ImportTrainingCanvasSliderChanged(g)
@@ -1036,10 +1041,12 @@ ImportTrainingCanvasPopulateSelectionFields(g) {
         return
 
     sel := state.selection
-    g.xEdit.Value := sel.x
-    g.yEdit.Value := sel.y
-    g.wEdit.Value := sel.w
-    g.hEdit.Value := sel.h
+    try {
+        g.xEdit.Value := sel.x
+        g.yEdit.Value := sel.y
+        g.wEdit.Value := sel.w
+        g.hEdit.Value := sel.h
+    }
 
     rect := GetImportTrainingCanvasControlRect(g.imageCtrl)
     displayCenterX := Round((sel.x + Floor(sel.w / 2)) * (g.displayW / g.imageWidth))

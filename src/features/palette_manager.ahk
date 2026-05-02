@@ -823,7 +823,7 @@ ShowImportPathDialog(app) {
     g.pathEdit := g.AddEdit("w360 y+6")
     g.AddText("c909090 w360 y+6", "Supported: PNG, JPG, JPEG, BMP")
 
-    g.OnEvent("DropFiles", (guiObj, files) => ImportPathDialogDropFiles(guiObj, files))
+    g.OnEvent("DropFiles", ImportPathDialogDropFiles)
     g.AddButton("w120 h28 y+14", "Import").OnEvent("Click", (*) => ConfirmImportPathDialog(app, g, &result))
     g.AddButton("w120 h28 x+10", "Cancel").OnEvent("Click", (*) => g.Destroy())
 

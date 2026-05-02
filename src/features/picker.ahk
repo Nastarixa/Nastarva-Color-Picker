@@ -183,7 +183,8 @@ UpdatePickGui(app, hex) {
             break
 
         ctrl := gr.roleControls[i]
-        ctrl.Value := GetRoleIcon(item.role) "  " item.section
+        sectionLabel := SubStr(item.section, 1, 11)
+        ctrl.Value := GetRoleIcon(item.role) "  " sectionLabel
         ctrl.Opt("-Hidden")
     }
 

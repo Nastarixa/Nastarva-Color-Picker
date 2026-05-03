@@ -13,6 +13,18 @@ InitPalettes(app) {
             app.palettes[name] := p
             app.paletteOrder.Push(name)
         }
+
+        loop files base "*.txt" {
+            fname := SubStr(A_LoopFileName, 1, -4)
+            if !app.palettes.Has(fname) && (fname != "palettes") {
+                p := CreatePalette(fname, base fname ".txt")
+                LoadPaletteFromFile(p)
+                app.palettes[fname] := p
+                app.paletteOrder.Push(fname)
+            }
+        }
+
+        SavePaletteList(app)
         SortPaletteOrderByPriority(app)
     } else {
         defaults := ["Default", "UI", "Shadow"]
@@ -29,7 +41,7 @@ InitPalettes(app) {
 LoadPaletteFromFile(p) {
     if !FileExist(p.file)
         return
-    
+
     for line in StrSplit(FileRead(p.file), "`n", "`r") {
         line := Trim(line)
         if (line = "")
@@ -40,6 +52,24 @@ LoadPaletteFromFile(p) {
                 p.priority := Integer(m5[1])
             continue
         }
+
+        if (SubStr(line, 1, 1) = "#")
+            continue
+
+        parts := StrSplit(line, "|")
+        if parts.Length < 8
+            continue
+
+        p.colors.Push({
+            id: parts[8],
+            hex: parts[1],
+            rgb: parts[2],
+            name: parts[3],
+            role: parts[4],
+            pinned: parts[5] = "1",
+            pinOrder: Integer(parts[6]),
+            section: parts[7]
+        })
     }
 }
 

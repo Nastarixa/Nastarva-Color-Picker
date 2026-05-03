@@ -558,6 +558,30 @@ BuildSectionGroups(app) {
     return groups
 }
 
+BuildSingleSectionGroup(app, sectionName) {
+    p := app.activePalette
+    maxPerSection := p.HasOwnProp("maxPerSection") ? p.maxPerSection : 0
+
+    group := { name: sectionName, items: [] }
+
+    for _, item in p.colors {
+        itemSection := item.HasOwnProp("section") && item.section != ""
+            ? item.section
+            : "Default"
+
+        if itemSection != sectionName
+            continue
+
+        if maxPerSection > 0 && group.items.Length >= maxPerSection
+            continue
+
+        group.items.Push(item)
+    }
+
+    SortSectionItems(app, group.items)
+    return group
+}
+
 RegisterSectionPanelDrag(app, g) {
     if IsPaletteDocked(app.activePalette)
         return

@@ -33,7 +33,7 @@ OpenPaletteManager(app) {
         return
     }
 
-    g := Gui("+AlwaysOnTop +Resize +OwnDialogs", "🎨 Nastarxa Palette Manager v" app.version)
+    g := Gui("+AlwaysOnTop +Resize +OwnDialogs", "Nastarxa Palette Manager v" app.version)
     g.BackColor := "323338"
     g.SetFont("s9", "Consolas")
 
@@ -1425,6 +1425,10 @@ DoPaletteMerge(app, g) {
 }
 
 OpenPaletteCompareDialog(app) {
+    if app.paletteGui {
+        RefreshPaletteManager(app, app.paletteGui)
+    }
+
     palNames := []
     for name in app.paletteOrder
         palNames.Push(name)
@@ -1432,6 +1436,15 @@ OpenPaletteCompareDialog(app) {
     if palNames.Length < 2 {
         ShowToast(app, "Need at least 2 palettes to compare")
         return
+    }
+
+    activeName := app.activePalette.name
+    activeIndex := 1
+    for i, name in palNames {
+        if name = activeName {
+            activeIndex := i
+            break
+        }
     }
 
     g := Gui("+AlwaysOnTop +ToolWindow +Border", "Compare Palettes")
@@ -1442,7 +1455,7 @@ OpenPaletteCompareDialog(app) {
 
     g.AddText("cFFFFFF", "Palette A:")
     g.listA := g.AddDropDownList("w220 y+4", palNames)
-    g.listA.Value := 1
+    g.listA.Value := activeIndex
 
     g.AddText("cFFFFFF y+10", "Palette B:")
     g.listB := g.AddDropDownList("w220 y+4", palNames)
@@ -1460,99 +1473,127 @@ OpenPaletteCompareDialog(app) {
 DoPaletteCompare(app, g) {
     nameA := g.listA.Text
     nameB := g.listB.Text
-    g.Destroy()
 
     pA := app.palettes[nameA]
     pB := app.palettes[nameB]
 
-    setA := Map()
-    setB := Map()
+    if pA.colors.Length = 0
+        LoadPaletteFromFile(pA)
+    if pB.colors.Length = 0
+        LoadPaletteFromFile(pB)
+
+    if !pA.colors.Length && !pB.colors.Length {
+        ShowToast(app, "Both palettes empty")
+        return
+    }
+
+    setA := Map(), setB := Map()
     for item in pA.colors
         setA[item.hex] := item
     for item in pB.colors
         setB[item.hex] := item
 
-    common := []
-    onlyA := []
-    onlyB := []
+    common := [], onlyA := [], onlyB := []
 
-    for hex, item in setA {
-        if setB.Has(hex)
-            common.Push(hex)
-        else
-            onlyA.Push(hex)
-    }
-    for hex, item in setB {
+    for hex in setA
+        (setB.Has(hex)) ? common.Push(hex) : onlyA.Push(hex)
+
+    for hex in setB
         if !setA.Has(hex)
             onlyB.Push(hex)
-    }
 
-    cg := Gui("+AlwaysOnTop +ToolWindow +Border", "Comparison: " nameA " vs " nameB)
-    cg.BackColor := "323338"
-    cg.SetFont("s9", "Consolas")
-    cg.MarginX := 12
-    cg.MarginY := 10
+    ; ================= GUI =================
+    cg := Gui("+AlwaysOnTop +ToolWindow +Border", nameA " vs " nameB)
+    cg.BackColor := "2B2D31"
+    cg.SetFont("s9", "Segoe UI")
+    cg.MarginX := 10
+    cg.MarginY := 8
 
-    cg.AddText("cFFD76A", "Summary:")
-    cg.AddText("cFFFFFF", "Common: " common.Length " | Only in " nameA ": " onlyA.Length " | Only in " nameB ": " onlyB.Length)
+    ; ================= PREVIEW (COMPACT ROW) =================
+    cg.previewSwatch := cg.AddProgress("xm w50 h32 Background808080")
 
-    cg.AddText("c00FF88 y+10", "In Both (" common.Length "):")
-    cg.commonList := cg.AddListView("w480 h100 -Multi", ["HEX", "Name", "Role", "A Name", "B Name"])
+    cg.previewHex  := cg.AddText("x+6 yp-2 cFFFFFF w90", "#000000")
+    cg.previewName := cg.AddText("x+10 yp cFFFFFF w120", "-")
+    cg.previewRgb  := cg.AddText("xm+56 yp+18 cAAAAAA w90", "RGB: 0,0,0")
+    cg.previewRole := cg.AddText("x+10 yp cFFFFFF w100", "-")
+
+    ; ================= SUMMARY (ONE LINE) =================
+    cg.summaryText := cg.AddText("xm y+6 cAAAAAA",
+        "Common " common.Length
+        "   |   A " onlyA.Length
+        "   |   B " onlyB.Length
+    )
+
+    ; ================= COMMON =================
+    cg.commonList := cg.AddListView("xm y+4 w460 h80 -Multi", ["HEX", "Name", "Role", "A", "B"])
     cg.commonList.SetFont("s8", "Consolas")
-    totalW := 480
-    hexW := 70
-    remaining := totalW - hexW - 20
-    each := Floor(remaining / 4)
-    cg.commonList.ModifyCol(1, hexW)
-    Loop 4
-        cg.commonList.ModifyCol(A_Index + 1, each)
-    for hex in common {
-        itemA := setA[hex]
-        itemB := setB[hex]
-        cg.commonList.Add("", "#" hex, itemA.name, itemA.role, itemA.name, itemB.name)
-    }
-    if common.Length > 0
-        cg.commonList.Modify(1, "Select")
 
-    cg.AddText("cFF6B6B y+8", "Only in " nameA " (" onlyA.Length "):")
-    cg.onlyAList := cg.AddListView("w480 h80 -Multi", ["HEX", "Name", "Role"])
+    cg.commonList.ModifyCol(1, 65)
+    cg.commonList.ModifyCol(2, 110)
+    cg.commonList.ModifyCol(3, 70)
+    cg.commonList.ModifyCol(4, 90)
+    cg.commonList.ModifyCol(5, 90)
+
+    for hex in common {
+        a := setA[hex], b := setB[hex]
+        cg.commonList.Add("", "#" hex, a.name, a.role, b.name)
+    }
+
+    ; ================= SIDE LISTS =================
+    cg.onlyAList := cg.AddListView("xm y+4 w225 h130 -Multi", ["HEX", "Name", "Role"])
     cg.onlyAList.SetFont("s8", "Consolas")
-    totalW := 480
-    hexW := 70
-    remaining := totalW - hexW - 20
-    each := Floor(remaining / 2)
-    cg.onlyAList.ModifyCol(1, hexW)
-    Loop 2
-        cg.onlyAList.ModifyCol(A_Index + 1, each)
+
+    cg.onlyAList.ModifyCol(1, 65)
+    cg.onlyAList.ModifyCol(2, 105)
+    cg.onlyAList.ModifyCol(3, 55)
+
     for hex in onlyA {
         item := setA[hex]
         cg.onlyAList.Add("", "#" hex, item.name, item.role)
     }
-    if onlyA.Length > 0
-        cg.onlyAList.Modify(1, "Select")
 
-    cg.AddText("c6B9FFF y+8", "Only in " nameB " (" onlyB.Length "):")
-    cg.onlyBList := cg.AddListView("w480 h80 -Multi", ["HEX", "Name", "Role"])
+    cg.onlyBList := cg.AddListView("x+6 yp w225 h130 -Multi", ["HEX", "Name", "Role"])
     cg.onlyBList.SetFont("s8", "Consolas")
-    totalW := 480
-    hexW := 70
-    remaining := totalW - hexW - 20
-    each := Floor(remaining / 2)
-    cg.onlyBList.ModifyCol(1, hexW)
-    Loop 2
-        cg.onlyBList.ModifyCol(A_Index + 1, each)
+
+    cg.onlyBList.ModifyCol(1, 65)
+    cg.onlyBList.ModifyCol(2, 105)
+    cg.onlyBList.ModifyCol(3, 55)
+
     for hex in onlyB {
         item := setB[hex]
         cg.onlyBList.Add("", "#" hex, item.name, item.role)
     }
-    if onlyB.Length > 0
-        cg.onlyBList.Modify(1, "Select")
 
-    cg.AddButton("w150 h28 y+8", "Copy All HEX (A only)").OnEvent("Click", (*) => CopyHexList(app, onlyA))
-    cg.AddButton("w150 h28 x+10", "Copy All HEX (B only)").OnEvent("Click", (*) => CopyHexList(app, onlyB))
-    cg.AddButton("w150 h28 x+10", "Close").OnEvent("Click", (*) => cg.Destroy())
+    ; ================= EVENTS =================
+    cg.commonList.OnEvent("Click", (*) => UpdateComparePreview(cg, cg.commonList, setA, setB, nameA, nameB))
+    cg.onlyAList.OnEvent("Click", (*) => UpdateComparePreview(cg, cg.onlyAList, setA, setB, nameA, nameB))
+    cg.onlyBList.OnEvent("Click", (*) => UpdateComparePreview(cg, cg.onlyBList, setA, setB, nameA, nameB))
+
+    cg.selectedHex := ""
+    cg.selectedSource := ""
+
+    cg.setA := setA
+    cg.setB := setB
+    cg.onlyA := onlyA
+    cg.onlyB := onlyB
+
+    cg.targetA := nameA
+    cg.targetB := nameB
+    cg.sourceNameA := nameA
+    cg.sourceNameB := nameB
+
+    ; ================= BUTTONS (TIGHT ROW) =================
+    cg.btnMove  := cg.AddButton("xm y+6 w90 h26", "Move→A")
+    cg.btnDup   := cg.AddButton("x+5 yp w90 h26", "Duplicate")
+    cg.btnMerge := cg.AddButton("x+5 yp w90 h26", "Merge")
+    cg.AddButton("x+10 yp w70 h26", "Close").OnEvent("Click", (*) => cg.Destroy())
+
+    cg.btnMove.OnEvent("Click", (*) => UpdateCompareButtonState(app, cg))
+    cg.btnDup.OnEvent("Click", (*) => UpdateDuplicateButtonState(app, cg))
+    cg.btnMerge.OnEvent("Click", (*) => UpdateMergeButtonState(app, cg))
 
     cg.Show("AutoSize Center")
+    g.Destroy()
 }
 
 CopyHexList(app, hexList) {
@@ -1565,6 +1606,49 @@ CopyHexList(app, hexList) {
         text .= "#" hex "`n"
     A_Clipboard := Trim(text)
     ShowToast(app, "Copied " hexList.Length " HEX values")
+}
+
+CopyHexRgbList(app, hexList, set) {
+    if hexList.Length = 0 {
+        ShowToast(app, "Nothing to copy")
+        return
+    }
+    text := ""
+    for hex in hexList {
+        item := set[hex]
+        rgb := item.rgb ? item.rgb : "0,0,0"
+        text .= "#" hex " (" rgb ")`n"
+    }
+    A_Clipboard := Trim(text)
+    ShowToast(app, "Copied " hexList.Length " HEX+RGB values")
+}
+
+DoDuplicateToPalette(app, cg, targetName, sourceSet, sourceList, onlyList) {
+    targetPal := app.palettes[targetName]
+    if !targetPal {
+        ShowToast(app, "Target palette not found")
+        return
+    }
+
+    if !cg.selectedHex {
+        ShowToast(app, "Select a color first")
+        return
+    }
+
+    hex := cg.selectedHex
+    if !sourceSet.Has(hex) || targetPal.map.Has(hex) {
+        ShowToast(app, "Color already exists or not found")
+        return
+    }
+
+    item := sourceSet[hex]
+    newItem := { id: item.id, hex: item.hex, rgb: item.rgb, name: item.name, role: item.role, pinned: item.pinned, pinOrder: item.pinOrder, section: item.section }
+    targetPal.colors.Push(newItem)
+    targetPal.map[hex] := newItem
+
+    SavePalette(targetPal, app.version)
+    ShowToast(app, "Duplicated #" hex " to " targetName)
+    RefreshPaletteManager(app, app.paletteGui)
 }
 
 RefreshPaletteManager(app, g) {
@@ -2420,4 +2504,401 @@ StrJoin(arr, sep) {
         text .= (i > 1 ? sep : "") v
     }
     return text
+}
+
+MergeColorsToPalette(app, cg, targetName, sourceSet, srcSet, moveList) {
+    targetPal := app.palettes[targetName]
+    if !targetPal {
+        ShowToast(app, "Target palette not found")
+        return
+    }
+
+    added := 0
+    for hex in moveList {
+        if !srcSet.Has(hex) {
+            item := sourceSet[hex]
+            newItem := { id: item.id, hex: item.hex, rgb: item.rgb, name: item.name, role: item.role, pinned: item.pinned, pinOrder: item.pinOrder, section: item.section }
+            targetPal.colors.Push(newItem)
+            srcSet[hex] := newItem
+            added += 1
+        }
+    }
+
+    SavePalette(targetPal, app.version)
+    ShowToast(app, "Added " added " colors to " targetName)
+    cg.Destroy()
+
+    if app.mainGui
+        RefreshPaletteManager(app, app.paletteGui)
+}
+
+DoMoveColors(app, cg, targetName, moveList, srcSet) {
+    targetPal := app.palettes[targetName]
+    if !targetPal {
+        ShowToast(app, "Target palette not found")
+        return
+    }
+
+    added := 0
+    for hex in moveList {
+        item := srcSet[hex]
+        newItem := { id: item.id, hex: item.hex, rgb: item.rgb, name: item.name, role: item.role, pinned: item.pinned, pinOrder: item.pinOrder, section: item.section }
+        targetPal.colors.Push(newItem)
+        added += 1
+    }
+
+    SavePalette(targetPal, app.version)
+    ShowToast(app, "Moved " added " colors to " targetName)
+
+    if IsObject(cg) {
+        try cg.Destroy()
+    }
+
+if app.HasOwnProp("mainGui") && app.mainGui {
+        RefreshPaletteManager(app, app.paletteGui)
+    }
+}
+
+RefreshCompareLists(app, cg) {
+    nameA := cg.sourceNameA
+    nameB := cg.sourceNameB
+    pA := app.palettes[nameA]
+    pB := app.palettes[nameB]
+
+    if pA.colors.Length = 0 {
+        LoadPaletteFromFile(pA)
+    }
+    if pB.colors.Length = 0 {
+        LoadPaletteFromFile(pB)
+    }
+
+    setA := Map()
+    setB := Map()
+    for item in pA.colors
+        setA[item.hex] := item
+    for item in pB.colors
+        setB[item.hex] := item
+
+    cg.setA := setA
+    cg.setB := setB
+
+    common := []
+    onlyA := []
+    onlyB := []
+
+    for hex, item in setA {
+        if setB.Has(hex)
+            common.Push(hex)
+        else
+            onlyA.Push(hex)
+    }
+    for hex, item in setB {
+        if !setA.Has(hex)
+            onlyB.Push(hex)
+    }
+
+    cg.commonList.Delete()
+    for hex in common {
+        itemA := setA[hex]
+        itemB := setB[hex]
+        cg.commonList.Add("", "#" hex, itemA.name, itemA.role, itemB.name)
+    }
+
+    cg.onlyAList.Delete()
+    for hex in onlyA {
+        item := setA[hex]
+        cg.onlyAList.Add("", "#" hex, item.name, item.role)
+    }
+
+    cg.onlyBList.Delete()
+    for hex in onlyB {
+        item := setB[hex]
+        cg.onlyBList.Add("", "#" hex, item.name, item.role)
+    }
+
+    cg.summaryText.Value := "Common " common.Length "   |   A " onlyA.Length "   |   B " onlyB.Length
+
+    cg.previewSwatch.Opt("Background808080")
+    cg.previewHex.Value := "#000000"
+    cg.previewRgb.Value := "RGB: 0,0,0"
+    cg.previewName.Value := "Name: -"
+    cg.previewRole.Value := "Role: -"
+    cg.btnMove.Text := "Move to -"
+    cg.btnDup.Text := "Duplicate to -"
+    cg.btnMerge.Text := "Merge to -"
+}
+
+DoMoveOneColor(app, cg, targetName, sourceName, sourceSet, hex) {
+    targetPal := app.palettes[targetName]
+    sourcePal := app.palettes[sourceName]
+    if !targetPal || !sourcePal {
+        ShowToast(app, "Palette not found")
+        return
+    }
+
+    item := sourceSet[hex]
+    if !item {
+        ShowToast(app, "Color not found")
+        return
+    }
+
+    newItem := { id: item.id, hex: item.hex, rgb: item.rgb, name: item.name, role: item.role, pinned: item.pinned, pinOrder: item.pinOrder, section: item.section }
+    targetPal.colors.Push(newItem)
+
+    newColors := []
+    for c in sourcePal.colors {
+        if c.hex != hex
+            newColors.Push(c)
+    }
+    sourcePal.colors := newColors
+
+    SavePalette(targetPal, app.version)
+    SavePalette(sourcePal, app.version)
+    ShowToast(app, "Moved #" hex " to " targetName)
+
+    RefreshPaletteManager(app, app.paletteGui)
+    RefreshCompareLists(app, cg)
+}
+
+DoDuplicateOneColor(app, cg, targetName, sourceSet, hex) {
+    targetPal := app.palettes[targetName]
+    if !targetPal {
+        ShowToast(app, "Target palette not found")
+        return
+    }
+
+    if targetPal.map.Has(hex) {
+        ShowToast(app, "Color already exists in target")
+        return
+    }
+
+    item := sourceSet[hex]
+    if !item {
+        ShowToast(app, "Color not found")
+        return
+    }
+
+    newItem := { id: item.id, hex: item.hex, rgb: item.rgb, name: item.name, role: item.role, pinned: item.pinned, pinOrder: item.pinOrder, section: item.section }
+    targetPal.colors.Push(newItem)
+    targetPal.map[hex] := newItem
+    SavePalette(targetPal, app.version)
+    ShowToast(app, "Duplicated #" hex " to " targetName)
+    RefreshPaletteManager(app, app.paletteGui)
+    RefreshCompareLists(app, cg)
+}
+
+UpdateComparePreview(cg, list, setA, setB, nameA, nameB) {
+    row := list.GetNext(0)
+    if !row {
+        cg.previewSwatch.Opt("Background808080")
+        cg.previewHex.Value := "#000000"
+        cg.previewRgb.Value := "RGB: 0,0,0"
+        cg.previewName.Value := "Name: -"
+        cg.previewRole.Value := "Role: -"
+        cg.btnMove.Text := "Move to -"
+        cg.btnDup.Text := "Duplicate to -"
+        cg.btnMerge.Text := "Merge to -"
+        cg.selectedSource := ""
+cg.selectedHex := ""
+        return
+    }
+
+    hex := SubStr(list.GetText(row, 1), 2)
+    cg.selectedHex := hex
+
+    if list = cg.commonList {
+        cg.selectedSource := "common"
+        cg.btnMove.Text := "Move (select list)"
+        cg.btnDup.Text := "Duplicate (select list)"
+        cg.btnMerge.Text := "Merge (select list)"
+    } else if list = cg.onlyAList {
+        cg.selectedSource := "A"
+        cg.btnMove.Text := "Move to B"
+        cg.btnDup.Text := "Duplicate to B"
+        cg.btnMerge.Text := "Merge all to B"
+    } else if list = cg.onlyBList {
+        cg.selectedSource := "B"
+        cg.btnMove.Text := "Move to A"
+        cg.btnDup.Text := "Duplicate to A"
+        cg.btnMerge.Text := "Merge all to A"
+    }
+
+    item := setA.Has(hex) ? setA[hex] : setB[hex]
+    if !item {
+        cg.previewSwatch.Opt("Background808080")
+        cg.previewHex.Value := "#000000"
+        cg.previewRgb.Value := "RGB: 0,0,0"
+        cg.previewName.Value := "Name: -"
+        cg.previewRole.Value := "Role: -"
+        return
+    }
+
+    rgb := item.rgb ? item.rgb : "0,0,0"
+    try cg.previewSwatch.Opt("Background" item.hex)
+    cg.previewHex.Value := "#" hex
+    cg.previewRgb.Value := "RGB: " rgb
+    cg.previewName.Value := "Name: " item.name
+    cg.previewRole.Value := "Role: " item.role
+}
+
+UpdateCompareButtonState(app, cg) {
+    src := cg.selectedSource
+    hex := cg.selectedHex
+
+    if !hex || src = "common" {
+        row := cg.onlyAList.GetNext(0)
+        list := cg.onlyAList
+        if !row {
+            row := cg.onlyBList.GetNext(0)
+            list := cg.onlyBList
+        }
+        if !row {
+            ShowToast(app, "Select a color first")
+            return
+        }
+        hex := SubStr(list.GetText(row, 1), 2)
+        src := (list = cg.onlyAList) ? "A" : "B"
+    }
+
+    if src = "A" {
+        DoMoveOneColor(app, cg, cg.targetB, cg.sourceNameA, cg.setA, hex)
+    } else if src = "B" {
+        DoMoveOneColor(app, cg, cg.targetA, cg.sourceNameB, cg.setB, hex)
+    }
+}
+
+UpdateDuplicateButtonState(app, cg) {
+    src := cg.selectedSource
+    hex := cg.selectedHex
+
+    if !hex || src = "common" {
+        row := cg.onlyAList.GetNext(0)
+        list := cg.onlyAList
+        if !row {
+            row := cg.onlyBList.GetNext(0)
+            list := cg.onlyBList
+        }
+        if !row {
+            ShowToast(app, "Select a color first")
+            return
+        }
+        hex := SubStr(list.GetText(row, 1), 2)
+        src := (list = cg.onlyAList) ? "A" : "B"
+    }
+
+    if src = "A" {
+        DoDuplicateOneColor(app, cg, cg.targetB, cg.setA, hex)
+    } else if src = "B" {
+        DoDuplicateOneColor(app, cg, cg.targetA, cg.setB, hex)
+    }
+}
+
+UpdateMergeButtonState(app, cg) {
+    src := cg.selectedSource
+    hex := cg.selectedHex
+
+    if !hex || src = "common" {
+        row := cg.onlyAList.GetNext(0)
+        list := cg.onlyAList
+        if !row {
+            row := cg.onlyBList.GetNext(0)
+            list := cg.onlyBList
+        }
+        if !row {
+            ShowToast(app, "Select a color first")
+            return
+        }
+        hex := SubStr(list.GetText(row, 1), 2)
+        src := (list = cg.onlyAList) ? "A" : "B"
+    }
+
+    if src = "A" {
+        targetPal := app.palettes[cg.targetB]
+        sourcePal := app.palettes[cg.sourceNameA]
+        if targetPal && sourcePal {
+            mergedCount := 0
+            for item in sourcePal.colors {
+                if !targetPal.map.Has(item.hex) {
+                    newItem := { id: item.id, hex: item.hex, rgb: item.rgb, name: item.name, role: item.role, pinned: item.pinned, pinOrder: item.pinOrder, section: item.section }
+                    targetPal.colors.Push(newItem)
+                    targetPal.map[item.hex] := newItem
+                    mergedCount++
+                }
+            }
+            if mergedCount > 0 {
+                SavePalette(targetPal, app.version)
+                if sourcePal.HasOwnProp("file") && FileExist(sourcePal.file) {
+                    FileDelete(sourcePal.file)
+                }
+                app.palettes.Delete(cg.sourceNameA)
+                ShowToast(app, "Merged " mergedCount " colors to " cg.targetB " and deleted " cg.sourceNameA)
+                RefreshPaletteManager(app, app.paletteGui)
+                cg.Destroy()
+            } else {
+                ShowToast(app, "No new colors to merge")
+            }
+        }
+    } else if src = "B" {
+        targetPal := app.palettes[cg.targetA]
+        sourcePal := app.palettes[cg.sourceNameB]
+        if targetPal && sourcePal {
+            mergedCount := 0
+            for item in sourcePal.colors {
+                if !targetPal.map.Has(item.hex) {
+                    newItem := { id: item.id, hex: item.hex, rgb: item.rgb, name: item.name, role: item.role, pinned: item.pinned, pinOrder: item.pinOrder, section: item.section }
+                    targetPal.colors.Push(newItem)
+                    targetPal.map[item.hex] := newItem
+                    mergedCount++
+                }
+            }
+            if mergedCount > 0 {
+                SavePalette(targetPal, app.version)
+                if sourcePal.HasOwnProp("file") && FileExist(sourcePal.file) {
+                    FileDelete(sourcePal.file)
+                }
+                app.palettes.Delete(cg.sourceNameB)
+                ShowToast(app, "Merged " mergedCount " colors to " cg.targetA " and deleted " cg.sourceNameB)
+                RefreshPaletteManager(app, app.paletteGui)
+                cg.Destroy()
+            } else {
+                ShowToast(app, "No new colors to merge")
+            }
+        }
+    }
+}
+
+DoMergeAndDeletePalette(app, cg, targetName, sourceName, sourceSet, targetSet, onlyList) {
+    targetPal := app.palettes[targetName]
+    sourcePal := app.palettes[sourceName]
+    if !targetPal || !sourcePal {
+        ShowToast(app, "Palette not found")
+        return
+    }
+
+    added := 0
+    for hex in onlyList {
+        if !targetSet.Has(hex) {
+            item := sourceSet[hex]
+            newItem := { id: item.id, hex: item.hex, rgb: item.rgb, name: item.name, role: item.role, pinned: item.pinned, pinOrder: item.pinOrder, section: item.section }
+            targetPal.colors.Push(newItem)
+            added += 1
+        }
+    }
+
+    FileDelete(sourcePal.file)
+
+    app.palettes.Delete(sourceName)
+    for i, name in app.paletteOrder {
+        if name = sourceName {
+            app.paletteOrder.RemoveAt(i)
+            break
+        }
+    }
+
+    SavePaletteList(app)
+    SavePalette(targetPal, app.version)
+    ShowToast(app, "Merged " added " colors to " targetName " | Deleted " sourceName)
+
+    cg.Destroy()
+    RefreshPaletteManager(app, app.paletteGui)
 }

@@ -69,7 +69,7 @@ RefreshCellByToken(app, token) {
         UpdateCellDisplay(app, token)
 }
 
-Layout(app) {
+Layout(app, singleSection := "") {
     gap := app.ui.gap
     headerH := GetPanelHeaderHeight()
     
@@ -102,8 +102,12 @@ Layout(app) {
         itemH := app.ui.itemH
     }
 
-    sectionGroups := BuildSectionGroups(app)
-    ClearSectionHeaders(app)
+    sectionGroups := (singleSection != "")
+        ? [BuildSingleSectionGroup(app, singleSection)]
+        : BuildSectionGroups(app)
+
+    if (singleSection = "")
+        ClearSectionHeaders(app)
 
     totalW := cols * itemW + Max(0, cols - 1) * gap
     panelIndex := 0

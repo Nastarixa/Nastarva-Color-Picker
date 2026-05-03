@@ -22,6 +22,7 @@ Persistent
 #Include "src/features/color_dialogs.ahk"
 #Include "src/features/import_review.ahk"
 #Include "src/features/favorites.ahk"
+TraySetIcon "Icon.ico"
 
 ; =========================================================
 ; GLOBAL STATE

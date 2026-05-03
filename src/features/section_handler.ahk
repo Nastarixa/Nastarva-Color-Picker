@@ -9,6 +9,8 @@ QueueHistoryRebuild(app) {
     currentHash := p.colors.Length "|"
     for _, item in p.colors {
         currentHash .= item.hex "|" item.id "|"
+        if item.HasOwnProp("section")
+            currentHash .= item.section "|"
     }
     if p.HasOwnProp("sections") {
         currentHash .= "s" p.sections.Length
@@ -103,6 +105,7 @@ RefreshSectionByName(app, sectionName) {
     if !app.historyVisible
         return
     QueueHistoryRebuild(app)
+    LayoutSectionOnly(app, sectionName)
 }
 
 LayoutSectionOnly(app, sectionName) {

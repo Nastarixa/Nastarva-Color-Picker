@@ -1513,9 +1513,10 @@ DoPaletteCompare(app, g) {
     cg.previewSwatch := cg.AddProgress("xm w50 h32 Background808080")
 
     cg.previewHex  := cg.AddText("x+6 yp-2 cFFFFFF w90", "#000000")
-    cg.previewName := cg.AddText("x+10 yp cFFFFFF w120", "-")
+    cg.previewName := cg.AddText("x+13 yp cFFFFFF w120", "-")
+    cg.infoSection := cg.AddText("x+2 yp cFFFFFF w120", "From: -")
     cg.previewRgb  := cg.AddText("xm+56 yp+18 cAAAAAA w90", "RGB: 0,0,0")
-    cg.previewRole := cg.AddText("x+10 yp cFFFFFF w100", "-")
+    cg.previewRole := cg.AddText("x+13 yp cFFFFFF w100", "-")
 
     ; ================= SUMMARY (ONE LINE) =================
     cg.summaryText := cg.AddText("xm y+6 cAAAAAA",
@@ -1540,7 +1541,9 @@ DoPaletteCompare(app, g) {
     }
 
     ; ================= SIDE LISTS =================
-    cg.onlyAList := cg.AddListView("xm y+4 w225 h130 -Multi", ["HEX", "Name", "Role"])
+    cg.AddText("xm y+4 cFF6B6B", "(A) " nameA)
+    cg.AddText("xp+231 yp c6B9FFF", "(B) " nameB)
+    cg.onlyAList := cg.AddListView("xm y+2 w225 h120 -Multi", ["HEX", "Name", "Role"])
     cg.onlyAList.SetFont("s8", "Consolas")
 
     cg.onlyAList.ModifyCol(1, 65)
@@ -1552,7 +1555,7 @@ DoPaletteCompare(app, g) {
         cg.onlyAList.Add("", "#" hex, item.name, item.role)
     }
 
-    cg.onlyBList := cg.AddListView("x+6 yp w225 h130 -Multi", ["HEX", "Name", "Role"])
+    cg.onlyBList := cg.AddListView("x+6 yp w225 h120 -Multi", ["HEX", "Name", "Role"])
     cg.onlyBList.SetFont("s8", "Consolas")
 
     cg.onlyBList.ModifyCol(1, 65)
@@ -1583,14 +1586,16 @@ DoPaletteCompare(app, g) {
     cg.sourceNameB := nameB
 
     ; ================= BUTTONS (TIGHT ROW) =================
-    cg.btnMove  := cg.AddButton("xm y+6 w90 h26", "Move→A")
-    cg.btnDup   := cg.AddButton("x+5 yp w90 h26", "Duplicate")
-    cg.btnMerge := cg.AddButton("x+5 yp w90 h26", "Merge")
+    cg.btnMove  := cg.AddButton("xm y+6 w80 h26", "Move→A")
+    cg.btnDup   := cg.AddButton("x+5 yp w80 h26", "Duplicate")
+    cg.btnMerge := cg.AddButton("x+5 yp w80 h26", "Merge")
+    cg.btnDel   := cg.AddButton("x+5 yp w80 h26", "Delete")
     cg.AddButton("x+10 yp w70 h26", "Close").OnEvent("Click", (*) => cg.Destroy())
 
     cg.btnMove.OnEvent("Click", (*) => UpdateCompareButtonState(app, cg))
     cg.btnDup.OnEvent("Click", (*) => UpdateDuplicateButtonState(app, cg))
     cg.btnMerge.OnEvent("Click", (*) => UpdateMergeButtonState(app, cg))
+    cg.btnDel.OnEvent("Click", (*) => UpdateDeleteButtonState(app, cg))
 
     cg.Show("AutoSize Center")
     g.Destroy()
@@ -2621,11 +2626,90 @@ RefreshCompareLists(app, cg) {
     cg.previewSwatch.Opt("Background808080")
     cg.previewHex.Value := "#000000"
     cg.previewRgb.Value := "RGB: 0,0,0"
-    cg.previewName.Value := "Name: -"
-    cg.previewRole.Value := "Role: -"
-    cg.btnMove.Text := "Move to -"
-    cg.btnDup.Text := "Duplicate to -"
-    cg.btnMerge.Text := "Merge to -"
+    cg.previewName.Value := "-"
+    cg.previewRole.Value := "-"
+    cg.btnMove.Text := "Move→A"
+    cg.btnDup.Text := "Duplicate"
+    cg.btnMerge.Text := "Merge"
+    cg.btnDel.Text := "Delete"
+}
+
+UpdateDeleteButtonState(app, cg) {
+    src := cg.selectedSource
+    hex := cg.selectedHex
+
+    if !hex {
+        row := cg.onlyAList.GetNext(0)
+        list := cg.onlyAList
+        if !row {
+            row := cg.onlyBList.GetNext(0)
+            list := cg.onlyBList
+        }
+        if !row {
+            row := cg.commonList.GetNext(0)
+            list := cg.commonList
+        }
+        if !row {
+            ShowToast(app, "Select a color first")
+            return
+        }
+        hex := SubStr(list.GetText(row, 1), 2)
+        src := (list = cg.onlyAList) ? "A" : (list = cg.onlyBList) ? "B" : "common"
+    }
+
+    if src = "common" {
+        pA := app.palettes[cg.sourceNameA]
+        pB := app.palettes[cg.sourceNameB]
+        if pA && pB {
+            newColorsA := []
+            for c in pA.colors {
+                if c.hex != hex
+                    newColorsA.Push(c)
+            }
+            pA.colors := newColorsA
+
+            newColorsB := []
+            for c in pB.colors {
+                if c.hex != hex
+                    newColorsB.Push(c)
+            }
+            pB.colors := newColorsB
+
+            SavePalette(pA, app.version)
+            SavePalette(pB, app.version)
+            ShowToast(app, "Deleted #" hex " from both palettes")
+            RefreshPaletteManager(app, app.paletteGui)
+            RefreshCompareLists(app, cg)
+        }
+    } else if src = "A" {
+        pA := app.palettes[cg.sourceNameA]
+        if pA {
+            newColors := []
+            for c in pA.colors {
+                if c.hex != hex
+                    newColors.Push(c)
+            }
+            pA.colors := newColors
+            SavePalette(pA, app.version)
+            ShowToast(app, "Deleted #" hex " from " cg.sourceNameA)
+            RefreshPaletteManager(app, app.paletteGui)
+            RefreshCompareLists(app, cg)
+        }
+    } else if src = "B" {
+        pB := app.palettes[cg.sourceNameB]
+        if pB {
+            newColors := []
+            for c in pB.colors {
+                if c.hex != hex
+                    newColors.Push(c)
+            }
+            pB.colors := newColors
+            SavePalette(pB, app.version)
+            ShowToast(app, "Deleted #" hex " from " cg.sourceNameB)
+            RefreshPaletteManager(app, app.paletteGui)
+            RefreshCompareLists(app, cg)
+        }
+    }
 }
 
 DoMoveOneColor(app, cg, targetName, sourceName, sourceSet, hex) {
@@ -2692,14 +2776,15 @@ UpdateComparePreview(cg, list, setA, setB, nameA, nameB) {
     if !row {
         cg.previewSwatch.Opt("Background808080")
         cg.previewHex.Value := "#000000"
-        cg.previewRgb.Value := "RGB: 0,0,0"
-        cg.previewName.Value := "Name: -"
-        cg.previewRole.Value := "Role: -"
-        cg.btnMove.Text := "Move to -"
-        cg.btnDup.Text := "Duplicate to -"
-        cg.btnMerge.Text := "Merge to -"
+cg.previewRgb.Value := "RGB: 0,0,0"
+        cg.previewName.Value := "-"
+        cg.previewRole.Value := "-"
+        cg.btnMove.Text := "Move→A"
+        cg.btnDup.Text := "Duplicate"
+        cg.btnMerge.Text := "Merge"
+        cg.btnDel.Text := "Delete"
         cg.selectedSource := ""
-cg.selectedHex := ""
+        cg.selectedHex := ""
         return
     }
 
@@ -2708,19 +2793,30 @@ cg.selectedHex := ""
 
     if list = cg.commonList {
         cg.selectedSource := "common"
-        cg.btnMove.Text := "Move (select list)"
-        cg.btnDup.Text := "Duplicate (select list)"
-        cg.btnMerge.Text := "Merge (select list)"
+        cg.btnMove.Text := "Move→?"
+        cg.btnDup.Text := "Dup→?"
+        cg.btnMerge.Text := "Merge all?"
+        cg.btnDel.Text := "Del both"
     } else if list = cg.onlyAList {
         cg.selectedSource := "A"
-        cg.btnMove.Text := "Move to B"
-        cg.btnDup.Text := "Duplicate to B"
-        cg.btnMerge.Text := "Merge all to B"
+        cg.btnMove.Text := "Move→B"
+        cg.btnDup.Text := "Dup→B"
+        cg.btnMerge.Text := "Merge all→B"
+        cg.btnDel.Text := "Del from A"
     } else if list = cg.onlyBList {
         cg.selectedSource := "B"
-        cg.btnMove.Text := "Move to A"
-        cg.btnDup.Text := "Duplicate to A"
-        cg.btnMerge.Text := "Merge all to A"
+        cg.btnMove.Text := "Move→A"
+        cg.btnDup.Text := "Dup→A"
+        cg.btnMerge.Text := "Merge all→A"
+        cg.btnDel.Text := "Del from B"
+    }
+
+    if list = cg.commonList {
+        cg.infoSection.Value := "From: Both"
+    } else if list = cg.onlyAList {
+        cg.infoSection.Value := "From: A only"
+    } else if list = cg.onlyBList {
+        cg.infoSection.Value := "From: B only"
     }
 
     item := setA.Has(hex) ? setA[hex] : setB[hex]
@@ -2728,8 +2824,8 @@ cg.selectedHex := ""
         cg.previewSwatch.Opt("Background808080")
         cg.previewHex.Value := "#000000"
         cg.previewRgb.Value := "RGB: 0,0,0"
-        cg.previewName.Value := "Name: -"
-        cg.previewRole.Value := "Role: -"
+        cg.previewName.Value := "-"
+        cg.previewRole.Value := "-"
         return
     }
 
@@ -2737,8 +2833,8 @@ cg.selectedHex := ""
     try cg.previewSwatch.Opt("Background" item.hex)
     cg.previewHex.Value := "#" hex
     cg.previewRgb.Value := "RGB: " rgb
-    cg.previewName.Value := "Name: " item.name
-    cg.previewRole.Value := "Role: " item.role
+    cg.previewName.Value := item.name
+    cg.previewRole.Value := item.role
 }
 
 UpdateCompareButtonState(app, cg) {

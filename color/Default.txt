@@ -1,3 +1,4 @@
 #META|version=3.5|historyMax=20|maxCols=10|guiMode=docked|priority=1|note=
 #ROLEORDER|Black,Outline,Mask,Highlight,Base,Hi Shadow,Shadow,2 Shadow
 #SECTION|s986375-1-5198|Default|locked=0|collapsed=0|tag=|note=
+#SECTION|s4225781-1-4344|ssx|locked=0|collapsed=0|tag=|note=

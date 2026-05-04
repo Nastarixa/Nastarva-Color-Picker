@@ -119,23 +119,37 @@ ToggleLayoutClicked(app, gui) {
 ToggleCompactClicked(app, gui) {
     compactMode := app.HasOwnProp("compactMode") ? app.compactMode : false
     fullCompactMode := app.HasOwnProp("fullCompactMode") ? app.fullCompactMode : false
-    if !compactMode && !fullCompactMode {
+    characterMode := app.HasOwnProp("characterMode") ? app.characterMode : false
+    
+    if !compactMode && !fullCompactMode && !characterMode {
         app.compactMode := true
         app.fullCompactMode := false
-    } else if compactMode && !fullCompactMode {
+        app.characterMode := false
+    } else if compactMode && !fullCompactMode && !characterMode {
         app.compactMode := false
         app.fullCompactMode := true
+        app.characterMode := false
+    } else if fullCompactMode && !characterMode {
+        app.compactMode := false
+        app.fullCompactMode := false
+        app.characterMode := true
     } else {
         app.fullCompactMode := false
         app.compactMode := false
+        app.characterMode := false
     }
+    
     if gui.HasOwnProp("btnCompact") {
-        label := app.fullCompactMode ? "Display: Full" : (app.compactMode ? "Display: Compact" : "Display: Normal")
+        if app.characterMode
+            label := "Display: Character"
+        else
+            label := app.fullCompactMode ? "Display: Full" : (app.compactMode ? "Display: Compact" : "Display: Normal")
         gui.btnCompact.Text := label
     }
     app.ui.generation++
     RebuildUI(app)
-    ShowToast(app, "Display: " (app.fullCompactMode ? "Full" : (app.compactMode ? "Compact" : "Normal")))
+    displayLabel := app.characterMode ? "Character" : (app.fullCompactMode ? "Full" : (app.compactMode ? "Compact" : "Normal"))
+    ShowToast(app, "Display: " displayLabel)
 }
 
 ToggleHeaderClicked(app, gui) {

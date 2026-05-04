@@ -36,12 +36,6 @@ QueueHistoryRebuild(app) {
     ), -1)
 }
 
-RefreshSectionBySectionId(app, sectionId) {
-    if !app.historyVisible
-        return
-    QueueHistoryRebuild(app)
-}
-
 StartSectionPanelMove(app, sectionName) {
     panelHwnd := 0
     for name, g in app.ui.sectionGuis {
@@ -99,92 +93,6 @@ RefreshSectionByToken(app, token) {
     if !app.historyVisible
         return
     QueueHistoryRebuild(app)
-}
-
-RefreshSectionByName(app, sectionName) {
-    if !app.historyVisible
-        return
-    QueueHistoryRebuild(app)
-    LayoutSectionOnly(app, sectionName)
-}
-
-LayoutSectionOnly(app, sectionName) {
-    if !app.ui.HasOwnProp("sectionGuis") || !app.ui.sectionGuis.Has(sectionName)
-        return
-    
-    g := app.ui.sectionGuis[sectionName]
-    if !IsObject(g) || !SafeGetGuiHwnd(g)
-        return
-
-    sectionItems := []
-    for item in app.activePalette.colors {
-        itemSection := item.HasOwnProp("section") && item.section != "" ? item.section : "Default"
-        if itemSection = sectionName {
-            sectionItems.Push(item)
-        }
-    }
-
-    headerH := 28
-    gap := app.ui.gap
-    baseCols := app.activePalette.HasOwnProp("maxCols") ? app.activePalette.maxCols : app.ui.cols
-    if baseCols < 1
-        baseCols := 1
-    
-    layout := app.activePalette.HasOwnProp("layout") ? app.activePalette.layout : "normal"
-    fullCompact := app.HasOwnProp("fullCompactMode") && app.fullCompactMode
-    compact := !fullCompact && app.HasOwnProp("compactMode") && app.compactMode
-    
-    if layout = "grid"
-        cols := 3
-    else if layout = "vertical"
-        cols := 1
-    else
-        cols := baseCols
-    
-    if fullCompact {
-        itemW := 24
-        itemH := 24
-    } else if compact {
-        itemW := 120
-        itemH := 22
-    } else {
-        itemW := app.ui.itemW
-        itemH := app.ui.itemH
-    }
-
-    sectionItems := []
-    for item in app.activePalette.colors {
-        itemSection := item.HasOwnProp("section") && item.section != "" ? item.section : "Default"
-        if itemSection = sectionName {
-            sectionItems.Push(item)
-        }
-    }
-
-    idx := 0
-    for item in sectionItems {
-        token := GetItemToken(item)
-        if !app.ui.controls.Has(token)
-            continue
-        ctrl := app.ui.controls[token]
-        if !SafeGetControlHwnd(ctrl.bg)
-            continue
-        col := Mod(idx, cols)
-        row := Floor(idx / cols)
-        x := col * (itemW + gap)
-        y := headerH + row * (itemH + gap)
-        try ctrl.bg.Move(x, y)
-        if ctrl.txt != ctrl.bg && SafeGetControlHwnd(ctrl.txt) {
-            lblH := fullCompact ? 0 : (compact ? 12 : 14)
-            try ctrl.txt.Move(x + 2, y + 2, itemW - 4, lblH)
-        }
-        idx++
-    }
-
-    usedRows := idx > 0 ? Floor((idx - 1) / cols) + 1 : 1
-    totalH := IsSectionCollapsed(app.activePalette, sectionName) ? headerH : headerH + Max(itemH + gap, usedRows * (itemH + gap))
-    totalW := cols * itemW + Max(0, cols - 1) * gap
-
-    try g.Show("w" totalW " h" totalH)
 }
 
 RefreshSectionChromeByName(app, sectionName) {
@@ -471,7 +379,7 @@ EditSectionTagConfirm(app, sectionName, val) {
     }
     SetSectionTagColor(app, sectionName, tag)
     SaveHistory(app)
-    RefreshSectionByName(app, sectionName)
+    RebuildUI(app)
     ShowToast(app, "Tag updated")
     if app.HasOwnProp("tagDialog") && SafeGetGuiHwnd(app.tagDialog)
         app.tagDialog.Destroy()
@@ -583,6 +491,87 @@ BuildSingleSectionGroup(app, sectionName) {
 
     SortSectionItems(app, group.items)
     return group
+}
+
+BuildCharacterGroups(app) {
+    p := app.activePalette
+    roleOrder := ["Mask", "Outline", "Black", "Base", "Shadow", "2 Shadow", "Highlight", "Hi Shadow"]
+    sectionItems := Map()
+    groups := []
+
+    EnsureDefaultSection(p)
+    for _, section in p.sections {
+        sectionName := IsObject(section) ? section.name : section
+        sectionName := sectionName != "" ? sectionName : "Default"
+        if !sectionItems.Has(sectionName)
+            sectionItems[sectionName] := []
+    }
+
+    for _, item in p.colors {
+        sectionName := item.HasOwnProp("section") && item.section != ""
+            ? item.section
+            : "Default"
+        if !sectionItems.Has(sectionName)
+            sectionItems[sectionName] := []
+        sectionItems[sectionName].Push(item)
+    }
+
+    for sectionName, items in sectionItems {
+        if items.Length = 0
+            continue
+
+        SortSectionItems(app, items)
+        cards := []
+
+        for _, item in items {
+            role := NormalizeCharacterExportRole(item.HasOwnProp("role") ? item.role : "")
+            placed := false
+
+            for _, card in cards {
+                if !card.roleMap.Has(role) {
+                    card.roleMap[role] := item
+                    placed := true
+                    break
+                }
+            }
+
+            if !placed {
+                cardIndex := cards.Length + 1
+                cardName := cardIndex = 1 ? sectionName : sectionName " (" cardIndex ")"
+                card := { name: cardName, sourceSection: sectionName, roleMap: Map(), items: [] }
+                card.roleMap[role] := item
+                cards.Push(card)
+            }
+        }
+
+        for _, card in cards {
+            orderedItems := []
+            for _, roleName in roleOrder {
+                if card.roleMap.Has(roleName) {
+                    item := card.roleMap[roleName]
+                    item._roleGroup := card.name
+                    orderedItems.Push(item)
+                }
+            }
+            card.items := orderedItems
+            groups.Push(card)
+        }
+    }
+
+    return groups
+}
+
+NormalizeCharacterExportRole(role) {
+    role := Trim(role)
+    if (role = "")
+        return "Base"
+    if RegExMatch(role, "i)^BL$")
+        return "Black"
+    if RegExMatch(role, "i)Hi[\s-]*Shadow|High[\s-]*Shadow")
+        return "Hi Shadow"
+    if RegExMatch(role, "i)2.*Shadow|Shadow.*2|Second Shadow")
+        return "2 Shadow"
+    return role
 }
 
 RegisterSectionPanelDrag(app, g) {

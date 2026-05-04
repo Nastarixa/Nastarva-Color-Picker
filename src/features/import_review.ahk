@@ -803,6 +803,12 @@ OpenImportTrainingCanvas(app, reviewGui) {
         sourceName: reviewGui.importData.sourceName != "" ? reviewGui.importData.sourceName : RegExReplace(imagePath, "^.*\\")
     }
 
+    actualImageSize := GetImportTrainingCanvasImageSize(imagePath)
+    if IsObject(actualImageSize) {
+        data.imageWidth := actualImageSize.w
+        data.imageHeight := actualImageSize.h
+    }
+
     imageW := Max(1, data.imageWidth)
     imageH := Max(1, data.imageHeight)
     maxW := 760
@@ -832,8 +838,8 @@ g.AddText("x10 y10 cFFFFFF", "Click on image to set X/Y position")
 
     trackW := 18
 
-    g.imageX := 60
-g.imageY := 100
+    g.imageX := 18
+    g.imageY := 50
     g.imageW := displayW
     g.imageH := displayH
     g.imageCtrl := g.AddPicture("x" g.imageX " y" g.imageY " w" g.imageW " h" g.imageH, imagePath)
@@ -842,35 +848,35 @@ g.imageY := 100
     g.imageCtrl.OnEvent("Click", (*) => ImportTrainingCanvasImageClick(g))
 
     g.xStartValue := 0
-    g.xStartThumb := g.AddPicture("x" g.imageX " y" (g.imageY - 44) " w6 h12")
-    g.xStartThumb.Opt("Background00C8FF")
-
-    g.xEndValue := 100
-    g.xEndThumb := g.AddPicture("x" (g.imageX + g.imageW - 6) " y" (g.imageY - 24) " w6 h12")
-    g.xEndThumb.Opt("BackgroundFFD24A")
-
+    g.xEndValue := Max(0, imageW - 1)
     g.yStartValue := 0
-    g.yStartThumb := g.AddPicture("x" (g.imageX - 44) " y" g.imageY " w12 h6")
-    g.yStartThumb.Opt("Background00C8FF")
+    g.yEndValue := Max(0, imageH - 1)
 
-    g.yEndValue := 100
-    g.yEndThumb := g.AddPicture("x" (g.imageX - 24) " y" (g.imageY + g.imageH - 6) " w12 h6")
-    g.yEndThumb.Opt("BackgroundFFD24A")
+    g.xStartGuide := g.AddProgress("x" g.imageX " y" g.imageY " w2 h" g.imageH " Background00C8FF")
+    g.xEndGuide := g.AddProgress("x" g.imageX " y" g.imageY " w2 h" g.imageH " BackgroundFFD24A")
+    g.yStartGuide := g.AddProgress("x" g.imageX " y" g.imageY " w" g.imageW " h2 Background00C8FF")
+    g.yEndGuide := g.AddProgress("x" g.imageX " y" g.imageY " w" g.imageW " h2 BackgroundFFD24A")
+    g.startDot := g.AddProgress("x" g.imageX " y" g.imageY " w8 h8 Background00C8FF")
+    g.endDot := g.AddProgress("x" g.imageX " y" g.imageY " w8 h8 BackgroundFFD24A")
+    g.selectionLeft := g.AddProgress("x" g.imageX " y" g.imageY " w2 h1 BackgroundFF4D4D")
+    g.selectionRight := g.AddProgress("x" g.imageX " y" g.imageY " w2 h1 BackgroundFF4D4D")
+    g.selectionTop := g.AddProgress("x" g.imageX " y" g.imageY " w1 h2 BackgroundFF4D4D")
+    g.selectionBottom := g.AddProgress("x" g.imageX " y" g.imageY " w1 h2 BackgroundFF4D4D")
 
     infoY := g.imageY + g.imageH + 8
     g.AddText("x" g.imageX " y" infoY " cAAAAAA", "X Start")
     g.xStartLabel := g.AddText("x" (g.imageX + 50) " y" infoY " w60 cFFFFFF", "0")
 
     g.AddText("x" (g.imageX + 120) " y" infoY " cAAAAAA", "X End")
-    g.xEndLabel := g.AddText("x" (g.imageX + 170) " y" infoY " w60 cFFFFFF", imageW "")
+    g.xEndLabel := g.AddText("x" (g.imageX + 170) " y" infoY " w60 cFFFFFF", Max(0, imageW - 1) "")
 
     g.AddText("x" g.imageX " y" (infoY + 20) " cAAAAAA", "Y Start")
     g.yStartLabel := g.AddText("x" (g.imageX + 50) " y" (infoY + 20) " w60 cFFFFFF", "0")
 
     g.AddText("x" (g.imageX + 120) " y" (infoY + 20) " cAAAAAA", "Y End")
-    g.yEndLabel := g.AddText("x" (g.imageX + 170) " y" (infoY + 20) " w60 cFFFFFF", imageH "")
+    g.yEndLabel := g.AddText("x" (g.imageX + 170) " y" (infoY + 20) " w60 cFFFFFF", Max(0, imageH - 1) "")
 
-    sideX := g.imageX + g.imageW + 28
+    sideX := g.imageX + g.imageW + 20
     g.AddText("x" sideX " y" g.imageY " cAAAAAA", "Block Data")
     g.preview := g.AddProgress("x" sideX " y" (g.imageY + 20) " w54 h42 Background808080")
     g.hexText := g.AddText("x" (sideX + 64) " y" (g.imageY + 20) " w180 cFFFFFF", "#808080")
@@ -924,7 +930,7 @@ g.imageY := 100
     g.OnEvent("Close", (*) => CloseImportTrainingCanvas(g))
     g.OnEvent("Escape", (*) => CancelImportTrainingCanvasSelection(g))
 
-    g.Show("w" (sideX + 330) " h" (bottomY + 50) " Center")
+    g.Show("w" (sideX + 322) " h" (bottomY + 46) " Center")
     state := GetImportTrainerState()
     state.gui := g
     state.app := app
@@ -967,30 +973,42 @@ ImportTrainingCanvasHexChanged(g) {
 }
 
 ImportTrainingCanvasSliderChanged(g) {
-    x1 := Round(g.xStartValue / 100 * g.imageWidth)
-    x2 := Round(g.xEndValue / 100 * g.imageWidth)
-    y1 := Round(g.yStartValue / 100 * g.imageHeight)
-    y2 := Round(g.yEndValue / 100 * g.imageHeight)
+    x1 := Max(0, Min(g.imageWidth - 1, Round(g.xStartValue)))
+    x2 := Max(0, Min(g.imageWidth - 1, Round(g.xEndValue)))
+    y1 := Max(0, Min(g.imageHeight - 1, Round(g.yStartValue)))
+    y2 := Max(0, Min(g.imageHeight - 1, Round(g.yEndValue)))
 
     g.xStartLabel.Value := x1
     g.xEndLabel.Value := x2
     g.yStartLabel.Value := y1
     g.yEndLabel.Value := y2
 
-    xThumbW := 6
-    xThumbH := 12
-    yThumbW := 12
-    yThumbH := 6
+    guideX1 := g.imageX + ImportTrainingCanvasMapCoordToDisplay(x1, g.imageWidth, g.imageW)
+    guideX2 := g.imageX + ImportTrainingCanvasMapCoordToDisplay(x2, g.imageWidth, g.imageW)
+    guideY1 := g.imageY + ImportTrainingCanvasMapCoordToDisplay(y1, g.imageHeight, g.imageH)
+    guideY2 := g.imageY + ImportTrainingCanvasMapCoordToDisplay(y2, g.imageHeight, g.imageH)
+    dotSize := 8
+    dotOffset := Floor(dotSize / 2)
 
-    x1Pos := g.imageX + ((g.xStartValue / 100) * g.imageW)
-    x2Pos := g.imageX + ((g.xEndValue / 100) * g.imageW)
-    y1Pos := g.imageY + ((g.yStartValue / 100) * g.imageH)
-    y2Pos := g.imageY + ((g.yEndValue / 100) * g.imageH)
+    try g.xStartGuide.Move(guideX1, g.imageY, 2, g.imageH)
+    try g.xEndGuide.Move(guideX2, g.imageY, 2, g.imageH)
+    try g.yStartGuide.Move(g.imageX, guideY1, g.imageW, 2)
+    try g.yEndGuide.Move(g.imageX, guideY2, g.imageW, 2)
+    try g.startDot.Move(guideX1 - dotOffset, guideY1 - dotOffset, dotSize, dotSize)
+    try g.endDot.Move(guideX2 - dotOffset, guideY2 - dotOffset, dotSize, dotSize)
 
-    try g.xStartThumb.Move(x1Pos, g.imageY - 44, xThumbW, xThumbH)
-    try g.xEndThumb.Move(x2Pos, g.imageY - 24, xThumbW, xThumbH)
-    try g.yStartThumb.Move(g.imageX - 44, y1Pos, yThumbW, yThumbH)
-    try g.yEndThumb.Move(g.imageX - 24, y2Pos, yThumbW, yThumbH)
+    rectLeft := Min(guideX1, guideX2)
+    rectTop := Min(guideY1, guideY2)
+    rectRight := Max(guideX1, guideX2)
+    rectBottom := Max(guideY1, guideY2)
+    rectW := Max(1, rectRight - rectLeft + 1)
+    rectH := Max(1, rectBottom - rectTop + 1)
+    border := 2
+
+    try g.selectionLeft.Move(rectLeft, rectTop, border, rectH)
+    try g.selectionRight.Move(rectRight - border + 1, rectTop, border, rectH)
+    try g.selectionTop.Move(rectLeft, rectTop, rectW, border)
+    try g.selectionBottom.Move(rectLeft, rectBottom - border + 1, rectW, border)
 
     x := Min(x1, x2)
     y := Min(y1, y2)
@@ -1003,19 +1021,18 @@ ImportTrainingCanvasSliderChanged(g) {
 }
 
 ImportTrainingCanvasImageClick(g) {
-    rect := GetImportTrainingCanvasControlRect(g.imageCtrl)
-    MouseGetPos(&mx, &my)
-    relX := Max(0, Min(rect.w, mx - rect.x))
-    relY := Max(0, Min(rect.h, my - rect.y))
-    imgX := Round(relX * (g.imageWidth / g.imageW))
-    imgY := Round(relY * (g.imageHeight / g.imageH))
+    mouseClient := GetImportTrainingCanvasMouseClientPos(g)
+    relX := Max(0, Min(g.imageW - 1, mouseClient.x - g.imageX))
+    relY := Max(0, Min(g.imageH - 1, mouseClient.y - g.imageY))
+    imgX := ImportTrainingCanvasMapDisplayToCoord(relX, g.imageWidth, g.imageW)
+    imgY := ImportTrainingCanvasMapDisplayToCoord(relY, g.imageHeight, g.imageH)
 
     if GetKeyState("Ctrl", "P") {
-        g.xEndValue := Round(imgX / g.imageWidth * 100)
-        g.yEndValue := Round(imgY / g.imageHeight * 100)
+        g.xEndValue := imgX
+        g.yEndValue := imgY
     } else {
-        g.xStartValue := Round(imgX / g.imageWidth * 100)
-        g.yStartValue := Round(imgY / g.imageHeight * 100)
+        g.xStartValue := imgX
+        g.yStartValue := imgY
     }
 
     ImportTrainingCanvasSliderChanged(g)
@@ -1025,14 +1042,56 @@ CancelImportTrainingCanvasSelection(g) {
     GetImportTrainerState().selection := 0
 }
 
-GetImportTrainingCanvasControlRect(ctrl) {
-    rect := Buffer(16, 0)
-    DllCall("GetWindowRect", "ptr", ctrl.Hwnd, "ptr", rect.Ptr)
-    left := NumGet(rect, 0, "int")
-    top := NumGet(rect, 4, "int")
-    right := NumGet(rect, 8, "int")
-    bottom := NumGet(rect, 12, "int")
-    return { x: left, y: top, w: right - left, h: bottom - top }
+GetImportTrainingCanvasMouseClientPos(g) {
+    MouseGetPos(&mx, &my)
+    pt := Buffer(8, 0)
+    NumPut("int", mx, pt, 0)
+    NumPut("int", my, pt, 4)
+    DllCall("ScreenToClient", "ptr", g.Hwnd, "ptr", pt.Ptr)
+    return { x: NumGet(pt, 0, "int"), y: NumGet(pt, 4, "int") }
+}
+
+GetImportTrainingCanvasClientToScreen(g, x, y) {
+    pt := Buffer(8, 0)
+    NumPut("int", x, pt, 0)
+    NumPut("int", y, pt, 4)
+    DllCall("ClientToScreen", "ptr", g.Hwnd, "ptr", pt.Ptr)
+    return { x: NumGet(pt, 0, "int"), y: NumGet(pt, 4, "int") }
+}
+
+ImportTrainingCanvasMapCoordToDisplay(coord, sourceSize, displaySize) {
+    if (displaySize <= 1 || sourceSize <= 1)
+        return 0
+    coord := Max(0, Min(sourceSize - 1, coord))
+    return Round((coord / (sourceSize - 1)) * (displaySize - 1))
+}
+
+ImportTrainingCanvasMapDisplayToCoord(displayCoord, sourceSize, displaySize) {
+    if (displaySize <= 1 || sourceSize <= 1)
+        return 0
+    displayCoord := Max(0, Min(displaySize - 1, displayCoord))
+    return Round((displayCoord / (displaySize - 1)) * (sourceSize - 1))
+}
+
+GetImportTrainingCanvasImageSize(imagePath) {
+    imageType := ""
+    hBitmap := 0
+    try hBitmap := LoadPicture(imagePath, "", &imageType)
+    catch
+        return 0
+    if !hBitmap
+        return 0
+
+    bitmap := Buffer(32, 0)
+    result := 0
+    if DllCall("GetObject", "ptr", hBitmap, "int", bitmap.Size, "ptr", bitmap.Ptr, "int") {
+        width := NumGet(bitmap, 4, "int")
+        height := NumGet(bitmap, 8, "int")
+        if (width > 0 && height > 0)
+            result := { w: width, h: height }
+    }
+    DllCall("DeleteObject", "ptr", hBitmap)
+    return result
 }
 
 ImportTrainingCanvasPopulateSelectionFields(g) {
@@ -1048,12 +1107,10 @@ ImportTrainingCanvasPopulateSelectionFields(g) {
         g.hEdit.Value := sel.h
     }
 
-    rect := GetImportTrainingCanvasControlRect(g.imageCtrl)
-    displayCenterX := Round((sel.x + Floor(sel.w / 2)) * (g.displayW / g.imageWidth))
-    displayCenterY := Round((sel.y + Floor(sel.h / 2)) * (g.displayH / g.imageHeight))
-    centerX := rect.x + displayCenterX
-    centerY := rect.y + displayCenterY
-    pixel := PixelGetColor(centerX, centerY, "RGB")
+    displayCenterX := g.imageX + ImportTrainingCanvasMapCoordToDisplay(sel.x + Floor(sel.w / 2), g.imageWidth, g.imageW)
+    displayCenterY := g.imageY + ImportTrainingCanvasMapCoordToDisplay(sel.y + Floor(sel.h / 2), g.imageHeight, g.imageH)
+    screenPoint := GetImportTrainingCanvasClientToScreen(g, displayCenterX, displayCenterY)
+    pixel := PixelGetColor(screenPoint.x, screenPoint.y, "RGB")
     hex := Format("{:06X}", pixel & 0xFFFFFF)
     rgb := ImportReviewGetRGBFromHex(hex)
 

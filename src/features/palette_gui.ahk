@@ -33,6 +33,11 @@ InitHistoryGui(app) {
 }
 
 RebuildUI(app) {
+    currentLayout := app.activePalette.HasOwnProp("layout") ? app.activePalette.layout : "normal"
+    characterMode := app.HasOwnProp("characterMode") && app.characterMode
+    if characterMode
+        currentLayout := "character"
+
     for _, ctrl in app.ui.controls {
         try ctrl.bg.Destroy()
         if (ctrl.txt != ctrl.bg)
@@ -46,6 +51,9 @@ RebuildUI(app) {
     ClearSectionHeaders(app)
     DestroyHistoryPanels(app)
     app.ui.sectionGuis := Map()
+
+    if (currentLayout = "character")
+        BuildCharacterGroups(app)
 
     for _, item in app.activePalette.colors {
         CreateCell(app, item)
@@ -83,13 +91,23 @@ Layout(app, singleSection := "") {
     layout := app.activePalette.HasOwnProp("layout") ? app.activePalette.layout : "normal"
     fullCompact := app.HasOwnProp("fullCompactMode") && app.fullCompactMode
     compact := !fullCompact && app.HasOwnProp("compactMode") && app.compactMode
+    characterMode := app.HasOwnProp("characterMode") && app.characterMode
+    
+    if characterMode
+        layout := "character"
     
     if (layout = "grid")
         cols := 3
     else if (layout = "vertical")
         cols := 1
+    else if (layout = "character")
+        cols := 1
     else
         cols := baseCols
+    
+    if layout = "character" {
+        ShowToast(app, "Layout: character, charMode: " characterMode ", cols: " cols)
+    }
     
     if fullCompact {
         itemW := 24
@@ -104,9 +122,9 @@ Layout(app, singleSection := "") {
 
     sectionGroups := (singleSection != "")
         ? [BuildSingleSectionGroup(app, singleSection)]
-        : BuildSectionGroups(app)
+        : (layout = "character" ? BuildCharacterGroups(app) : BuildSectionGroups(app))
 
-    if (singleSection = "")
+    if (singleSection = "" && layout != "character")
         ClearSectionHeaders(app)
 
     totalW := cols * itemW + Max(0, cols - 1) * gap

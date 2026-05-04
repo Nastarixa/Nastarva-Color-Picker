@@ -1,5 +1,12 @@
 CreateCell(app, item) {
     sectionName := GetItemSectionName(item)
+    
+    characterMode := app.HasOwnProp("characterMode") && app.characterMode
+    if characterMode {
+        if (item.HasOwnProp("_roleGroup") && item._roleGroup != "")
+            sectionName := item._roleGroup
+    }
+    
     token := GetItemToken(item)
     g := GetOrCreateSectionGui(app, sectionName)
     if !IsObject(g) || !SafeGetGuiHwnd(g)
@@ -13,9 +20,13 @@ CreateCell(app, item) {
         safeHex := "808080"
 
     fullCompact := app.HasOwnProp("fullCompactMode") && app.fullCompactMode
+    characterMode := app.HasOwnProp("characterMode") && app.characterMode
     compact := !fullCompact && app.HasOwnProp("compactMode") && app.compactMode
     
-    if fullCompact {
+    if characterMode {
+        w := 40
+        h := 20
+    } else if fullCompact {
         w := 24
         h := 24
     } else if compact {
@@ -32,7 +43,7 @@ CreateCell(app, item) {
     catch
         return
 
-    if !fullCompact {
+    if !fullCompact && !characterMode {
         if compact {
             text := (item.HasOwnProp("pinned") && item.pinned ? "📌 " : "") FormatColorInfo(item, "compact", app)
         } else {
@@ -52,12 +63,12 @@ CreateCell(app, item) {
     try bg.hex := item.hex, bg.token := token
     catch {
         try bg.Destroy()
-        if !fullCompact
+        if !fullCompact && !characterMode
             try txt.Destroy()
         return
     }
 
-    if !fullCompact {
+    if !fullCompact && !characterMode {
         try txt.hex := item.hex, txt.token := token
         catch {
             try bg.Destroy()
@@ -72,7 +83,7 @@ CreateCell(app, item) {
     try bg.OnEvent("ContextMenu", (*) => OpenPinMenu(app, token, GetSelectedIds(app, token)))
     catch
         return
-    if !fullCompact {
+    if !fullCompact && !characterMode {
         try txt.OnEvent("Click", (*) => HistoryClick(app, token))
         catch
             return
@@ -84,7 +95,7 @@ CreateCell(app, item) {
     sectionId := GetSectionId(app.activePalette, sectionName)
     app.ui.controls[token] := {
         bg: bg,
-        txt: fullCompact ? bg : txt,
+        txt: (fullCompact || characterMode) ? bg : txt,
         section: sectionName,
         sectionId: sectionId,
         hex: item.hex,
@@ -92,13 +103,13 @@ CreateCell(app, item) {
     }
 
     bg.gen := app.ui.generation
-    if !fullCompact
+    if !fullCompact && !characterMode
         txt.gen := app.ui.generation
 
     bgHwnd := SafeGetControlHwnd(bg)
     if bgHwnd
         app.ui.controlHexByHwnd[bgHwnd] := token
-    if !fullCompact {
+    if !fullCompact && !characterMode {
         txtHwnd := SafeGetControlHwnd(txt)
         if txtHwnd
             app.ui.controlHexByHwnd[txtHwnd] := token
@@ -120,13 +131,14 @@ UpdateCellDisplay(app, token) {
         return
 
     fullCompact := app.HasOwnProp("fullCompactMode") && app.fullCompactMode
+    characterMode := app.HasOwnProp("characterMode") && app.characterMode
     safeHex := RegExReplace(item.hex, "[^0-9A-Fa-f]")
     if (StrLen(safeHex) != 6)
         safeHex := "808080"
     
     try ctrl.bg.Opt("Background" safeHex)
     
-    if !fullCompact && SafeGetControlHwnd(ctrl.txt) {
+    if !fullCompact && !characterMode && SafeGetControlHwnd(ctrl.txt) {
         compact := app.HasOwnProp("compactMode") && app.compactMode
         if compact {
             text := (item.HasOwnProp("pinned") && item.pinned ? "📌 " : "") FormatColorInfo(item, "compact", app)

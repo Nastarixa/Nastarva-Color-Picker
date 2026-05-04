@@ -210,6 +210,7 @@ ToggleLayout(app) {
     switch current {
         case "normal": p.layout := "grid"
         case "grid": p.layout := "vertical"
+        case "vertical": p.layout := "character"
         default: p.layout := "normal"
     }
 
@@ -1968,7 +1969,7 @@ PasteColorFromClipboard(app) {
     AddSectionName(p, section)
     Normalize(p)
     SaveHistory(app)
-    RefreshSectionByName(app, section)
+    RebuildUI(app)
     ShowToast(app, "Added #" hex " (" name ")")
 }
 

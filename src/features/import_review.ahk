@@ -1008,10 +1008,11 @@ ImportTrainingCanvasSliderChanged(g) {
     g.yStartLabel.Value := y1
     g.yEndLabel.Value := y2
 
-    guideX1 := (g.imageX + ImportTrainingCanvasMapCoordToDisplay(x1, g.imageWidth, g.imageW)) 
-    guideX2 := (g.imageX + ImportTrainingCanvasMapCoordToDisplay(x2, g.imageWidth, g.imageW)) 
-    guideY1 := (g.imageY + ImportTrainingCanvasMapCoordToDisplay(y1, g.imageHeight, g.imageH))
-    guideY2 := (g.imageY + ImportTrainingCanvasMapCoordToDisplay(y2, g.imageHeight, g.imageH)) 
+    guideX1 := g.imageX + g.renderOffsetX + ImportTrainingCanvasMapCoordToDisplay(x1, g.imageWidth, g.renderW)
+    guideX2 := g.imageX + g.renderOffsetX + ImportTrainingCanvasMapCoordToDisplay(x2, g.imageWidth, g.renderW)
+
+    guideY1 := g.imageY + g.renderOffsetY + ImportTrainingCanvasMapCoordToDisplay(y1, g.imageHeight, g.renderH)
+    guideY2 := g.imageY + g.renderOffsetY + ImportTrainingCanvasMapCoordToDisplay(y2, g.imageHeight, g.renderH)
     dotSize := 8
     dotOffset := Floor(dotSize / 2)
 

@@ -225,7 +225,7 @@ GetOrCreateSectionGui(app, sectionOrName) {
     tagColor := GetSectionTagColor(app.activePalette, sourceSectionName)
     tagBg := (tagColor != "" ? tagColor : "323338")
 
-        g.tag := g.AddText("x0 y0 w120 h" headerH " Background" tagBg)
+        g.tag := g.AddText("x0 y0 w14 h" headerH " Background" tagBg)
  
     g.header := g.AddText("x14 y0 h" headerH " 0x200 Background323338 cFFFFFF", "  " title)
     g.headerContainer := g.AddText("x14 y0 w148 h" headerH " BackgroundTrans")
@@ -261,42 +261,20 @@ GetOrCreateSectionGui(app, sectionOrName) {
     try g.tag.Visible := true
     try g.headerContainer.Visible := true
 
-    if headerCompact {
-        try g.header.Hide()
-        try g.target.Hide()
-        try g.lock.Hide()
-        try g.menu.Hide()
-        try g.collapse.Hide()
-        try g.refresh.Hide()
-        try g.close.Hide()
-        if characterMode {
-            try g.tag.Move(0, 0, 120, headerH)
-            try g.header.Move(-1000, 0, 0, 0)
-            try g.lock.Visible := false
-            try g.menu.Visible := false
-            try g.collapse.Visible := false
-            try g.refresh.Visible := false
-        } else {
-            try g.lock.Visible := true
-            try g.menu.Visible := true
-            try g.collapse.Visible := true
-            try g.refresh.Visible := true
-        }
+    if characterMode {
+        try g.tag.Move(0, 0, 14, headerH)
+        try g.header.Move(14, 0, 120, headerH)
+        try g.lock.Visible := false
+        try g.menu.Visible := false
+        try g.collapse.Visible := false
+        try g.refresh.Visible := false
     } else {
-        if characterMode {
-            try g.tag.Move(0, 0, 120, headerH)
-            try g.header.Move(-1000, 0, 0, 0)
-            try g.lock.Visible := false
-            try g.menu.Visible := false
-            try g.collapse.Visible := false
-            try g.refresh.Visible := false
-        } else {
-            try g.lock.Visible := true
-            try g.menu.Visible := true
-            try g.collapse.Visible := true
-            try g.refresh.Visible := true
-        }
+        try g.lock.Visible := true
+        try g.menu.Visible := true
+        try g.collapse.Visible := true
+        try g.refresh.Visible := true
     }
+
     g.hasShown := false
 
     for _, ctrl in [g.tag, g.header, g.target, g.lock, g.refresh, g.menu, g.collapse, g.close] {
@@ -416,9 +394,13 @@ ShowSectionPanel(app, g, sectionOrName, panelIndex, totalW, totalH, dockOffset :
     rightWidth := btnW * btnCount
 
     characterMode := app.HasOwnProp("characterMode") && app.characterMode
-    tagW := (characterMode) ? 120 : 14
+    tagW := 14
     try g.tag.Move(0, 0, tagW, headerH)
-    try g.header.Move(14, 0, totalW - (14 + rightWidth), headerH)
+    if characterMode {
+        try g.header.Move(14, 0, 120, headerH)
+    } else {
+        try g.header.Move(14, 0, totalW - (14 + rightWidth), headerH)
+    }
 
     x := totalW - btnW
     try g.close.Move(x, 0, btnW, headerH)

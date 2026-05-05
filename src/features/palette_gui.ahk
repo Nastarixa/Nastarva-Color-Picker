@@ -446,43 +446,17 @@ UpdateSectionPanelChrome(app, g, sectionName) {
     headerCompact := app.HasOwnProp("headerCompactMode") && app.headerCompactMode
     isTarget := GetSelectedSectionName(app.activePalette) = sectionName
     tag := GetSectionTagColor(app.activePalette, sectionName)
-    
-  
-
-       
-    if headerCompact && !characterMode {
-        bgColor := (tag != "" ? tag : "323338")
-        if g.HasOwnProp("tag") && SafeGetControlHwnd(g.tag)
-            try g.tag.Opt("Background" bgColor)
-        try g.tag.Show()
-        try g.header.Hide()
-        try g.target.Hide()
-        
-        return
-    }
-    
-    if headerCompact && characterMode {
-        try g.tag.Move(0, 0, 120, headerH)
-        try g.header.Move(-1000, 0, 0, 0)
-        try g.target.Move(-1000, 0, 0, 0)
-        try g.lock.Move(-1000, 0, 0, 0)
-        try g.menu.Move(-1000, 0, 0, 0)
-        try g.collapse.Move(-1000, 0, 0, 0)
-        try g.refresh.Move(-1000, 0, 0, 0)
-        return
-    }
+   
 
     if characterMode {
-        try g.tag.Move(0, 0, 120, headerH)
-        try g.header.Move(-1000, 0, 0, 0)
-        try g.target.Move(-1000, 0, 0, 0)
+        try g.tag.Move(0, 0, 14, headerH)
+        try g.header.Move(14, 0, 120, headerH)
         try g.lock.Move(-1000, 0, 0, 0)
         try g.menu.Move(-1000, 0, 0, 0)
         try g.collapse.Move(-1000, 0, 0, 0)
         try g.refresh.Move(-1000, 0, 0, 0)
     } 
 
-    try g.tag.Move(0, 0, (characterMode) ? 120 : 14, headerH)
 
     headerText := "  " sectionName
     isCollapsed := IsSectionCollapsed(app.activePalette, sectionName)

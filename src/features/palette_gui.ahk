@@ -455,6 +455,7 @@ UpdateSectionPanelChrome(app, g, sectionName) {
         try g.menu.Move(-1000, 0, 0, 0)
         try g.collapse.Move(-1000, 0, 0, 0)
         try g.refresh.Move(-1000, 0, 0, 0)
+        try g.close.Move(-1000, 0, 0, 0)
     } 
 
 

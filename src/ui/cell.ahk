@@ -268,11 +268,13 @@ GetOrCreateSectionGui(app, sectionOrName) {
         try g.menu.Visible := false
         try g.collapse.Visible := false
         try g.refresh.Visible := false
+        try g.close.Visible := false
     } else {
         try g.lock.Visible := true
         try g.menu.Visible := true
         try g.collapse.Visible := true
         try g.refresh.Visible := true
+        try g.close.Visible := true
     }
 
     g.hasShown := false

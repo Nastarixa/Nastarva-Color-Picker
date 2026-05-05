@@ -6,14 +6,14 @@
 #SECTION|s2489953-2-7797|Eyes (Blue)|locked=0|collapsed=0|tag=|note=
 #SECTION|s2489953-3-8751|Eyes (Brown)|locked=0|collapsed=0|tag=|note=
 #SECTION|s2489953-4-1920|Hair (Dark)|locked=0|collapsed=0|tag=|note=
-#SECTION|s2489953-5-9941|Hair (Light)|locked=0|collapsed=0|tag=|note=
-#SECTION|s2489953-6-8088|Outline|locked=0|collapsed=0|tag=|note=
-#SECTION|s2489953-7-4570|Skin|locked=0|collapsed=0|tag=|note=
+#SECTION|s2489953-5-9941|Hair (Light)|locked=0|collapsed=1|tag=|note=
+#SECTION|s2489953-6-8088|Outline|locked=0|collapsed=0|tag=FFFF00|note=
+#SECTION|s2489953-7-4570|Skin|locked=0|collapsed=0|tag=FF0000|note=
 B97A50|185,122,80|Skin Shadow|Shadow|0|0|Skin|2489953-94-6864
 FFDCC2|255,220,194|Skin Highlight|Highlight|0|0|Skin|2489953-93-3586
-D89A6A|216,154,106|Skin Hi-Shadow|Shadow|0|0|Skin|2489953-92-6284
+D89A6A|216,154,106|Skin Hi-Shadow|Base|0|0|Skin|2489953-92-6284
 6E4630|110,70,48|Skin Deep|2 Shadow|0|0|Skin|2489953-91-7851
-EFA676|239,166,118|Skin Base|Base|0|0|Skin|2489953-90-9621
+EFA676|239,166,118|Skin Base|Hi Shadow|0|0|Skin|2489953-90-9621
 0F0F0F|15,15,15|Outline|Outline|0|0|Outline|2489953-89-8860
 ff00ff|255,0,255|Mask|Mask|0|0|Outline|2489953-88-2177
 141414|20,20,20|Black|Black|0|0|Outline|2489953-87-2869
@@ -32,12 +32,12 @@ E6C7A1|230,199,161|Eye Highlight|Highlight|0|0|Eyes (Brown)|2489953-75-5051
 734923|115,73,35|Eye Hi-Shadow|Hi-Shadow|0|0|Eyes (Brown)|2489953-74-9770
 2E1C0D|46,28,13|Eye Deep|2 Shadow|0|0|Eyes (Brown)|2489953-73-4384
 8B5A2B|139,90,43|Eye Base|Base|0|0|Eyes (Brown)|2489953-72-7290
-2F5C99|47,92,153|Eye Shadow|Shadow|0|0|Eyes (Blue)|2489953-71-7234
+2F5C99|47,92,153|Eye Shadow|Base|0|0|Eyes (Blue)|2489953-71-7234
 CFE9FF|207,233,255|Eye Highlight|Highlight|0|0|Eyes (Blue)|2489953-70-4119
 3E7BC0|62,123,192|Eye Hi-Shadow|Hi-Shadow|0|0|Eyes (Blue)|2489953-69-2186
 1A345A|26,52,90|Eye Deep|2 Shadow|0|0|Eyes (Blue)|2489953-68-8391
 4A90E2|74,144,226|Eye Base|Base|0|0|Eyes (Blue)|2489953-67-4246
-2C4AA3|44,74,163|Cloth Shadow|Shadow|0|0|Clothing|2489953-66-8090
+2C4AA3|44,74,163|Cloth Shadow|Base|0|0|Clothing|2489953-66-8090
 8FB3FF|143,179,255|Cloth Highlight|Highlight|0|0|Clothing|2489953-65-8544
 3657C0|54,87,192|Cloth Hi-Shadow|Hi-Shadow|0|0|Clothing|2489953-64-7892
 162552|22,37,82|Cloth Deep|2 Shadow|0|0|Clothing|2489953-63-1053

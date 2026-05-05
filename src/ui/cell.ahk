@@ -1,12 +1,6 @@
 CreateCell(app, item) {
     sectionName := GetItemSectionName(item)
     
-    characterMode := app.HasOwnProp("characterMode") && app.characterMode
-    if characterMode {
-        if (item.HasOwnProp("_roleGroup") && item._roleGroup != "")
-            sectionName := item._roleGroup
-    }
-    
     token := GetItemToken(item)
     g := GetOrCreateSectionGui(app, sectionName)
     if !IsObject(g) || !SafeGetGuiHwnd(g)
@@ -24,8 +18,17 @@ CreateCell(app, item) {
     compact := !fullCompact && app.HasOwnProp("compactMode") && app.compactMode
     
     if characterMode {
-        w := 40
-        h := 20
+        role := item.HasOwnProp("role") && item.role != "" ? item.role : "Base"
+        if role = "Highlight" || role = "Hi Shadow" {
+            w := 15
+            h := 15
+        } else if role = "Base" || role = "Shadow" || role = "2 Shadow" {
+            w := 35
+            h := 20
+        } else {
+            w := 35
+            h := 20
+        }
     } else if fullCompact {
         w := 24
         h := 24
@@ -181,6 +184,7 @@ GetOrCreateSectionGui(app, sectionOrName) {
         app.ui.sectionByHwnd := Map()
 
     sectionName := IsObject(sectionOrName) ? sectionOrName.name : sectionOrName
+    characterMode := app.HasOwnProp("characterMode")
 
     if app.ui.sectionGuis.Has(sectionName) {
         g := app.ui.sectionGuis[sectionName]
@@ -197,10 +201,13 @@ GetOrCreateSectionGui(app, sectionOrName) {
 
     headerH := GetPanelHeaderHeight()
     headerCompact := app.HasOwnProp("headerCompactMode") && app.headerCompactMode
+    characterMode := app.HasOwnProp("characterMode") && app.characterMode
     
     tagColor := GetSectionTagColor(app.activePalette, sectionName)
     tagBg := (tagColor != "" ? tagColor : "323338")
-    g.tag := g.AddText("x0 y0 w14 h" headerH " Background" tagBg)
+
+        g.tag := g.AddText("x0 y0 w120 h" headerH " Background" tagBg)
+ 
     g.header := g.AddText("x14 y0 h" headerH " 0x200 Background323338 cFFFFFF", "  " title)
     g.headerContainer := g.AddText("x14 y0 w148 h" headerH " BackgroundTrans")
     
@@ -228,6 +235,13 @@ GetOrCreateSectionGui(app, sectionOrName) {
     g.refresh.OnEvent("Click", (*) => RefreshSectionFromHeader(app, sectionName))
     g.close.OnEvent("Click", (*) => HideSectionPanel(app, sectionName))
     
+
+
+    try g.target.Visible := true
+    try g.tag.Visible := true
+    try g.header.Visible := true
+    try g.headerContainer.Visible := true
+
     if headerCompact {
         try g.header.Hide()
         try g.target.Hide()
@@ -236,13 +250,42 @@ GetOrCreateSectionGui(app, sectionOrName) {
         try g.collapse.Hide()
         try g.refresh.Hide()
         try g.close.Hide()
+        if characterMode {
+            headerH := GetPanelHeaderHeight()
+            try g.header.Move(-1000, 0, 0, 0)
+            try g.lock.Visible := false
+            try g.menu.Visible := false
+            try g.collapse.Visible := false
+            try g.refresh.Visible := false
+        } else {
+            try g.lock.Visible := true
+            try g.menu.Visible := true
+            try g.collapse.Visible := true
+            try g.refresh.Visible := true
+        }
+    } else {
+        if characterMode {
+            headerH := GetPanelHeaderHeight()
+            try g.header.Move(-1000, 0, 0, 0)
+            try g.lock.Visible := false
+            try g.menu.Visible := false
+            try g.collapse.Visible := false
+            try g.refresh.Visible := false
+        } else {
+            try g.lock.Visible := true
+            try g.menu.Visible := true
+            try g.collapse.Visible := true
+            try g.refresh.Visible := true
+        }
     }
     g.hasShown := false
 
     for _, ctrl in [g.tag, g.header, g.target, g.lock, g.refresh, g.menu, g.collapse, g.close] {
-        hwnd := SafeGetControlHwnd(ctrl)
-        if hwnd && !app.ui.sectionByHwnd.Has(hwnd)
-            app.ui.sectionByHwnd[hwnd] := sectionName
+        try {
+            hwnd := SafeGetControlHwnd(ctrl)
+            if hwnd && !app.ui.sectionByHwnd.Has(hwnd)
+                app.ui.sectionByHwnd[hwnd] := sectionName
+        }
     }
 
     g.dragStrip := g.AddText("x0 y9999 w100 h8 Background424348")
@@ -281,7 +324,7 @@ GetSectionPositionKey(app, sectionOrName) {
     return paletteName "|" sectionName
 }
 
-ShowSectionPanel(app, g, sectionOrName, panelIndex, totalW, totalH, dockOffset := 0) {
+ShowSectionPanel(app, g, sectionOrName, panelIndex, totalW, totalH, dockOffset := 0, xOffset := 0) {
     sectionName := IsObject(sectionOrName) ? sectionOrName.name : sectionOrName
     if !app.historyVisible || !SafeGetGuiHwnd(g)
         return
@@ -302,14 +345,14 @@ ShowSectionPanel(app, g, sectionOrName, panelIndex, totalW, totalH, dockOffset :
     }
 
     if isDocked {
-        showX := L + 10
+        showX := L + 10 + xOffset
         showY := Max(T, B - totalH - 25 - dockOffset)
     } else if sectionId != "" && app.activePalette.HasOwnProp("sectionPositions") && app.activePalette.sectionPositions.Has(sectionId) {
         pos := app.activePalette.sectionPositions[sectionId]
-        showX := pos.x
+        showX := pos.x + xOffset
         showY := pos.y
     } else {
-        showX := L + 10
+        showX := L + 10 + xOffset
         showY := Max(T, B - totalH - 25)
     }
 
@@ -321,7 +364,9 @@ ShowSectionPanel(app, g, sectionOrName, panelIndex, totalW, totalH, dockOffset :
     btnCount := 6
     rightWidth := btnW * btnCount
 
-    try g.tag.Move(0, 0, 14, headerH)
+    characterMode := app.HasOwnProp("characterMode") && app.characterMode
+    tagW := (characterMode) ? 120 : 14
+    try g.tag.Move(0, 0, tagW, headerH)
     try g.header.Move(14, 0, totalW - (14 + rightWidth), headerH)
 
     x := totalW - btnW

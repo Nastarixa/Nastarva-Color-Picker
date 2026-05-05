@@ -38,6 +38,12 @@ RebuildUI(app) {
     if characterMode
         currentLayout := "character"
 
+    if app.ui.HasOwnProp("sectionGuis") {
+        for _, g in app.ui.sectionGuis {
+            try g.Destroy()
+        }
+    }
+    
     for _, ctrl in app.ui.controls {
         try ctrl.bg.Destroy()
         if (ctrl.txt != ctrl.bg)
@@ -92,6 +98,7 @@ Layout(app, singleSection := "") {
     fullCompact := app.HasOwnProp("fullCompactMode") && app.fullCompactMode
     compact := !fullCompact && app.HasOwnProp("compactMode") && app.compactMode
     characterMode := app.HasOwnProp("characterMode") && app.characterMode
+    headerCompact := app.HasOwnProp("headerCompactMode") && app.headerCompactMode
     
     if characterMode
         layout := "character"
@@ -101,13 +108,9 @@ Layout(app, singleSection := "") {
     else if (layout = "vertical")
         cols := 1
     else if (layout = "character")
-        cols := 1
+        cols := 2
     else
         cols := baseCols
-    
-    if layout = "character" {
-        ShowToast(app, "Layout: character, charMode: " characterMode ", cols: " cols)
-    }
     
     if fullCompact {
         itemW := 24
@@ -154,11 +157,40 @@ Layout(app, singleSection := "") {
                 continue
             }
 
-            col := Mod(idx, cols)
-            row := Floor(idx / cols)
+            if characterMode {
+                currentRole := items.Length >= idx + 1 ? (items[idx + 1].HasOwnProp("role") && items[idx + 1].role != "" ? items[idx + 1].role : "Base") : "Base"
+                
+                
+                rowMapLeft  := Map("Base", 0, "Shadow", 1, "2 Shadow", 2, "Mask", 3, "Outline", 4)
+                rowMapRight := Map("Highlight", 0, "Hi Shadow", 1)
 
-            x := col * (itemW + gap)
-            y := headerH + row * (itemH + gap)
+                isRightCol := rowMapRight.Has(currentRole)
+                isBlackGroup := sectionName = "Black Group" || sectionName = "Mask Group" || sectionName = "Outline Group"
+                
+                if isBlackGroup {
+                    x := 5
+                    y := headerH + 5 + idx * (itemH + 2)
+                } else {
+                        if isRightCol {
+                            x := 40
+                            row := rowMapRight[currentRole]
+                            y := headerH + 5 + row * 20   ; fixed spacing
+                        } else {
+                            x := 5
+                            if rowMapLeft.Has(currentRole) {
+                                row := rowMapLeft[currentRole]
+                            } else {
+                                row := 0
+                            }
+                            y := headerH + 5 + row * 20
+                        }
+                }
+            } else {
+                col := Mod(idx, cols)
+                row := Floor(idx / cols)
+                x := col * (itemW + gap)
+                y := headerH + row * (itemH + gap)
+            }
 
             try ctrl.bg.Move(x, y)
             catch {
@@ -168,34 +200,75 @@ Layout(app, singleSection := "") {
             }
 
             if (ctrl.txt != ctrl.bg) && SafeGetControlHwnd(ctrl.txt) {
-                lblH := fullCompact ? 0 : (compact ? 12 : 14)
-                try ctrl.txt.Move(x + 2, y + 2, itemW - 4, lblH)
-                catch {
-                    if app.ui.controls.Has(token)
-                        app.ui.controls.Delete(token)
-                    continue
+                if characterMode {
+                    try ctrl.txt.Visible := false
+                } else {
+                    lblH := fullCompact ? 0 : (compact ? 12 : 14)
+                    try ctrl.txt.Move(x + 2, y + 2, itemW - 4, lblH)
                 }
             }
 
             idx++
         }
 
+   
         usedRowsForSection := (idx > 0) ? Floor((idx - 1) / cols) + 1 : 1
-        totalH := IsSectionCollapsed(app.activePalette, sectionName)
-            ? headerH
-            : headerH + Max(itemH + gap, usedRowsForSection * (itemH + gap))
+        
+        if characterMode {
+            maxY := 0
+            maxItemH := 0
+            for _, itm in items {
+                r := itm.HasOwnProp("role") && itm.role != "" ? itm.role : "Base"
+                if r = "Highlight" {
+                    y := headerH + 5 + 0 * (itemH - 8)
+                } else if r = "Hi Shadow" {
+                    y := headerH + 5 + 1 * (itemH - 8)
+                } else if r = "Base" {
+                    y := headerH + 5 + 0 * (itemH - 18)
+                } else if r = "Shadow" {
+                    y := headerH + 5 + 1 * (itemH - 18)
+                } else if r = "2 Shadow" {
+                    y := headerH + 5 + 2 * (itemH - 18)
+                } else {
+                    y := headerH + 5
+                }
+                maxY := Max(maxY, y + itemH)
+            }
+            if headerCompact {
+            totalH := 83
+                } else {
+            totalH := 93
+            }
+            panelW := 60
+        } else {
+            totalH := IsSectionCollapsed(app.activePalette, sectionName)
+                ? headerH
+                : headerH + Max(itemH + gap, usedRowsForSection * (itemH + gap))
+            panelW := cols * itemW + Max(0, cols - 1) * gap
+        }
 
-        try g.close.Move(totalW - 24, 0, 24, headerH)
-        try g.menu.Move(totalW - 48, 0, 24, headerH)
-        try g.collapse.Move(totalW - 72, 0, 24, headerH)
-        try g.refresh.Move(totalW - 96, 0, 24, headerH)
-        try g.lock.Move(totalW - 120, 0, 24, headerH)
-        try g.target.Move(totalW - 144, 0, 24, headerH)
-        try g.tag.Move(0, 0, 14, headerH)
-        try g.header.Move(14, 0, totalW - 158, headerH)
+        try g.tag.Move(0, 0, 120, headerH)
+        try g.close.Move(panelW - 24, 0, 24, headerH)
+        try g.headerContainer (0, 0, panelW, headerH)
+
+        if characterMode {
+            try g.header.Move(14, 0, 120, headerH)
+            try g.target.Move(-1000, 0, 0, 0)
+            try g.lock.Move(-1000, 0, 0, 0)
+            try g.menu.Move(-1000, 0, 0, 0)
+            try g.collapse.Move(-1000, 0, 0, 0)
+            try g.refresh.Move(-1000, 0, 0, 0)
+        } else {
+            try g.header.Move(14, 0, panelW - 158, headerH)
+            try g.target.Move(panelW - 144, 0, 24, headerH)
+            try g.menu.Move(panelW - 48, 0, 24, headerH)
+            try g.collapse.Move(panelW - 72, 0, 24, headerH)
+            try g.refresh.Move(panelW - 96, 0, 24, headerH)
+            try g.lock.Move(panelW - 120, 0, 24, headerH)
+        }
         if g.HasOwnProp("dragStrip") {
             stripH := Max(8, Floor(totalH * 0.1))
-            try g.dragStrip.Move(0, totalH - stripH, totalW, stripH)
+            try g.dragStrip.Move(0, totalH - stripH, panelW, stripH)
         }
 
         state := GetSectionChromeState(app, sectionName)
@@ -209,9 +282,51 @@ Layout(app, singleSection := "") {
 
         panelIndex++
         visibleSections[sectionName] := true
-        ShowSectionPanel(app, g, sectionName, panelIndex, totalW, totalH, dockOffset)
-        if IsPaletteDocked(app.activePalette)
-            dockOffset += totalH + 15
+        
+if characterMode {
+            xPos := 0
+            yOffset := 0
+            
+            blackY := 0
+            leftY := 0
+            rightY := 0
+            
+            for _, grp in sectionGroups {
+                grpH := headerH + 10 + grp.items.Length * 22 + 15
+                if grp.name = "Black Group" {
+                    if sectionName = "Black Group" {
+                        xPos := 0
+                        yOffset := 0
+                    }
+                    blackY += grpH
+                } else {
+                    firstItemRole := ""
+                    if grp.items.Length > 0 {
+                        firstItemRole := grp.items[1].HasOwnProp("role") && grp.items[1].role != "" ? grp.items[1].role : "Base"
+                    }
+                    
+                    if firstItemRole = "Highlight" || firstItemRole = "Hi Shadow" {
+                        if sectionName = grp.name {
+                            xPos := 150
+                            yOffset := blackY + leftY
+                        }
+                        rightY += grpH
+                    } else {
+                        if sectionName = grp.name {
+                            xPos := 0
+                            yOffset := blackY + leftY
+                        }
+                        leftY += grpH
+                    }
+                }
+            }
+            
+            ShowSectionPanel(app, g, sectionName, panelIndex, panelW, totalH, yOffset, xPos)
+        } else {
+            ShowSectionPanel(app, g, sectionName, panelIndex, panelW, totalH, dockOffset)
+            if IsPaletteDocked(app.activePalette)
+                dockOffset += totalH + 15
+        }
     }
 
     RemoveEmptySectionPanels(app, visibleSections)
@@ -332,11 +447,28 @@ GetSectionChromeState(app, sectionName) {
     return sectionName "|" isTarget "|" isCollapsed "|" isLocked "|" tag
 }
 UpdateSectionPanelChrome(app, g, sectionName) {
+    characterMode := app.HasOwnProp("characterMode") && app.characterMode
+    headerH := GetPanelHeaderHeight()
+
+    if characterMode {
+        headerText := "  " sectionName
+        try g.header.Text := headerText
+        headerH := GetPanelHeaderHeight()
+        try g.header.Move(-1000, 0, 0, 0)
+        try g.tag.Move(0, 0, 120, headerH)
+        try g.target.Move(-1000, 0, 0, 0)
+        try g.lock.Move(-1000, 0, 0, 0)
+        try g.menu.Move(-1000, 0, 0, 0)
+        try g.collapse.Move(-1000, 0, 0, 0)
+        try g.refresh.Move(-1000, 0, 0, 0)
+        return
+    }
+
     headerCompact := app.HasOwnProp("headerCompactMode") && app.headerCompactMode
     isTarget := GetSelectedSectionName(app.activePalette) = sectionName
     tag := GetSectionTagColor(app.activePalette, sectionName)
     
-    if headerCompact {
+    if headerCompact && !characterMode {
         bgColor := (tag != "" ? tag : "323338")
         if g.HasOwnProp("tag") && SafeGetControlHwnd(g.tag)
             try g.tag.Opt("Background" bgColor)
@@ -349,6 +481,17 @@ UpdateSectionPanelChrome(app, g, sectionName) {
         try g.refresh.Hide()
         try g.close.Hide()
         
+        return
+    }
+    
+    if headerCompact && characterMode {
+        try g.tag.Move(0, 0, 120, headerH)
+        try g.header.Move(14, 0, 120, headerH)
+        try g.target.Move(-1000, 0, 0, 0)
+        try g.lock.Move(-1000, 0, 0, 0)
+        try g.menu.Move(-1000, 0, 0, 0)
+        try g.collapse.Move(-1000, 0, 0, 0)
+        try g.refresh.Move(-1000, 0, 0, 0)
         return
     }
     
@@ -373,13 +516,30 @@ UpdateSectionPanelChrome(app, g, sectionName) {
     try g.collapse.Opt("Background39414A cFFFFFF")
     try g.close.Opt("Background4A4C52 cFFFFFF")
     
-    try g.header.Show()
-    try g.target.Show()
-    try g.lock.Show()
-    try g.menu.Show()
-    try g.collapse.Show()
-    try g.refresh.Show()
-    try g.close.Show()
+    characterMode := app.HasOwnProp("characterMode") && app.characterMode
+    headerH := GetPanelHeaderHeight()
+    
+    hwnd := SafeGetGuiHwnd(g)
+    currentW := 200
+    if hwnd && WinExist("ahk_id " hwnd) {
+        WinGetPos(,, &currentW,, "ahk_id " hwnd)
+    }
+    
+    if characterMode {
+        try g.lock.Move(-1000, 0, 0, 0)
+        try g.menu.Move(-1000, 0, 0, 0)
+        try g.collapse.Move(-1000, 0, 0, 0)
+        try g.refresh.Move(-1000, 0, 0, 0)
+    } else {
+        try g.lock.Move(currentW - 120, 0, 24, headerH)
+        try g.menu.Move(currentW - 48, 0, 24, headerH)
+        try g.collapse.Move(currentW - 72, 0, 24, headerH)
+        try g.refresh.Move(currentW - 96, 0, 24, headerH)
+    }
+    try g.target.Move(currentW - 144, 0, 24, headerH)
+    try g.header.Move(14, 0, currentW - 158, headerH)
+    try g.tag.Move(0, 0, (characterMode) ? 120 : 14, headerH)
+    try g.close.Move(currentW - 24, 0, 24, headerH)
 }
 
 RefreshAllSectionChrome(app) {

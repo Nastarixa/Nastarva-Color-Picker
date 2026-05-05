@@ -809,39 +809,54 @@ OpenImportTrainingCanvas(app, reviewGui) {
         data.imageHeight := actualImageSize.h
     }
 
-    imageW := Max(1, data.imageWidth)
-    imageH := Max(1, data.imageHeight)
-    maxW := 760
-    maxH := 560
-    scale := Min(maxW / imageW, maxH / imageH)
-    if (scale <= 0)
-        scale := 1
-    displayW := Max(120, Round(imageW * scale))
-    displayH := Max(120, Round(imageH * scale))
 
     g := Gui("+AlwaysOnTop +Resize +ToolWindow +Border", "Training Canvas")
     g.BackColor := "2B2D31"
     g.SetFont("s9", "Consolas")
+
+
+    imageW := Max(1, data.imageWidth)
+    imageH := Max(1, data.imageHeight)
+
+    maxW := 760
+    maxH := 560
+
+    scale := Min(maxW / imageW, maxH / imageH)
+
+    displayW := Max(120, Round(imageW * scale))
+    displayH := Max(120, Round(imageH * scale))
+
+    realW := displayW
+    realH := displayH
+
+    offsetX := 0
+    offsetY := 0
+
+    g.imageW := displayW
+    g.imageH := displayH
+
+    g.renderW := realW
+    g.renderH := realH
+
+    g.renderOffsetX := Floor((g.imageW - g.renderW) / 2)
+    g.renderOffsetY := Floor((g.imageH - g.renderH) / 2)
+
     g.MarginX := 12
     g.MarginY := 10
     g.parentReview := reviewGui
     g.trainingData := data
     g.sourceImagePath := imagePath
-    g.displayW := displayW
-    g.displayH := displayH
     g.imageWidth := imageW
     g.imageHeight := imageH
     g.selectedBlockRow := 0
 
-g.AddText("x10 y10 cFFFFFF", "Click on image to set X/Y position")
+    g.AddText("x10 y10 cFFFFFF", "Click on image to set X/Y position")
     g.AddText("x10 y28 c909090", "Ctrl+Click = set end position")
 
     trackW := 18
 
     g.imageX := 18
     g.imageY := 50
-    g.imageW := displayW
-    g.imageH := displayH
     g.imageCtrl := g.AddPicture("x" g.imageX " y" g.imageY " w" g.imageW " h" g.imageH, imagePath)
     g.imageOverlay := g.AddText("x" g.imageX " y" g.imageY " w" g.imageW " h" g.imageH " BackgroundTrans")
     g.imageOverlay.OnEvent("Click", (*) => ImportTrainingCanvasImageClick(g))
@@ -870,11 +885,21 @@ g.AddText("x10 y10 cFFFFFF", "Click on image to set X/Y position")
     g.AddText("x" (g.imageX + 120) " y" infoY " cAAAAAA", "X End")
     g.xEndLabel := g.AddText("x" (g.imageX + 170) " y" infoY " w60 cFFFFFF", Max(0, imageW - 1) "")
 
+
+
+    g.AddText("x" (g.imageX + 240) " y" infoY " cAAAAAA", "X Max")
+    g.xMaxLabel := g.AddText("x" (g.imageX + 280) " y" infoY " w60 cFFFFFF", Max(0, imageW - 1) "")
+
+
     g.AddText("x" g.imageX " y" (infoY + 20) " cAAAAAA", "Y Start")
     g.yStartLabel := g.AddText("x" (g.imageX + 50) " y" (infoY + 20) " w60 cFFFFFF", "0")
 
     g.AddText("x" (g.imageX + 120) " y" (infoY + 20) " cAAAAAA", "Y End")
     g.yEndLabel := g.AddText("x" (g.imageX + 170) " y" (infoY + 20) " w60 cFFFFFF", Max(0, imageH - 1) "")
+
+    g.AddText("x" (g.imageX + 240) " y" (infoY + 20) " cAAAAAA", "Y Max")
+    g.yMaxLabel := g.AddText("x" (g.imageX + 280) " y" (infoY + 20) " w60 cFFFFFF", Max(0, imageH - 1) "")
+
 
     sideX := g.imageX + g.imageW + 20
     g.AddText("x" sideX " y" g.imageY " cAAAAAA", "Block Data")
@@ -921,9 +946,9 @@ g.AddText("x10 y10 cFFFFFF", "Click on image to set X/Y position")
     g.blockList.OnEvent("ItemFocus", (ctrl, item) => ImportTrainingCanvasFocusBlock(g, item))
 
     bottomY := Max(g.imageY + g.imageH + 42, listY + 252)
-    g.btnApplyReview := g.AddButton("x10 y" bottomY " w180 h30", "Apply To Review")
-    g.btnSavePreset := g.AddButton("x200 y" bottomY " w180 h30", "Save Training Preset")
-    g.btnClose := g.AddButton("x390 y" bottomY " w180 h30", "Close")
+    g.btnApplyReview := g.AddButton("x10 y" bottomY+10 " w180 h25", "Apply To Review")
+    g.btnSavePreset := g.AddButton("x200 y" bottomY+10 " w180 h25", "Save Training Preset")
+    g.btnClose := g.AddButton("x390 y" bottomY+10 " w180 h25", "Close")
     g.btnApplyReview.OnEvent("Click", (*) => ImportTrainingCanvasApplyToReview(app, g))
     g.btnSavePreset.OnEvent("Click", (*) => ImportTrainingCanvasSavePreset(app, g))
     g.btnClose.OnEvent("Click", (*) => CloseImportTrainingCanvas(g))
@@ -983,10 +1008,10 @@ ImportTrainingCanvasSliderChanged(g) {
     g.yStartLabel.Value := y1
     g.yEndLabel.Value := y2
 
-    guideX1 := g.imageX + ImportTrainingCanvasMapCoordToDisplay(x1, g.imageWidth, g.imageW)
-    guideX2 := g.imageX + ImportTrainingCanvasMapCoordToDisplay(x2, g.imageWidth, g.imageW)
-    guideY1 := g.imageY + ImportTrainingCanvasMapCoordToDisplay(y1, g.imageHeight, g.imageH)
-    guideY2 := g.imageY + ImportTrainingCanvasMapCoordToDisplay(y2, g.imageHeight, g.imageH)
+    guideX1 := (g.imageX + ImportTrainingCanvasMapCoordToDisplay(x1, g.imageWidth, g.imageW)) 
+    guideX2 := (g.imageX + ImportTrainingCanvasMapCoordToDisplay(x2, g.imageWidth, g.imageW)) 
+    guideY1 := (g.imageY + ImportTrainingCanvasMapCoordToDisplay(y1, g.imageHeight, g.imageH))
+    guideY2 := (g.imageY + ImportTrainingCanvasMapCoordToDisplay(y2, g.imageHeight, g.imageH)) 
     dotSize := 8
     dotOffset := Floor(dotSize / 2)
 
@@ -1022,10 +1047,15 @@ ImportTrainingCanvasSliderChanged(g) {
 
 ImportTrainingCanvasImageClick(g) {
     mouseClient := GetImportTrainingCanvasMouseClientPos(g)
-    relX := Max(0, Min(g.imageW - 1, mouseClient.x - g.imageX))
-    relY := Max(0, Min(g.imageH - 1, mouseClient.y - g.imageY))
-    imgX := ImportTrainingCanvasMapDisplayToCoord(relX, g.imageWidth, g.imageW)
-    imgY := ImportTrainingCanvasMapDisplayToCoord(relY, g.imageHeight, g.imageH)
+
+    relX := mouseClient.x - g.imageX - g.renderOffsetX
+    relY := mouseClient.y - g.imageY - g.renderOffsetY
+    ; clamp inside real image
+    relX := Max(0, Min(g.renderW - 1, relX))
+    relY := Max(0, Min(g.renderH - 1, relY))
+
+    imgX := Round((relX / (g.renderW - 1)) * (g.imageWidth - 1))
+    imgY := Round((relY / (g.renderH - 1)) * (g.imageHeight - 1))
 
     if GetKeyState("Ctrl", "P") {
         g.xEndValue := imgX
@@ -1060,9 +1090,8 @@ GetImportTrainingCanvasClientToScreen(g, x, y) {
 }
 
 ImportTrainingCanvasMapCoordToDisplay(coord, sourceSize, displaySize) {
-    if (displaySize <= 1 || sourceSize <= 1)
+    if (sourceSize <= 1)
         return 0
-    coord := Max(0, Min(sourceSize - 1, coord))
     return Round((coord / (sourceSize - 1)) * (displaySize - 1))
 }
 

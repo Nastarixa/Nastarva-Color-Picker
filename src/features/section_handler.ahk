@@ -495,70 +495,76 @@ BuildSingleSectionGroup(app, sectionName) {
 
 BuildCharacterGroups(app) {
     p := app.activePalette
-    roleOrder := ["Mask", "Outline", "Black", "Base", "Shadow", "2 Shadow", "Highlight", "Hi Shadow"]
-    sectionItems := Map()
-    groups := []
-
-    EnsureDefaultSection(p)
-    for _, section in p.sections {
-        sectionName := IsObject(section) ? section.name : section
-        sectionName := sectionName != "" ? sectionName : "Default"
-        if !sectionItems.Has(sectionName)
-            sectionItems[sectionName] := []
-    }
-
-    for _, item in p.colors {
-        sectionName := item.HasOwnProp("section") && item.section != ""
-            ? item.section
-            : "Default"
-        if !sectionItems.Has(sectionName)
-            sectionItems[sectionName] := []
-        sectionItems[sectionName].Push(item)
-    }
-
-    for sectionName, items in sectionItems {
-        if items.Length = 0
-            continue
-
-        SortSectionItems(app, items)
-        cards := []
-
-        for _, item in items {
-            role := NormalizeCharacterExportRole(item.HasOwnProp("role") ? item.role : "")
-            placed := false
-
-            for _, card in cards {
-                if !card.roleMap.Has(role) {
-                    card.roleMap[role] := item
-                    placed := true
-                    break
-                }
-            }
-
-            if !placed {
-                cardIndex := cards.Length + 1
-                cardName := cardIndex = 1 ? sectionName : sectionName " (" cardIndex ")"
-                card := { name: cardName, sourceSection: sectionName, roleMap: Map(), items: [] }
-                card.roleMap[role] := item
-                cards.Push(card)
+    
+    maskGroup := { name: "Mask Group", items: [] }
+    outlineGroup := { name: "Outline Group", items: [] }
+    blackGroup := { name: "Black Group", items: [] }
+    resultGroups := []
+    
+    sectionGroups := BuildSectionGroups(app)
+    
+    for _, section in sectionGroups {
+        sectionName := section.name
+        sectionItems := section.items
+        
+        colorsByRole := Map()
+        colorsByRole["Base"] := []
+        colorsByRole["Shadow"] := []
+        colorsByRole["2 Shadow"] := []
+        colorsByRole["Highlight"] := []
+        colorsByRole["Hi Shadow"] := []
+        
+        for item in sectionItems {
+            role := item.HasOwnProp("role") ? item.role : "Base"
+            
+            if role = "Mask" {
+                maskGroup.items.Push(item)
+            } else if role = "Outline" {
+                outlineGroup.items.Push(item)
+            } else if role = "Black" {
+                blackGroup.items.Push(item)
+            } else if InStr(role, "hi") {
+                colorsByRole["Hi Shadow"].Push(item)
+            } else if colorsByRole.Has(role) {
+                colorsByRole[role].Push(item)
+            } else {
+                colorsByRole["Base"].Push(item)
             }
         }
-
-        for _, card in cards {
-            orderedItems := []
-            for _, roleName in roleOrder {
-                if card.roleMap.Has(roleName) {
-                    item := card.roleMap[roleName]
-                    item._roleGroup := card.name
-                    orderedItems.Push(item)
+        
+        roleOrder := ["Base", "Shadow", "2 Shadow", "Highlight", "Hi Shadow"]
+        
+        while true {
+            groupHasItems := false
+            newGroup := { name: sectionName, items: [] }
+            
+            for r in roleOrder {
+                if colorsByRole[r].Length > 0 {
+                    newGroup.items.Push(colorsByRole[r][1])
+                    colorsByRole[r].RemoveAt(1)
+                    groupHasItems := true
                 }
             }
-            card.items := orderedItems
-            groups.Push(card)
+            
+            if groupHasItems && newGroup.items.Length > 0 {
+                resultGroups.Push(newGroup)
+            } else {
+                break
+            }
         }
     }
-
-    return groups
+    
+    if maskGroup.items.Length > 0 {
+        resultGroups.InsertAt(1, maskGroup)
+    }
+    if outlineGroup.items.Length > 0 {
+        resultGroups.InsertAt(2, outlineGroup)
+    }
+    if blackGroup.items.Length > 0 {
+        resultGroups.InsertAt(3, blackGroup)
+    }
+    
+    return resultGroups
 }
 
 NormalizeCharacterExportRole(role) {

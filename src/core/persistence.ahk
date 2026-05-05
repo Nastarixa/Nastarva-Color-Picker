@@ -308,7 +308,7 @@ LoadHistory(app) {
         }
 
         if (SubStr(line, 1, 10) = "#POSITION|") {
-            posData := Trim(SubStr(line, 11))
+            posData := Trim(SubStr(line, 10))
             parts := StrSplit(posData, "|")
             if (parts.Length = 5) {
                 sectionId := Trim(parts[1])

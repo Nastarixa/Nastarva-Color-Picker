@@ -54,12 +54,20 @@ RebuildUI(app) {
     app.ui.controlHexByHwnd := Map()
     app.ui.sectionByHwnd := Map()
     app.ui.panelDragHwnds := Map()
+    app.ui.characterGroupByToken := Map()
     ClearSectionHeaders(app)
     DestroyHistoryPanels(app)
     app.ui.sectionGuis := Map()
 
-    if (currentLayout = "character")
-        BuildCharacterGroups(app)
+    if (currentLayout = "character") {
+        app.ui.characterGroups := BuildCharacterGroups(app)
+        for _, group in app.ui.characterGroups {
+            for _, groupItem in group.items
+                app.ui.characterGroupByToken[GetItemToken(groupItem)] := group
+        }
+    } else {
+        app.ui.characterGroups := []
+    }
 
     for _, item in app.activePalette.colors {
         CreateCell(app, item)
@@ -125,7 +133,9 @@ Layout(app, singleSection := "") {
 
     sectionGroups := (singleSection != "")
         ? [BuildSingleSectionGroup(app, singleSection)]
-        : (layout = "character" ? BuildCharacterGroups(app) : BuildSectionGroups(app))
+        : (layout = "character"
+            ? (app.ui.HasOwnProp("characterGroups") && IsObject(app.ui.characterGroups) ? app.ui.characterGroups : BuildCharacterGroups(app))
+            : BuildSectionGroups(app))
 
     if (singleSection = "" && layout != "character")
         ClearSectionHeaders(app)
@@ -138,8 +148,9 @@ Layout(app, singleSection := "") {
     for _, group in sectionGroups {
         sectionName := group.name
         items := group.items
+        characterLayout := characterMode ? BuildCharacterCardLayout(group, headerH) : 0
 
-        g := GetOrCreateSectionGui(app, sectionName)
+        g := GetOrCreateSectionGui(app, group)
         if !IsObject(g) || !SafeGetGuiHwnd(g)
             continue
 
@@ -158,41 +169,27 @@ Layout(app, singleSection := "") {
             }
 
             if characterMode {
-                currentRole := items.Length >= idx + 1 ? (items[idx + 1].HasOwnProp("role") && items[idx + 1].role != "" ? items[idx + 1].role : "Base") : "Base"
-                
-                
-                rowMapLeft  := Map("Base", 0, "Shadow", 1, "2 Shadow", 2, "Mask", 3, "Outline", 4)
-                rowMapRight := Map("Highlight", 0, "Hi Shadow", 1)
+                currentRole := item.HasOwnProp("_normalizedCharacterRole")
+                    ? item._normalizedCharacterRole
+                    : NormalizeCharacterExportRole(item.HasOwnProp("role") ? item.role : "")
 
-                isRightCol := rowMapRight.Has(currentRole)
-                isBlackGroup := sectionName = "Black Group" || sectionName = "Mask Group" || sectionName = "Outline Group"
-                
-                if isBlackGroup {
-                    x := 5
-                    y := headerH + 5 + idx * (itemH + 2)
-                } else {
-                        if isRightCol {
-                            x := 40
-                            row := rowMapRight[currentRole]
-                            y := headerH + 5 + row * 20   ; fixed spacing
-                        } else {
-                            x := 5
-                            if rowMapLeft.Has(currentRole) {
-                                row := rowMapLeft[currentRole]
-                            } else {
-                                row := 0
-                            }
-                            y := headerH + 5 + row * 20
-                        }
-                }
+                slot := characterLayout.slots.Has(currentRole)
+                    ? characterLayout.slots[currentRole]
+                    : GetCharacterCardSlot(currentRole, headerH)
+                x := slot.x
+                y := slot.y
+                cellW := slot.w
+                cellH := slot.h
             } else {
                 col := Mod(idx, cols)
                 row := Floor(idx / cols)
                 x := col * (itemW + gap)
                 y := headerH + row * (itemH + gap)
+                cellW := itemW
+                cellH := itemH
             }
 
-            try ctrl.bg.Move(x, y)
+            try ctrl.bg.Move(x, y, cellW, cellH)
             catch {
                 if app.ui.controls.Has(token)
                     app.ui.controls.Delete(token)
@@ -215,31 +212,8 @@ Layout(app, singleSection := "") {
         usedRowsForSection := (idx > 0) ? Floor((idx - 1) / cols) + 1 : 1
         
         if characterMode {
-            maxY := 0
-            maxItemH := 0
-            for _, itm in items {
-                r := itm.HasOwnProp("role") && itm.role != "" ? itm.role : "Base"
-                if r = "Highlight" {
-                    y := headerH + 5 + 0 * (itemH - 8)
-                } else if r = "Hi Shadow" {
-                    y := headerH + 5 + 1 * (itemH - 8)
-                } else if r = "Base" {
-                    y := headerH + 5 + 0 * (itemH - 18)
-                } else if r = "Shadow" {
-                    y := headerH + 5 + 1 * (itemH - 18)
-                } else if r = "2 Shadow" {
-                    y := headerH + 5 + 2 * (itemH - 18)
-                } else {
-                    y := headerH + 5
-                }
-                maxY := Max(maxY, y + itemH)
-            }
-            if headerCompact {
-            totalH := 83
-                } else {
-            totalH := 93
-            }
-            panelW := 60
+            totalH := characterLayout.totalH
+            panelW := characterLayout.panelW
         } else {
             totalH := IsSectionCollapsed(app.activePalette, sectionName)
                 ? headerH
@@ -247,25 +221,6 @@ Layout(app, singleSection := "") {
             panelW := cols * itemW + Max(0, cols - 1) * gap
         }
 
-        try g.tag.Move(0, 0, 120, headerH)
-        try g.close.Move(panelW - 24, 0, 24, headerH)
-        try g.headerContainer (0, 0, panelW, headerH)
-
-        if characterMode {
-            try g.header.Move(14, 0, 120, headerH)
-            try g.target.Move(-1000, 0, 0, 0)
-            try g.lock.Move(-1000, 0, 0, 0)
-            try g.menu.Move(-1000, 0, 0, 0)
-            try g.collapse.Move(-1000, 0, 0, 0)
-            try g.refresh.Move(-1000, 0, 0, 0)
-        } else {
-            try g.header.Move(14, 0, panelW - 158, headerH)
-            try g.target.Move(panelW - 144, 0, 24, headerH)
-            try g.menu.Move(panelW - 48, 0, 24, headerH)
-            try g.collapse.Move(panelW - 72, 0, 24, headerH)
-            try g.refresh.Move(panelW - 96, 0, 24, headerH)
-            try g.lock.Move(panelW - 120, 0, 24, headerH)
-        }
         if g.HasOwnProp("dragStrip") {
             stripH := Max(8, Floor(totalH * 0.1))
             try g.dragStrip.Move(0, totalH - stripH, panelW, stripH)
@@ -281,49 +236,15 @@ Layout(app, singleSection := "") {
         RegisterSectionPanelDrag(app, g)
 
         panelIndex++
-        visibleSections[sectionName] := true
+        visibleKey := group.HasOwnProp("key") ? group.key : sectionName
+        visibleSections[visibleKey] := true
         
-if characterMode {
-            xPos := 0
-            yOffset := 0
-            
-            blackY := 0
-            leftY := 0
-            rightY := 0
-            
-            for _, grp in sectionGroups {
-                grpH := headerH + 10 + grp.items.Length * 22 + 15
-                if grp.name = "Black Group" {
-                    if sectionName = "Black Group" {
-                        xPos := 0
-                        yOffset := 0
-                    }
-                    blackY += grpH
-                } else {
-                    firstItemRole := ""
-                    if grp.items.Length > 0 {
-                        firstItemRole := grp.items[1].HasOwnProp("role") && grp.items[1].role != "" ? grp.items[1].role : "Base"
-                    }
-                    
-                    if firstItemRole = "Highlight" || firstItemRole = "Hi Shadow" {
-                        if sectionName = grp.name {
-                            xPos := 150
-                            yOffset := blackY + leftY
-                        }
-                        rightY += grpH
-                    } else {
-                        if sectionName = grp.name {
-                            xPos := 0
-                            yOffset := blackY + leftY
-                        }
-                        leftY += grpH
-                    }
-                }
-            }
-            
-            ShowSectionPanel(app, g, sectionName, panelIndex, panelW, totalH, yOffset, xPos)
+        if characterMode {
+            ShowSectionPanel(app, g, group, panelIndex, panelW, totalH, dockOffset)
+            if IsPaletteDocked(app.activePalette)
+                dockOffset += totalH + 15
         } else {
-            ShowSectionPanel(app, g, sectionName, panelIndex, panelW, totalH, dockOffset)
+            ShowSectionPanel(app, g, group, panelIndex, panelW, totalH, dockOffset)
             if IsPaletteDocked(app.activePalette)
                 dockOffset += totalH + 15
         }
@@ -333,6 +254,76 @@ if characterMode {
 
     maxItems := app.activePalette.historyMax
     app.ui.rows := Ceil(maxItems / cols)
+}
+
+BuildCharacterCardLayout(group, headerH) {
+    baseTopY := headerH + 8
+    leftPad := 6
+    rawSlots := Map()
+
+    for _, item in group.items {
+        role := item.HasOwnProp("_normalizedCharacterRole")
+            ? item._normalizedCharacterRole
+            : NormalizeCharacterExportRole(item.HasOwnProp("role") ? item.role : "")
+        if !rawSlots.Has(role)
+            rawSlots[role] := GetCharacterCardSlot(role, headerH)
+    }
+
+    if rawSlots.Count = 0
+        return { slots: Map(), panelW: 120, totalH: headerH + 36 }
+
+    minX := 999999
+    minY := 999999
+    maxRight := 0
+    maxBottom := 0
+    for _, slot in rawSlots {
+        if (slot.x < minX)
+            minX := slot.x
+        if (slot.y < minY)
+            minY := slot.y
+        if (slot.x + slot.w > maxRight)
+            maxRight := slot.x + slot.w
+        if (slot.y + slot.h > maxBottom)
+            maxBottom := slot.y + slot.h
+    }
+
+    adjustedSlots := Map()
+    for role, slot in rawSlots {
+        adjustedSlots[role] := {
+            x: leftPad + (slot.x - minX),
+            y: baseTopY + (slot.y - minY),
+            w: slot.w,
+            h: slot.h
+        }
+    }
+
+    panelW := leftPad + (maxRight - minX) + 6
+    totalH := baseTopY + (maxBottom - minY) + 8
+    return { slots: adjustedSlots, panelW: panelW, totalH: totalH }
+}
+
+GetCharacterCardSlot(role, headerH) {
+    topY := headerH + 8
+    switch role {
+        case "Mask":
+            return { x: 6, y: topY + 28, w: 44, h: 24 }
+        case "Outline":
+            return { x: 56, y: topY, w: 44, h: 24 }
+        case "Black":
+            return { x: 56, y: topY + 36, w: 44, h: 24 }
+        case "Base":
+            return { x: 106, y: topY, w: 56, h: 24 }
+        case "Shadow":
+            return { x: 106, y: topY + 24, w: 56, h: 24 }
+        case "2 Shadow":
+            return { x: 106, y: topY + 48, w: 56, h: 24 }
+        case "Highlight":
+            return { x: 164, y: topY, w: 18, h: 18 }
+        case "Hi Shadow":
+            return { x: 164, y: topY + 30, w: 18, h: 18 }
+        default:
+            return { x: 106, y: topY, w: 56, h: 24 }
+    }
 }
 
 HasHistoryPanels(app) {
@@ -399,13 +390,12 @@ SaveSectionPanelPosition(app, sectionName, x, y) {
         return
     
     if app.activePalette {
-        section := GetSectionObjectByName(app.activePalette, sectionName)
-        if IsObject(section) && section.HasOwnProp("id") {
-            sectionId := section.id
-            if !app.activePalette.HasOwnProp("sectionPositions") || !IsObject(app.activePalette.sectionPositions)
-                app.activePalette.sectionPositions := Map()
-            app.activePalette.sectionPositions[sectionId] := { x: x, y: y, w: 0, h: 0 }
-        }
+        lookupKey := GetSectionId(app.activePalette, sectionName)
+        if (lookupKey = "")
+            lookupKey := sectionName
+        if !app.activePalette.HasOwnProp("sectionPositions") || !IsObject(app.activePalette.sectionPositions)
+            app.activePalette.sectionPositions := Map()
+        app.activePalette.sectionPositions[lookupKey] := { x: x, y: y, w: 0, h: 0 }
     }
 }
 
@@ -416,23 +406,26 @@ SaveSectionPanelPositions(app) {
     if IsPaletteDocked(app.activePalette)
         return
 
-    for sectionName, g in app.ui.sectionGuis {
+    savedCount := 0
+    for sectionKey, g in app.ui.sectionGuis {
         hwnd := SafeGetGuiHwnd(g)
         if hwnd && WinExist("ahk_id " hwnd) {
             try {
                 WinGetPos(&x, &y, &w, &h, "ahk_id " hwnd)
-                if (y > 50) {
-                    if app.activePalette {
-                        section := GetSectionObjectByName(app.activePalette, sectionName)
-                        if IsObject(section) && section.HasOwnProp("id") {
-                            sectionId := section.id
-                            if !app.activePalette.HasOwnProp("sectionPositions") || !IsObject(app.activePalette.sectionPositions)
-                                app.activePalette.sectionPositions := Map()
-                            app.activePalette.sectionPositions[sectionId] := { x: x, y: y, w: w, h: h }
-                        }
-                    }
+                if app.activePalette {
+                    lookupKey := g.HasOwnProp("positionKey") ? g.positionKey : sectionKey
+                    if !app.activePalette.HasOwnProp("sectionPositions") || !IsObject(app.activePalette.sectionPositions)
+                        app.activePalette.sectionPositions := Map()
+                    app.activePalette.sectionPositions[lookupKey] := { x: x, y: y, w: w, h: h }
+                    savedCount++
                 }
             }
+        }
+    }
+    if savedCount > 0 {
+        ShowToast(app, "Saved " savedCount " positions")
+        if app.activePalette && app.palettes.Has(app.activePalette.name) {
+            app.palettes[app.activePalette.name] := app.activePalette
         }
     }
 }
@@ -450,24 +443,14 @@ UpdateSectionPanelChrome(app, g, sectionName) {
     characterMode := app.HasOwnProp("characterMode") && app.characterMode
     headerH := GetPanelHeaderHeight()
 
-    if characterMode {
-        headerText := "  " sectionName
-        try g.header.Text := headerText
-        headerH := GetPanelHeaderHeight()
-        try g.header.Move(-1000, 0, 0, 0)
-        try g.tag.Move(0, 0, 120, headerH)
-        try g.target.Move(-1000, 0, 0, 0)
-        try g.lock.Move(-1000, 0, 0, 0)
-        try g.menu.Move(-1000, 0, 0, 0)
-        try g.collapse.Move(-1000, 0, 0, 0)
-        try g.refresh.Move(-1000, 0, 0, 0)
-        return
-    }
-
     headerCompact := app.HasOwnProp("headerCompactMode") && app.headerCompactMode
     isTarget := GetSelectedSectionName(app.activePalette) = sectionName
     tag := GetSectionTagColor(app.activePalette, sectionName)
     
+  
+
+    try g.tag.Move(0, 0, (characterMode) ? 120 : 14, headerH)
+       
     if headerCompact && !characterMode {
         bgColor := (tag != "" ? tag : "323338")
         if g.HasOwnProp("tag") && SafeGetControlHwnd(g.tag)
@@ -475,11 +458,6 @@ UpdateSectionPanelChrome(app, g, sectionName) {
         try g.tag.Show()
         try g.header.Hide()
         try g.target.Hide()
-        try g.lock.Hide()
-        try g.menu.Hide()
-        try g.collapse.Hide()
-        try g.refresh.Hide()
-        try g.close.Hide()
         
         return
     }
@@ -494,7 +472,15 @@ UpdateSectionPanelChrome(app, g, sectionName) {
         try g.refresh.Move(-1000, 0, 0, 0)
         return
     }
-    
+
+    if characterMode {
+        try g.target.Move(-1000, 0, 0, 0)
+        try g.lock.Move(-1000, 0, 0, 0)
+        try g.menu.Move(-1000, 0, 0, 0)
+        try g.collapse.Move(-1000, 0, 0, 0)
+        try g.refresh.Move(-1000, 0, 0, 0)
+    } 
+
     headerText := "  " sectionName
     isCollapsed := IsSectionCollapsed(app.activePalette, sectionName)
     isLocked := IsSectionLocked(app.activePalette, sectionName)
@@ -515,43 +501,20 @@ UpdateSectionPanelChrome(app, g, sectionName) {
     try g.menu.Opt("Background3B3D44 cFFFFFF")
     try g.collapse.Opt("Background39414A cFFFFFF")
     try g.close.Opt("Background4A4C52 cFFFFFF")
-    
-    characterMode := app.HasOwnProp("characterMode") && app.characterMode
-    headerH := GetPanelHeaderHeight()
-    
-    hwnd := SafeGetGuiHwnd(g)
-    currentW := 200
-    if hwnd && WinExist("ahk_id " hwnd) {
-        WinGetPos(,, &currentW,, "ahk_id " hwnd)
-    }
-    
-    if characterMode {
-        try g.lock.Move(-1000, 0, 0, 0)
-        try g.menu.Move(-1000, 0, 0, 0)
-        try g.collapse.Move(-1000, 0, 0, 0)
-        try g.refresh.Move(-1000, 0, 0, 0)
-    } else {
-        try g.lock.Move(currentW - 120, 0, 24, headerH)
-        try g.menu.Move(currentW - 48, 0, 24, headerH)
-        try g.collapse.Move(currentW - 72, 0, 24, headerH)
-        try g.refresh.Move(currentW - 96, 0, 24, headerH)
-    }
-    try g.target.Move(currentW - 144, 0, 24, headerH)
-    try g.header.Move(14, 0, currentW - 158, headerH)
-    try g.tag.Move(0, 0, (characterMode) ? 120 : 14, headerH)
-    try g.close.Move(currentW - 24, 0, 24, headerH)
+
+
 }
 
 RefreshAllSectionChrome(app) {
     if !app.ui.HasOwnProp("sectionGuis")
         return
 
-    for sectionName, g in app.ui.sectionGuis {
+    for sectionKey, g in app.ui.sectionGuis {
         if SafeGetGuiHwnd(g)
-            state := GetSectionChromeState(app, sectionName)
+            state := GetSectionChromeState(app, g.HasOwnProp("sourceSectionName") ? g.sourceSectionName : sectionKey)
 
             if (!g.HasOwnProp("lastState") || g.lastState != state) {
-                UpdateSectionPanelChrome(app, g, sectionName)
+                UpdateSectionPanelChrome(app, g, g.HasOwnProp("sourceSectionName") ? g.sourceSectionName : sectionKey)
                 g.lastState := state
             }
     }
@@ -1601,23 +1564,23 @@ GetHistorySectionFromHwnd(app, hwnd) {
     if !hwnd || !app.ui.HasOwnProp("sectionGuis")
         return ""
 
-    for sectionName, g in app.ui.sectionGuis {
+    for sectionKey, g in app.ui.sectionGuis {
         panelHwnd := SafeGetGuiHwnd(g)
         if (panelHwnd = hwnd)
-            return sectionName
+            return g.HasOwnProp("sourceSectionName") ? g.sourceSectionName : sectionKey
 
         if SafeGetControlHwnd(g.header) = hwnd
-            return sectionName
+            return g.HasOwnProp("sourceSectionName") ? g.sourceSectionName : sectionKey
         if SafeGetControlHwnd(g.tag) = hwnd
-            return sectionName
+            return g.HasOwnProp("sourceSectionName") ? g.sourceSectionName : sectionKey
         if SafeGetControlHwnd(g.target) = hwnd
-            return sectionName
+            return g.HasOwnProp("sourceSectionName") ? g.sourceSectionName : sectionKey
         if SafeGetControlHwnd(g.collapse) = hwnd
-            return sectionName
+            return g.HasOwnProp("sourceSectionName") ? g.sourceSectionName : sectionKey
         if SafeGetControlHwnd(g.lock) = hwnd
-            return sectionName
+            return g.HasOwnProp("sourceSectionName") ? g.sourceSectionName : sectionKey
         if SafeGetControlHwnd(g.close) = hwnd
-            return sectionName
+            return g.HasOwnProp("sourceSectionName") ? g.sourceSectionName : sectionKey
     }
 
     try parent := DllCall("GetParent", "Ptr", hwnd, "Ptr")
@@ -1627,9 +1590,9 @@ GetHistorySectionFromHwnd(app, hwnd) {
     if !parent
         return ""
 
-    for sectionName, g in app.ui.sectionGuis {
+    for sectionKey, g in app.ui.sectionGuis {
         if (SafeGetGuiHwnd(g) = parent)
-            return sectionName
+            return g.HasOwnProp("sourceSectionName") ? g.sourceSectionName : sectionKey
     }
 
     return ""
@@ -1642,7 +1605,7 @@ QueueSectionPanelMove(app, panelHwnd) {
     sectionName := ""
     for name, g in app.ui.sectionGuis {
         if SafeGetGuiHwnd(g) = panelHwnd {
-            sectionName := name
+            sectionName := g.HasOwnProp("sourceSectionName") ? g.sourceSectionName : name
             break
         }
     }
@@ -1718,18 +1681,22 @@ FinishSectionPanelMove(app) {
             sectionName := GetHistorySectionFromHwnd(app, hwnd)
             if (sectionName != "") {
                 WinGetPos(&x, &y, &w, &h, "ahk_id " hwnd)
-                if (y > 50) {
-                    if app.activePalette {
-                        section := GetSectionObjectByName(app.activePalette, sectionName)
-                        if IsObject(section) && section.HasOwnProp("id") {
-                            sectionId := section.id
+                if app.activePalette {
+                        panelGui := ""
+                        for _, panel in app.ui.sectionGuis {
+                            if SafeGetGuiHwnd(panel) = hwnd {
+                                panelGui := panel
+                                break
+                            }
+                        }
+                        if IsObject(panelGui) {
+                            positionKey := panelGui.HasOwnProp("positionKey") ? panelGui.positionKey : sectionName
                             if !app.activePalette.HasOwnProp("sectionPositions") || !IsObject(app.activePalette.sectionPositions)
                                 app.activePalette.sectionPositions := Map()
-                            app.activePalette.sectionPositions[sectionId] := { x: x, y: y, w: w, h: h }
+                            app.activePalette.sectionPositions[positionKey] := { x: x, y: y, w: w, h: h }
                             SaveHistory(app)
                             ShowToast(app, "💾 Section position saved: " sectionName)
                         }
-                    }
                 }
             }
         }

@@ -19,7 +19,7 @@ CreateDisplayPanel(gui, app, leftX, leftW) {
     y += 28
     p := app.activePalette
     guiMode := p.HasOwnProp("guiMode") ? p.guiMode : "undocked"
-    guiModeLabel := (guiMode = "docked") ? "Mode: Docked" : "Mode: Undocked"
+    guiModeLabel := (guiMode = "docked") ? "Docked" : "Undocked"
     gui.btnGuiMode := gui.AddButton("x" leftX+5 " y" y " w" leftW-10 " h22", guiModeLabel)
     gui.btnGuiMode.OnEvent("Click", (*) => ToggleGuiModeClicked(app, gui))
 
@@ -82,7 +82,7 @@ ToggleGuiModeClicked(app, gui) {
     p.guiMode := newMode
     SavePalette(p, app.version)
     if gui.HasOwnProp("btnGuiMode")
-        gui.btnGuiMode.Text := (newMode = "docked") ? "Mode: Docked" : "Mode: Undocked"
+        gui.btnGuiMode.Text := (newMode = "docked") ? "Docked" : "Undocked"
     wasDocked := IsPaletteDocked(p)
     p.guiMode := newMode
     isNowDocked := IsPaletteDocked(p)
@@ -94,7 +94,7 @@ ToggleGuiModeClicked(app, gui) {
     InitHistoryGui(app)
     RebuildUI(app)
     Emit(app, "history_changed")
-    ShowToast(app, "GUI Mode: " (newMode = "docked" ? "Docked" : "Undocked"))
+    ShowToast(app, newMode = "docked" ? "Docked" : "Undocked")
 }
 
 ToggleLayoutClicked(app, gui) {

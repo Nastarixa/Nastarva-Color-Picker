@@ -18,6 +18,7 @@ SwitchPaletteByIndex(app, idx) {
 
     if app.activePalette && !IsPaletteDocked(app.activePalette) && app.historyVisible {
         SaveSectionPanelPositions(app)
+        SavePalette(app.activePalette, app.version)
         SaveHistory(app)
         ShowToast(app, "💾 Positions saved before switch")
     }
@@ -200,7 +201,7 @@ ToggleGuiMode(app) {
     if IsObject(g) && g.HasOwnProp("btnGuiMode")
         g.btnGuiMode.Text := GetGuiModeLabel(app)
 
-    ShowToast(app, "✅ GUI: " (newMode = "docked" ? "Docked" : "Undocked"))
+    ShowToast(app, newMode = "docked" ? "✅ Docked" : "✅ Undocked")
 }
 
 ToggleLayout(app) {

@@ -2,7 +2,12 @@ CreateCell(app, item) {
     sectionName := GetItemSectionName(item)
     
     token := GetItemToken(item)
-    g := GetOrCreateSectionGui(app, sectionName)
+    groupTarget := sectionName
+    if app.HasOwnProp("characterMode") && app.characterMode
+        if app.ui.HasOwnProp("characterGroupByToken") && app.ui.characterGroupByToken.Has(token)
+            groupTarget := app.ui.characterGroupByToken[token]
+
+    g := GetOrCreateSectionGui(app, groupTarget)
     if !IsObject(g) || !SafeGetGuiHwnd(g)
         return
 
@@ -184,14 +189,27 @@ GetOrCreateSectionGui(app, sectionOrName) {
         app.ui.sectionByHwnd := Map()
 
     sectionName := IsObject(sectionOrName) ? sectionOrName.name : sectionOrName
+    sectionKey := IsObject(sectionOrName) && sectionOrName.HasOwnProp("key")
+        ? sectionOrName.key
+        : sectionName
+    sourceSectionName := IsObject(sectionOrName) && sectionOrName.HasOwnProp("sourceSection") && sectionOrName.sourceSection != ""
+        ? sectionOrName.sourceSection
+        : sectionName
+    positionKey := IsObject(sectionOrName) && sectionOrName.HasOwnProp("positionKey")
+        ? sectionOrName.positionKey
+        : ""
+    if (positionKey = "") {
+        sectionId := GetSectionId(app.activePalette, sourceSectionName)
+        positionKey := sectionId != "" ? sectionId : sectionKey
+    }
     characterMode := app.HasOwnProp("characterMode")
 
-    if app.ui.sectionGuis.Has(sectionName) {
-        g := app.ui.sectionGuis[sectionName]
+    if app.ui.sectionGuis.Has(sectionKey) {
+        g := app.ui.sectionGuis[sectionKey]
         if SafeGetGuiHwnd(g)
             return g
         try g.Destroy()
-        app.ui.sectionGuis.Delete(sectionName)
+        app.ui.sectionGuis.Delete(sectionKey)
     }
 
     title := sectionName
@@ -203,7 +221,7 @@ GetOrCreateSectionGui(app, sectionOrName) {
     headerCompact := app.HasOwnProp("headerCompactMode") && app.headerCompactMode
     characterMode := app.HasOwnProp("characterMode") && app.characterMode
     
-    tagColor := GetSectionTagColor(app.activePalette, sectionName)
+    tagColor := GetSectionTagColor(app.activePalette, sourceSectionName)
     tagBg := (tagColor != "" ? tagColor : "323338")
 
         g.tag := g.AddText("x0 y0 w120 h" headerH " Background" tagBg)
@@ -222,18 +240,18 @@ GetOrCreateSectionGui(app, sectionOrName) {
     g.SetFont("s10", "Consolas")
     g.close := g.AddText("y0 w24 h" headerH " Center 0x200 Background39414A cFFFFFF", "x")
     
-    g.tag.OnEvent("Click", (*) => SetSelectedSection(app, sectionName))
-    g.header.OnEvent("Click", (*) => SetSelectedSection(app, sectionName))
-    g.tag.OnEvent("DoubleClick", (*) => EditSectionNoteUI(app, sectionName))
-    g.header.OnEvent("DoubleClick", (*) => EditSectionNoteUI(app, sectionName))
-    g.tag.OnEvent("ContextMenu", (*) => OpenSectionMenu(app, sectionName))
-    g.header.OnEvent("ContextMenu", (*) => OpenSectionMenu(app, sectionName))
-    g.target.OnEvent("Click", (*) => SetSelectedSection(app, sectionName))
-    g.collapse.OnEvent("Click", (*) => ToggleSectionCollapsed(app, sectionName))
-    g.lock.OnEvent("Click", (*) => ToggleSectionLock(app, sectionName))
-    g.menu.OnEvent("Click", (*) => OpenSectionMenu(app, sectionName))
-    g.refresh.OnEvent("Click", (*) => RefreshSectionFromHeader(app, sectionName))
-    g.close.OnEvent("Click", (*) => HideSectionPanel(app, sectionName))
+    g.tag.OnEvent("Click", (*) => SetSelectedSection(app, sourceSectionName))
+    g.header.OnEvent("Click", (*) => SetSelectedSection(app, sourceSectionName))
+    g.tag.OnEvent("DoubleClick", (*) => EditSectionNoteUI(app, sourceSectionName))
+    g.header.OnEvent("DoubleClick", (*) => EditSectionNoteUI(app, sourceSectionName))
+    g.tag.OnEvent("ContextMenu", (*) => OpenSectionMenu(app, sourceSectionName))
+    g.header.OnEvent("ContextMenu", (*) => OpenSectionMenu(app, sourceSectionName))
+    g.target.OnEvent("Click", (*) => SetSelectedSection(app, sourceSectionName))
+    g.collapse.OnEvent("Click", (*) => ToggleSectionCollapsed(app, sourceSectionName))
+    g.lock.OnEvent("Click", (*) => ToggleSectionLock(app, sourceSectionName))
+    g.menu.OnEvent("Click", (*) => OpenSectionMenu(app, sourceSectionName))
+    g.refresh.OnEvent("Click", (*) => RefreshSectionFromHeader(app, sourceSectionName))
+    g.close.OnEvent("Click", (*) => HideSectionPanel(app, sectionKey))
     
 
 
@@ -284,14 +302,17 @@ GetOrCreateSectionGui(app, sectionOrName) {
         try {
             hwnd := SafeGetControlHwnd(ctrl)
             if hwnd && !app.ui.sectionByHwnd.Has(hwnd)
-                app.ui.sectionByHwnd[hwnd] := sectionName
+                app.ui.sectionByHwnd[hwnd] := sourceSectionName
         }
     }
 
     g.dragStrip := g.AddText("x0 y9999 w100 h8 Background424348")
-    g.dragStrip.OnEvent("Click", (*) => SetSelectedSection(app, sectionName))
+    g.dragStrip.OnEvent("Click", (*) => SetSelectedSection(app, sourceSectionName))
+    g.sectionKey := sectionKey
+    g.sourceSectionName := sourceSectionName
+    g.positionKey := positionKey
 
-    app.ui.sectionGuis[sectionName] := g
+    app.ui.sectionGuis[sectionKey] := g
     return g
 }
 
@@ -320,8 +341,29 @@ GetPanelHeaderHeight() {
 
 GetSectionPositionKey(app, sectionOrName) {
     paletteName := (app.activePalette && app.activePalette.HasOwnProp("name")) ? app.activePalette.name : ""
-    sectionName := IsObject(sectionOrName) ? sectionOrName.name : sectionOrName
+    sectionName := IsObject(sectionOrName) && sectionOrName.HasOwnProp("positionKey")
+        ? sectionOrName.positionKey
+        : (IsObject(sectionOrName) ? sectionOrName.name : sectionOrName)
     return paletteName "|" sectionName
+}
+
+LogSectionPanelRestoreDebug(app, sectionName, positionKey, legacyPositionKey, matchedKey, showX, showY, totalW, totalH) {
+    try {
+        logPath := "C:\tmp\section-position-debug.log"
+        paletteName := (app.activePalette && app.activePalette.HasOwnProp("name")) ? app.activePalette.name : ""
+        line := FormatTime(, "yyyy-MM-dd HH:mm:ss")
+            . " | palette=" paletteName
+            . " | section=" sectionName
+            . " | key=" positionKey
+            . " | legacy=" legacyPositionKey
+            . " | matched=" matchedKey
+            . " | x=" showX
+            . " | y=" showY
+            . " | w=" totalW
+            . " | h=" totalH
+            . "`r`n"
+        FileAppend(line, logPath, "UTF-8")
+    }
 }
 
 ShowSectionPanel(app, g, sectionOrName, panelIndex, totalW, totalH, dockOffset := 0, xOffset := 0) {
@@ -337,20 +379,28 @@ ShowSectionPanel(app, g, sectionOrName, panelIndex, totalW, totalH, dockOffset :
 
     isDocked := IsPaletteDocked(app.activePalette)
 
-    sectionId := ""
-    if app.activePalette {
-        section := GetSectionObjectByName(app.activePalette, sectionName)
-        if IsObject(section) && section.HasOwnProp("id")
-            sectionId := section.id
-    }
+    characterMode := app.HasOwnProp("characterMode") && app.characterMode
+    positionKey := IsObject(sectionOrName) && sectionOrName.HasOwnProp("positionKey")
+        ? sectionOrName.positionKey
+        : (g.HasOwnProp("positionKey") ? g.positionKey : sectionName)
+
+    legacyPositionKey := g.HasOwnProp("sourceSectionName") ? g.sourceSectionName : sectionName
+    matchedKey := "default"
 
     if isDocked {
         showX := L + 10 + xOffset
         showY := Max(T, B - totalH - 25 - dockOffset)
-    } else if sectionId != "" && app.activePalette.HasOwnProp("sectionPositions") && app.activePalette.sectionPositions.Has(sectionId) {
-        pos := app.activePalette.sectionPositions[sectionId]
-        showX := pos.x + xOffset
+        matchedKey := "docked"
+    } else if app.activePalette.HasOwnProp("sectionPositions") && app.activePalette.sectionPositions.Has(positionKey) {
+        pos := app.activePalette.sectionPositions[positionKey]
+        showX := pos.x
         showY := pos.y
+        matchedKey := positionKey
+    } else if app.activePalette.HasOwnProp("sectionPositions") && app.activePalette.sectionPositions.Has(legacyPositionKey) {
+        pos := app.activePalette.sectionPositions[legacyPositionKey]
+        showX := pos.x
+        showY := pos.y
+        matchedKey := legacyPositionKey
     } else {
         showX := L + 10 + xOffset
         showY := Max(T, B - totalH - 25)
@@ -383,6 +433,7 @@ ShowSectionPanel(app, g, sectionOrName, panelIndex, totalW, totalH, dockOffset :
     try g.target.Move(x, 0, btnW, headerH)
 
         try g.Show("x" showX " y" showY " w" totalW " h" totalH)
+    LogSectionPanelRestoreDebug(app, sectionName, positionKey, legacyPositionKey, matchedKey, showX, showY, totalW, totalH)
 
     g.hasShown := true
 }

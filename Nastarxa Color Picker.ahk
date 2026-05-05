@@ -39,6 +39,7 @@ LoadHistory(App)
 LoadFavorites(App)
 InitEvents(App)
 InitKeyboardNav(App)
+OnExit(HandleAppExit)
 ShowHotkeyHelp(App)
 
 ; =========================================================
@@ -81,3 +82,8 @@ Hotkey("~Enter", (*) => App.historyVisible && EnterSelectedColor(App))
 }
 
 ~^MButton::SaveColor(App)
+
+HandleAppExit(*) {
+    global App
+    try PersistActivePaletteState(App)
+}

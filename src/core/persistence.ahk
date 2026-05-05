@@ -50,6 +50,64 @@ LoadPaletteFromFile(p) {
         if (SubStr(line, 1, 5) = "#META") {
             if RegExMatch(line, "priority=(\d+)", &m5)
                 p.priority := Integer(m5[1])
+            if RegExMatch(line, "guiMode=(\w+)", &m6)
+                p.guiMode := m6[1]
+            continue
+        }
+
+        if (SubStr(line, 1, 10) = "#POSITION|") {
+            posData := Trim(SubStr(line, 11))
+            parts := StrSplit(posData, "|")
+            if (parts.Length >= 5) {
+                sectionId := Trim(parts[1])
+                x := Trim(parts[2])
+                y := Trim(parts[3])
+                w := Trim(parts[4])
+                h := Trim(parts[5])
+                if (sectionId != "" && RegExMatch(x, "^-?\d+$") && RegExMatch(y, "^-?\d+$")) {
+                    p.sectionPositions[sectionId] := {
+                        x: Integer(x),
+                        y: Integer(y),
+                        w: Integer(w),
+                        h: Integer(h)
+                    }
+                }
+            }
+            continue
+        }
+        
+        if (SubStr(line, 1, 9) = "#SECTION|") {
+            secData := Trim(SubStr(line, 10))
+            parts := StrSplit(secData, "|")
+            if (parts.Length >= 2) {
+                secId := Trim(parts[1])
+                secName := UnescapeSectionMeta(Trim(parts[2]))
+                locked := 0
+                collapsed := 0
+                tag := ""
+                note := ""
+                if (parts.Length >= 3) {
+                    for i, partValue in parts {
+                        if (i <= 2)
+                            continue
+                        if InStr(partValue, "locked=") {
+                            partsKV := StrSplit(partValue, "=", , 2)
+                            locked := (partsKV.Length >= 2 && Trim(partsKV[2]) = "1") ? 1 : 0
+                        }
+                        if InStr(partValue, "collapsed=") {
+                            partsKV := StrSplit(partValue, "=", , 2)
+                            collapsed := (partsKV.Length >= 2 && Trim(partsKV[2]) = "1") ? 1 : 0
+                        }
+                        if InStr(partValue, "tag=")
+                            tag := SubStr(partValue, 5)
+                        if InStr(partValue, "note=")
+                            note := UnescapeSectionMeta(SubStr(partValue, 6))
+                    }
+                }
+                if (secName != "" && !HasSectionName(p, secName)) {
+                    p.sections.Push({ id: secId, name: secName, isDefault: false, locked: locked, collapsed: collapsed, tag: tag, note: note })
+                }
+            }
             continue
         }
 
@@ -194,9 +252,24 @@ NormalizeRoleOrderList(roleOrder) {
     return normalized
 }
 
+PersistActivePaletteState(app) {
+    if !app || !app.HasOwnProp("activePalette") || !IsObject(app.activePalette)
+        return
+
+    if app.HasOwnProp("historyVisible") && app.historyVisible && !IsPaletteDocked(app.activePalette)
+        SaveSectionPanelPositions(app)
+
+    SaveHistory(app)
+    if app.HasOwnProp("palettes") && app.palettes.Has(app.activePalette.name)
+        app.palettes[app.activePalette.name] := app.activePalette
+}
+
 SwitchPalette(app, name) {
     if !app.palettes.Has(name)
         return
+
+    if app.activePalette && app.activePalette.name != ""
+        PersistActivePaletteState(app)
 
     app.activePalette := app.palettes[name]
     LoadHistory(app)
@@ -231,8 +304,9 @@ LoadHistory(app) {
     p := app.activePalette
     app.ui.generation++
 
-    if !FileExist(p.file)
+    if !FileExist(p.file) {
         SaveHistory(app)
+    }
 
     p.colors := []
     p.map := Map()
@@ -245,87 +319,73 @@ LoadHistory(app) {
     if !FileExist(p.file)
         return
 
-    for line in StrSplit(FileRead(p.file), "`n", "`r") {
+    fileContent := FileRead(p.file)
+    
+    lineNum := 0
+    for line in StrSplit(fileContent, "`n", "`r") {
+        lineNum++
         line := Trim(line)
         if (line = "")
             continue
-
-        if (SubStr(line, 1, 5) = "#META") {
-            if RegExMatch(line, "version=([\d\.]+)", &m)
-                p.version := m[1]
-            if RegExMatch(line, "historyMax=(\d+)", &m1)
-                p.historyMax := Integer(m1[1])
-            if RegExMatch(line, "maxCols=(\d+)", &m2)
-                p.maxCols := Integer(m2[1])
-            if RegExMatch(line, "guiMode=([A-Za-z]+)", &m3)
-                p.guiMode := StrLower(m3[1])
-            if RegExMatch(line, "priority=(\d+)", &m5)
-                p.priority := Integer(m5[1])
-            if RegExMatch(line, "note=([^|]*)", &m4)
-                p.note := UnescapeSectionMeta(m4[1])
-            continue
-        }
-
-        if (SubStr(line, 1, 10) = "#ROLEORDER") {
-            roleOrderText := Trim(SubStr(line, 12))
-            if (roleOrderText != "")
-                p.roleOrder := NormalizeRoleOrderList(StrSplit(roleOrderText, ","))
-            continue
-        }
-
-        if (SubStr(line, 1, 8) = "#SECTION") {
-            sectionData := Trim(SubStr(line, 10))
-            parts := StrSplit(sectionData, "|")
-            if parts.Length >= 2 {
+        
+        if (SubStr(line, 1, 10) = "#POSITION|") {
+            posData := Trim(SubStr(line, 11))
+            parts := StrSplit(posData, "|")
+            if (parts.Length >= 5) {
                 sectionId := Trim(parts[1])
-                sectionName := UnescapeSectionMeta(Trim(parts[2]))
-                if (sectionName != "") {
-                    section := {
-                        id: sectionId,
-                        name: sectionName,
-                        isDefault: false,
-                        locked: false,
-                        collapsed: false,
-                        tag: "",
-                        note: ""
-                    }
-                    if (parts.Length >= 3 && InStr(parts[3], "locked="))
-                        section.locked := (SubStr(parts[3], 8) = "1")
-                    if (parts.Length >= 4 && InStr(parts[4], "collapsed="))
-                        section.collapsed := (SubStr(parts[4], 11) = "1")
-                    if (parts.Length >= 5 && InStr(parts[5], "tag="))
-                        section.tag := StrUpper(RegExReplace(SubStr(parts[5], 5), "(?i)[^0-9A-F]"))
-                    if (parts.Length >= 6 && InStr(parts[6], "note="))
-                        section.note := UnescapeSectionMeta(SubStr(parts[6], 6))
-                    p.sections.Push(section)
+                x := Trim(parts[2])
+                y := Trim(parts[3])
+                w := Trim(parts[4])
+                h := Trim(parts[5])
+            } else if (parts.Length >= 4) {
+                sectionId := Trim(parts[1])
+                x := Trim(parts[2])
+                y := Trim(parts[3])
+                w := "0"
+                h := "0"
+            }
+            
+            if (sectionId != "" && RegExMatch(x, "^-?\d+$") && RegExMatch(y, "^-?\d+$")) {
+                p.sectionPositions[sectionId] := {
+                    x: Integer(x),
+                    y: Integer(y),
+                    w: Integer(w),
+                    h: Integer(h)
                 }
-            } else if parts.Length = 1 {
-                sectionName := UnescapeSectionMeta(Trim(parts[1]))
-                if (sectionName != "")
-                    AddSectionName(p, sectionName)
             }
             continue
         }
-
-        if (SubStr(line, 1, 10) = "#POSITION|") {
-            posData := Trim(SubStr(line, 10))
-            parts := StrSplit(posData, "|")
-            if (parts.Length = 5) {
-                sectionId := Trim(parts[1])
-                x := Trim(parts[2]), y := Trim(parts[3]), w := Trim(parts[4]), h := Trim(parts[5])
-                if (sectionId != ""
-                    && RegExMatch(x, "^-?\d+$")
-                    && RegExMatch(y, "^-?\d+$")
-                    && RegExMatch(w, "^-?\d+$")
-                    && RegExMatch(h, "^-?\d+$")
-                    && Integer(y) > 50
-                    && !p.sectionPositions.Has(sectionId)) {
-                    p.sectionPositions[sectionId] := {
-                        x: Integer(x),
-                        y: Integer(y),
-                        w: Integer(w),
-                        h: Integer(h)
+        
+        if (SubStr(line, 1, 9) = "#SECTION|") {
+            secData := Trim(SubStr(line, 10))
+            parts := StrSplit(secData, "|")
+            if (parts.Length >= 2) {
+                secId := Trim(parts[1])
+                secName := UnescapeSectionMeta(Trim(parts[2]))
+                locked := 0
+                collapsed := 0
+                tag := ""
+                note := ""
+                if (parts.Length >= 3) {
+                    for i, partValue in parts {
+                        if (i <= 2)
+                            continue
+                        if InStr(partValue, "locked=") {
+                            partsKV := StrSplit(partValue, "=", , 2)
+                            locked := (partsKV.Length >= 2 && Trim(partsKV[2]) = "1") ? 1 : 0
+                        }
+                        if InStr(partValue, "collapsed=") {
+                            partsKV := StrSplit(partValue, "=", , 2)
+                            collapsed := (partsKV.Length >= 2 && Trim(partsKV[2]) = "1") ? 1 : 0
+                        }
+                        if InStr(partValue, "tag=")
+                            tag := SubStr(partValue, 5)
+                        if InStr(partValue, "note=")
+                            note := UnescapeSectionMeta(SubStr(partValue, 6))
                     }
+                }
+                if (secName != "" && !HasSectionName(p, secName)) {
+                    p.sections.Push({ id: secId, name: secName, isDefault: false, locked: locked, collapsed: collapsed, tag: tag, note: note })
                 }
             }
             continue
@@ -333,7 +393,7 @@ LoadHistory(app) {
 
         part := StrSplit(line, "|")
 
-        if (part.Length < 4)
+        if (part.Length < 4 || SubStr(line, 1, 1) = "#")
             continue
 
         item := CreateItem(part[1], part[2], part[3], part[4])
@@ -371,6 +431,13 @@ LoadHistory(app) {
         p.roleOrder := NormalizeRoleOrderList(p.roleOrder)
     if !p.HasOwnProp("sectionPositions")
         p.sectionPositions := Map()
+    try {
+        logLine := FormatTime(, "yyyy-MM-dd HH:mm:ss")
+            . " | load palette=" p.name
+            . " | sectionPositions=" p.sectionPositions.Count
+            . "`r`n"
+        FileAppend(logLine, "C:\tmp\section-position-debug.log", "UTF-8")
+    }
 }
 
 SaveHistory(app) {

@@ -242,6 +242,8 @@ RefreshSectionFromMenu(app, sectionName, menuGui) {
 }
 
 RefreshSectionConfirm(app, sectionName) {
+    if app.activePalette && !IsPaletteDocked(app.activePalette) && app.historyVisible
+        SaveSectionPanelPositions(app)
     SaveHistory(app)
     app.ui.generation++
     InitHistoryGui(app)
@@ -440,8 +442,11 @@ BuildSectionGroups(app) {
     for _, section in p.sections {
         name := IsObject(section) ? section.name : section
         name := (name = "") ? "Default" : name
+        if groupMap.Has(name)
+            continue
         group := { name: name, items: [] }
         groups.Push(group)
+        groupMap[name] := group
         groupMap[name] := group
     }
 
@@ -495,75 +500,62 @@ BuildSingleSectionGroup(app, sectionName) {
 
 BuildCharacterGroups(app) {
     p := app.activePalette
-    
-    maskGroup := { name: "Mask Group", items: [] }
-    outlineGroup := { name: "Outline Group", items: [] }
-    blackGroup := { name: "Black Group", items: [] }
+    roleOrder := ["Mask", "Outline", "Black", "Base", "Shadow", "2 Shadow", "Highlight", "Hi Shadow"]
     resultGroups := []
-    
     sectionGroups := BuildSectionGroups(app)
-    
+
     for _, section in sectionGroups {
         sectionName := section.name
+        sectionId := GetSectionId(p, sectionName)
         sectionItems := section.items
-        
-        colorsByRole := Map()
-        colorsByRole["Base"] := []
-        colorsByRole["Shadow"] := []
-        colorsByRole["2 Shadow"] := []
-        colorsByRole["Highlight"] := []
-        colorsByRole["Hi Shadow"] := []
-        
-        for item in sectionItems {
-            role := item.HasOwnProp("role") ? item.role : "Base"
-            
-            if role = "Mask" {
-                maskGroup.items.Push(item)
-            } else if role = "Outline" {
-                outlineGroup.items.Push(item)
-            } else if role = "Black" {
-                blackGroup.items.Push(item)
-            } else if InStr(role, "hi") {
-                colorsByRole["Hi Shadow"].Push(item)
-            } else if colorsByRole.Has(role) {
-                colorsByRole[role].Push(item)
-            } else {
-                colorsByRole["Base"].Push(item)
-            }
-        }
-        
-        roleOrder := ["Base", "Shadow", "2 Shadow", "Highlight", "Hi Shadow"]
-        
-        while true {
-            groupHasItems := false
-            newGroup := { name: sectionName, items: [] }
-            
-            for r in roleOrder {
-                if colorsByRole[r].Length > 0 {
-                    newGroup.items.Push(colorsByRole[r][1])
-                    colorsByRole[r].RemoveAt(1)
-                    groupHasItems := true
+        cards := []
+
+        for _, item in sectionItems {
+            role := NormalizeCharacterExportRole(item.HasOwnProp("role") ? item.role : "")
+            item._normalizedCharacterRole := role
+            placed := false
+
+            for _, card in cards {
+                if !card.roleMap.Has(role) {
+                    card.roleMap[role] := item
+                    placed := true
+                    break
                 }
             }
-            
-            if groupHasItems && newGroup.items.Length > 0 {
-                resultGroups.Push(newGroup)
-            } else {
-                break
+
+            if !placed {
+                cardIndex := cards.Length + 1
+                groupKey := (sectionId != "")
+                    ? "character|" sectionId "|" cardIndex
+                    : "character|" sectionName "|" cardIndex
+                cardName := cardIndex = 1 ? sectionName : sectionName " (" cardIndex ")"
+                card := {
+                    name: cardName,
+                    key: groupKey,
+                    positionKey: groupKey,
+                    sourceSection: sectionName,
+                    roleMap: Map(),
+                    items: []
+                }
+                card.roleMap[role] := item
+                cards.Push(card)
             }
         }
+
+        for _, card in cards {
+            orderedItems := []
+            for _, roleName in roleOrder {
+                if card.roleMap.Has(roleName) {
+                    item := card.roleMap[roleName]
+                    item._roleGroup := card.name
+                    orderedItems.Push(item)
+                }
+            }
+            card.items := orderedItems
+            resultGroups.Push(card)
+        }
     }
-    
-    if maskGroup.items.Length > 0 {
-        resultGroups.InsertAt(1, maskGroup)
-    }
-    if outlineGroup.items.Length > 0 {
-        resultGroups.InsertAt(2, outlineGroup)
-    }
-    if blackGroup.items.Length > 0 {
-        resultGroups.InsertAt(3, blackGroup)
-    }
-    
+
     return resultGroups
 }
 
@@ -643,9 +635,14 @@ GetSectionGuiByName(app, sectionName) {
     if !app.ui.HasProp("sectionGuis")
         return ""
 
-    return app.ui.sectionGuis.Has(sectionName)
-        ? app.ui.sectionGuis[sectionName]
-        : ""
+    if app.ui.sectionGuis.Has(sectionName)
+        return app.ui.sectionGuis[sectionName]
+
+    for _, g in app.ui.sectionGuis
+        if g.HasOwnProp("sourceSectionName") && g.sourceSectionName = sectionName
+            return g
+
+    return ""
 }
 
 

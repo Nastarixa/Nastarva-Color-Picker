@@ -56,21 +56,12 @@ LoadPaletteFromFile(p) {
         }
 
         if (SubStr(line, 1, 10) = "#POSITION|") {
-            posData := Trim(SubStr(line, 11))
-            parts := StrSplit(posData, "|")
-            if (parts.Length >= 5) {
-                sectionId := Trim(parts[1])
-                x := Trim(parts[2])
-                y := Trim(parts[3])
-                w := Trim(parts[4])
-                h := Trim(parts[5])
-                if (sectionId != "" && RegExMatch(x, "^-?\d+$") && RegExMatch(y, "^-?\d+$")) {
-                    p.sectionPositions[sectionId] := {
-                        x: Integer(x),
-                        y: Integer(y),
-                        w: Integer(w),
-                        h: Integer(h)
-                    }
+            if TryParseSectionPositionLine(line, &sectionId, &x, &y, &w, &h) {
+                p.sectionPositions[sectionId] := {
+                    x: x,
+                    y: y,
+                    w: w,
+                    h: h
                 }
             }
             continue
@@ -329,28 +320,12 @@ LoadHistory(app) {
             continue
         
         if (SubStr(line, 1, 10) = "#POSITION|") {
-            posData := Trim(SubStr(line, 11))
-            parts := StrSplit(posData, "|")
-            if (parts.Length >= 5) {
-                sectionId := Trim(parts[1])
-                x := Trim(parts[2])
-                y := Trim(parts[3])
-                w := Trim(parts[4])
-                h := Trim(parts[5])
-            } else if (parts.Length >= 4) {
-                sectionId := Trim(parts[1])
-                x := Trim(parts[2])
-                y := Trim(parts[3])
-                w := "0"
-                h := "0"
-            }
-            
-            if (sectionId != "" && RegExMatch(x, "^-?\d+$") && RegExMatch(y, "^-?\d+$")) {
+            if TryParseSectionPositionLine(line, &sectionId, &x, &y, &w, &h) {
                 p.sectionPositions[sectionId] := {
-                    x: Integer(x),
-                    y: Integer(y),
-                    w: Integer(w),
-                    h: Integer(h)
+                    x: x,
+                    y: y,
+                    w: w,
+                    h: h
                 }
             }
             continue
@@ -438,6 +413,46 @@ LoadHistory(app) {
             . "`r`n"
         FileAppend(logLine, "C:\tmp\section-position-debug.log", "UTF-8")
     }
+}
+
+TryParseSectionPositionLine(line, &sectionId, &x, &y, &w, &h) {
+    sectionId := ""
+    x := 0
+    y := 0
+    w := 0
+    h := 0
+
+    if (SubStr(line, 1, 10) != "#POSITION|")
+        return false
+
+    posData := Trim(SubStr(line, 11))
+    parts := StrSplit(posData, "|")
+    if (parts.Length < 5)
+        return false
+
+    lastIndex := parts.Length
+    hText := Trim(parts[lastIndex])
+    wText := Trim(parts[lastIndex - 1])
+    yText := Trim(parts[lastIndex - 2])
+    xText := Trim(parts[lastIndex - 3])
+
+    if !(RegExMatch(xText, "^-?\d+$") && RegExMatch(yText, "^-?\d+$")
+        && RegExMatch(wText, "^-?\d+$") && RegExMatch(hText, "^-?\d+$"))
+        return false
+
+    sectionId := Trim(parts[1])
+    Loop lastIndex - 5 {
+        sectionId .= "|" parts[A_Index + 1]
+    }
+
+    if (sectionId = "")
+        return false
+
+    x := Integer(xText)
+    y := Integer(yText)
+    w := Integer(wText)
+    h := Integer(hText)
+    return true
 }
 
 SaveHistory(app) {

@@ -455,7 +455,7 @@ GetActivePaletteName(app) {
 
 GetPaletteGuiModeLabel(p) {
     mode := p.HasOwnProp("guiMode") ? StrLower(p.guiMode) : "undocked"
-    return (mode = "docked") ? "Docked" : "Undocked"
+    return (mode = "docked") ? "🪟 GUI: Docked" : "🖥 GUI: Undocked"
 }
 
 ParsePaletteGuiMode(text) {

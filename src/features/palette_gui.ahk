@@ -306,23 +306,23 @@ GetCharacterCardSlot(role, headerH) {
     topY := headerH + 8
     switch role {
         case "Mask":
-            return { x: 6, y: topY + 28, w: 44, h: 24 }
+            return { x: 6, y: topY + 17, w: 30, h: 24 }
         case "Outline":
-            return { x: 56, y: topY, w: 44, h: 24 }
+            return { x: 41, y: topY, w: 30, h: 24 }
         case "Black":
-            return { x: 56, y: topY + 36, w: 44, h: 24 }
+            return { x: 41, y: topY + 36, w: 30, h: 24 }
         case "Base":
-            return { x: 106, y: topY, w: 56, h: 24 }
+            return { x: 106, y: topY, w: 30, h: 24 }
         case "Shadow":
-            return { x: 106, y: topY + 24, w: 56, h: 24 }
+            return { x: 106, y: topY + 24, w: 30, h: 24 }
         case "2 Shadow":
-            return { x: 106, y: topY + 48, w: 56, h: 24 }
+            return { x: 106, y: topY + 48, w: 30, h: 24 }
         case "Highlight":
-            return { x: 164, y: topY, w: 18, h: 18 }
+            return { x: 138, y: topY, w: 18, h: 18 }
         case "Hi Shadow":
-            return { x: 164, y: topY + 30, w: 18, h: 18 }
+            return { x: 138, y: topY + 22, w: 18, h: 18 }
         default:
-            return { x: 106, y: topY, w: 56, h: 24 }
+            return { x: 106, y: topY, w: 30, h: 24 }
     }
 }
 
@@ -449,7 +449,6 @@ UpdateSectionPanelChrome(app, g, sectionName) {
     
   
 
-    try g.tag.Move(0, 0, (characterMode) ? 120 : 14, headerH)
        
     if headerCompact && !characterMode {
         bgColor := (tag != "" ? tag : "323338")
@@ -464,7 +463,7 @@ UpdateSectionPanelChrome(app, g, sectionName) {
     
     if headerCompact && characterMode {
         try g.tag.Move(0, 0, 120, headerH)
-        try g.header.Move(14, 0, 120, headerH)
+        try g.header.Move(-1000, 0, 0, 0)
         try g.target.Move(-1000, 0, 0, 0)
         try g.lock.Move(-1000, 0, 0, 0)
         try g.menu.Move(-1000, 0, 0, 0)
@@ -474,12 +473,16 @@ UpdateSectionPanelChrome(app, g, sectionName) {
     }
 
     if characterMode {
+        try g.tag.Move(0, 0, 120, headerH)
+        try g.header.Move(-1000, 0, 0, 0)
         try g.target.Move(-1000, 0, 0, 0)
         try g.lock.Move(-1000, 0, 0, 0)
         try g.menu.Move(-1000, 0, 0, 0)
         try g.collapse.Move(-1000, 0, 0, 0)
         try g.refresh.Move(-1000, 0, 0, 0)
     } 
+
+    try g.tag.Move(0, 0, (characterMode) ? 120 : 14, headerH)
 
     headerText := "  " sectionName
     isCollapsed := IsSectionCollapsed(app.activePalette, sectionName)

@@ -202,7 +202,8 @@ GetOrCreateSectionGui(app, sectionOrName) {
         sectionId := GetSectionId(app.activePalette, sourceSectionName)
         positionKey := sectionId != "" ? sectionId : sectionKey
     }
-    characterMode := app.HasOwnProp("characterMode")
+    characterMode := app.HasOwnProp("characterMode") && app.characterMode
+    headerH := GetPanelHeaderHeight()
 
     if app.ui.sectionGuis.Has(sectionKey) {
         g := app.ui.sectionGuis[sectionKey]
@@ -256,8 +257,8 @@ GetOrCreateSectionGui(app, sectionOrName) {
 
 
     try g.target.Visible := true
-    try g.tag.Visible := true
     try g.header.Visible := true
+    try g.tag.Visible := true
     try g.headerContainer.Visible := true
 
     if headerCompact {
@@ -269,7 +270,7 @@ GetOrCreateSectionGui(app, sectionOrName) {
         try g.refresh.Hide()
         try g.close.Hide()
         if characterMode {
-            headerH := GetPanelHeaderHeight()
+            try g.tag.Move(0, 0, 120, headerH)
             try g.header.Move(-1000, 0, 0, 0)
             try g.lock.Visible := false
             try g.menu.Visible := false
@@ -283,7 +284,7 @@ GetOrCreateSectionGui(app, sectionOrName) {
         }
     } else {
         if characterMode {
-            headerH := GetPanelHeaderHeight()
+            try g.tag.Move(0, 0, 120, headerH)
             try g.header.Move(-1000, 0, 0, 0)
             try g.lock.Visible := false
             try g.menu.Visible := false

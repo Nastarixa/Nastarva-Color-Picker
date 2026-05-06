@@ -95,8 +95,11 @@ OpenPaletteManager(app) {
     g.infoTable := CreatePaletteInfoTable(g, centerX+5, y-5, centerW-10, app.activePalette, 2)
 
     ; ===== BOTTOM LEFT: DISPLAY =====
-    CreateDisplayPanel(g, app, leftX, leftW)
+    CreatePickerPanel(g, app, leftX, leftW)
 
+
+    CreateDisplayPanel(g, app, leftX, leftW)
+    
     ; ===== BOTTOM CENTER: ACTIONS =====
     CreateActionsPanel(g, app, centerX, centerW)
 
@@ -612,6 +615,10 @@ DeletePaletteConfirm(app, g, name) {
     app.ui.cols := app.activePalette.maxCols
 
     LoadHistory(app)
+    
+    app.pickGuiOffsetX := app.activePalette.HasOwnProp("pickGuiOffsetX") ? app.activePalette.pickGuiOffsetX : -325
+    app.pickGuiOffsetY := app.activePalette.HasOwnProp("pickGuiOffsetY") ? app.activePalette.pickGuiOffsetY : 90
+    
     InitHistoryGui(app)
     app.ui.generation++
     RebuildUI(app)

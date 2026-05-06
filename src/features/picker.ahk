@@ -219,8 +219,8 @@ MovePickGui(app) {
     if app.pickGuiRoleVisible
         app.pickGuiRole.GetPos(,, &w2, &h2)
 
-    offsetX := -325
-    offsetY := 90
+    offsetX := app.HasOwnProp("pickGuiOffsetX") ? app.pickGuiOffsetX : (app.activePalette.HasOwnProp("pickGuiOffsetX") ? app.activePalette.pickGuiOffsetX : -325)
+    offsetY := app.HasOwnProp("pickGuiOffsetY") ? app.pickGuiOffsetY : (app.activePalette.HasOwnProp("pickGuiOffsetY") ? app.activePalette.pickGuiOffsetY : 90)
 
     mon := GetMonitorFromPoint(X, Y)
     MonitorGetWorkArea(mon, &L, &T, &R, &B)
@@ -292,4 +292,15 @@ SaveColor(app) {
     QueueHistoryRebuild(app)
 
     ShowToast(app, "Saved #" hex " to " section)
+}
+
+ApplyPickerSizeClicked(app, gui) {
+    x := Integer(gui.PickerX.Value)
+    y := Integer(gui.PickerY.Value)
+    app.pickGuiOffsetX := x
+    app.pickGuiOffsetY := y
+    app.activePalette.pickGuiOffsetX := x
+    app.activePalette.pickGuiOffsetY := y
+    SaveHistory(app)
+    ShowToast(app, "Picker offset: X=" x " Y=" y)
 }

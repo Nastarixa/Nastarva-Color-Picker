@@ -955,11 +955,20 @@ OpenImportTrainingCanvas(app, reviewGui) {
     g.OnEvent("Close", (*) => CloseImportTrainingCanvas(g))
     g.OnEvent("Escape", (*) => CancelImportTrainingCanvasSelection(g))
 
+    g.xStartGuide.Visible := false
+    g.xEndGuide.Visible := false
+    g.yStartGuide.Visible := false
+    g.yEndGuide.Visible := false
+    g.startDot.Visible := false
+    g.endDot.Visible := false
+
     g.Show("w" (sideX + 322) " h" (bottomY + 46) " Center")
     state := GetImportTrainerState()
     state.gui := g
     state.app := app
     state.selection := 0
+
+
 
     if (g.roleEdit.Text = "")
         g.roleEdit.Choose(1)
@@ -1008,8 +1017,8 @@ ImportTrainingCanvasSliderChanged(g) {
     g.yStartLabel.Value := y1
     g.yEndLabel.Value := y2
 
-    guideX1 := g.imageX + g.renderOffsetX + ImportTrainingCanvasMapCoordToDisplay(x1, g.imageWidth, g.renderW)
-    guideX2 := g.imageX + g.renderOffsetX + ImportTrainingCanvasMapCoordToDisplay(x2, g.imageWidth, g.renderW)
+    guideX1 :=  ImportTrainingCanvasMapCoordToDisplay(x1, g.imageWidth, g.renderW)
+    guideX2 := ImportTrainingCanvasMapCoordToDisplay(x2, g.imageWidth, g.renderW)
 
     guideY1 := g.imageY + g.renderOffsetY + ImportTrainingCanvasMapCoordToDisplay(y1, g.imageHeight, g.renderH)
     guideY2 := g.imageY + g.renderOffsetY + ImportTrainingCanvasMapCoordToDisplay(y2, g.imageHeight, g.renderH)
@@ -1023,6 +1032,7 @@ ImportTrainingCanvasSliderChanged(g) {
     try g.startDot.Move(guideX1 - dotOffset, guideY1 - dotOffset, dotSize, dotSize)
     try g.endDot.Move(guideX2 - dotOffset, guideY2 - dotOffset, dotSize, dotSize)
 
+    /*
     rectLeft := Min(guideX1, guideX2)
     rectTop := Min(guideY1, guideY2)
     rectRight := Max(guideX1, guideX2)
@@ -1035,7 +1045,8 @@ ImportTrainingCanvasSliderChanged(g) {
     try g.selectionRight.Move(rectRight - border + 1, rectTop, border, rectH)
     try g.selectionTop.Move(rectLeft, rectTop, rectW, border)
     try g.selectionBottom.Move(rectLeft, rectBottom - border + 1, rectW, border)
-
+    */ 
+    
     x := Min(x1, x2)
     y := Min(y1, y2)
     w := Max(1, Abs(x2 - x1))
@@ -1052,11 +1063,11 @@ ImportTrainingCanvasImageClick(g) {
     relX := mouseClient.x - g.imageX - g.renderOffsetX
     relY := mouseClient.y - g.imageY - g.renderOffsetY
     ; clamp inside real image
-    relX := Max(0, Min(g.renderW - 1, relX))
-    relY := Max(0, Min(g.renderH - 1, relY))
+    relX := Max(0, Min(g.renderW, relX))
+    relY := Max(0, Min(g.renderH, relY))
 
-    imgX := Round((relX / (g.renderW - 1)) * (g.imageWidth - 1))
-    imgY := Round((relY / (g.renderH - 1)) * (g.imageHeight - 1))
+    imgX := Round((relX / g.renderW) * g.imageWidth)
+    imgY := Round((relY / g.renderH) * g.imageHeight)
 
     if GetKeyState("Ctrl", "P") {
         g.xEndValue := imgX
@@ -1093,14 +1104,14 @@ GetImportTrainingCanvasClientToScreen(g, x, y) {
 ImportTrainingCanvasMapCoordToDisplay(coord, sourceSize, displaySize) {
     if (sourceSize <= 1)
         return 0
-    return Round((coord / (sourceSize - 1)) * (displaySize - 1))
+    return Round((coord / sourceSize) * displaySize)
 }
 
 ImportTrainingCanvasMapDisplayToCoord(displayCoord, sourceSize, displaySize) {
     if (displaySize <= 1 || sourceSize <= 1)
         return 0
-    displayCoord := Max(0, Min(displaySize - 1, displayCoord))
-    return Round((displayCoord / (displaySize - 1)) * (sourceSize - 1))
+    displayCoord := Max(0, Min(displaySize, displayCoord))
+    return Round((displayCoord / displaySize) * sourceSize)
 }
 
 GetImportTrainingCanvasImageSize(imagePath) {

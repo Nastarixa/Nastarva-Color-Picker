@@ -4,7 +4,7 @@ CreateDisplayPanel(gui, app, leftX, leftW) {
         gui.AddText("x" x+6 " y" y-10 " cFFD76A", title)
     }
 
-    yBase := 250
+    yBase := 295
     CreatePanel(leftX, yBase, leftW, 165, "Display")
 
     y := yBase + 12
@@ -40,8 +40,27 @@ y += 26
     headerLabel := headerCompactMode ? "Header: Compact" : "Header: Normal"
     gui.btnHeaderCompact := gui.AddButton("x" leftX+5 " y" y " w" leftW-10 " h22", headerLabel)
     gui.btnHeaderCompact.OnEvent("Click", (*) => ToggleHeaderClicked(app, gui))
-}
 
+
+}
+CreatePickerPanel(gui, app, leftX, leftW) {
+    CreatePanel(x, y, w, h, title) {
+        gui.AddText("x" x " y+1 w" w " h" (h-5), "")
+        gui.AddText("x" x+6 " y" y-10 " cFFD76A", title)
+    }
+
+    yBase := 242
+    CreatePanel(leftX, yBase, leftW, 165, "Picker")
+
+    y := yBase + 12
+    gui.AddText("x" leftX+5 " y" y " cFFFFFF", "X:")
+    offsetX := app.HasOwnProp("pickGuiOffsetX") ? app.pickGuiOffsetX : -325
+    gui.PickerX := gui.AddEdit("x+2 yp-2 w60", String(offsetX))
+    gui.AddText("x+10 yp+2 cFFFFFF", "Y:")
+    offsetY := app.HasOwnProp("pickGuiOffsetY") ? app.pickGuiOffsetY : 90
+    gui.PickerY := gui.AddEdit("x+2 yp-2 w40 Number", String(offsetY))
+    gui.AddButton("x+10 yp-1 w60 h24", "Apply").OnEvent("Click", (*) => ApplyPickerSizeClicked(app, gui))
+}
 ApplyDisplayBtnClicked(app) {
     g := app.paletteGui
     if !IsObject(g)

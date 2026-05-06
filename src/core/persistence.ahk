@@ -52,6 +52,10 @@ LoadPaletteFromFile(p) {
                 p.priority := Integer(m5[1])
             if RegExMatch(line, "guiMode=(\w+)", &m6)
                 p.guiMode := m6[1]
+            if RegExMatch(line, "offsetX=(-?\d+)", &m7)
+                p.pickGuiOffsetX := Integer(m7[1])
+            if RegExMatch(line, "offsetY=(-?\d+)", &m8)
+                p.pickGuiOffsetY := Integer(m8[1])
             continue
         }
 
@@ -264,6 +268,10 @@ SwitchPalette(app, name) {
 
     app.activePalette := app.palettes[name]
     LoadHistory(app)
+    
+    app.pickGuiOffsetX := app.activePalette.HasOwnProp("pickGuiOffsetX") ? app.activePalette.pickGuiOffsetX : -325
+    app.pickGuiOffsetY := app.activePalette.HasOwnProp("pickGuiOffsetY") ? app.activePalette.pickGuiOffsetY : 90
+    
     InitHistoryGui(app)
     app.ui.cols := app.activePalette.maxCols
 
@@ -295,10 +303,6 @@ LoadHistory(app) {
     p := app.activePalette
     app.ui.generation++
 
-    if !FileExist(p.file) {
-        SaveHistory(app)
-    }
-
     p.colors := []
     p.map := Map()
     p.idMap := Map()
@@ -312,25 +316,20 @@ LoadHistory(app) {
 
     fileContent := FileRead(p.file)
     
-    lineNum := 0
     for line in StrSplit(fileContent, "`n", "`r") {
-        lineNum++
         line := Trim(line)
         if (line = "")
             continue
         
+        ; Parse #POSITION| lines
         if (SubStr(line, 1, 10) = "#POSITION|") {
             if TryParseSectionPositionLine(line, &sectionId, &x, &y, &w, &h) {
-                p.sectionPositions[sectionId] := {
-                    x: x,
-                    y: y,
-                    w: w,
-                    h: h
-                }
+                p.sectionPositions[sectionId] := { x: x, y: y, w: w, h: h }
             }
             continue
         }
         
+        ; Parse #SECTION| lines
         if (SubStr(line, 1, 9) = "#SECTION|") {
             secData := Trim(SubStr(line, 10))
             parts := StrSplit(secData, "|")
@@ -342,21 +341,17 @@ LoadHistory(app) {
                 tag := ""
                 note := ""
                 if (parts.Length >= 3) {
-                    for i, partValue in parts {
+                    for i, pVal in parts {
                         if (i <= 2)
                             continue
-                        if InStr(partValue, "locked=") {
-                            partsKV := StrSplit(partValue, "=", , 2)
-                            locked := (partsKV.Length >= 2 && Trim(partsKV[2]) = "1") ? 1 : 0
-                        }
-                        if InStr(partValue, "collapsed=") {
-                            partsKV := StrSplit(partValue, "=", , 2)
-                            collapsed := (partsKV.Length >= 2 && Trim(partsKV[2]) = "1") ? 1 : 0
-                        }
-                        if InStr(partValue, "tag=")
-                            tag := SubStr(partValue, 5)
-                        if InStr(partValue, "note=")
-                            note := UnescapeSectionMeta(SubStr(partValue, 6))
+                        if InStr(pVal, "locked=")
+                            locked := (SubStr(pVal, 8) = "1") ? 1 : 0
+                        if InStr(pVal, "collapsed=")
+                            collapsed := (SubStr(pVal, 10) = "1") ? 1 : 0
+                        if InStr(pVal, "tag=")
+                            tag := SubStr(pVal, 5)
+                        if InStr(pVal, "note=")
+                            note := UnescapeSectionMeta(SubStr(pVal, 6))
                     }
                 }
                 if (secName != "" && !HasSectionName(p, secName)) {
@@ -365,12 +360,27 @@ LoadHistory(app) {
             }
             continue
         }
-
-        part := StrSplit(line, "|")
-
-        if (part.Length < 4 || SubStr(line, 1, 1) = "#")
+        
+        ; Parse #META line
+        if (SubStr(line, 1, 5) = "#META") {
+            if RegExMatch(line, "offsetX=(-?\d+)", &m7)
+                p.pickGuiOffsetX := Integer(m7[1])
+            if RegExMatch(line, "offsetY=(-?\d+)", &m8)
+                p.pickGuiOffsetY := Integer(m8[1])
+            if RegExMatch(line, "guiMode=(\w+)", &m6)
+                p.guiMode := m6[1]
             continue
-
+        }
+        
+        ; Skip other # lines
+        if (SubStr(line, 1, 1) = "#")
+            continue
+        
+        ; Parse color items
+        part := StrSplit(line, "|")
+        if (part.Length < 4)
+            continue
+        
         item := CreateItem(part[1], part[2], part[3], part[4])
         item.role := NormalizeRoleName(item.role)
         item.name := Trim(item.name)
@@ -382,12 +392,12 @@ LoadHistory(app) {
         item.id := (part.Length >= 8 && part[8] != "") ? part[8] : GenerateItemId()
         item.isSaved := true
         item.copiedUntil := 0
-
+        
         AddSectionName(p, item.section)
         p.colors.Push(item)
         p.idMap[item.id] := item
     }
-
+    
     EnsureDefaultSection(p)
     for idx, section in p.sections {
         if IsObject(section) {
@@ -406,13 +416,10 @@ LoadHistory(app) {
         p.roleOrder := NormalizeRoleOrderList(p.roleOrder)
     if !p.HasOwnProp("sectionPositions")
         p.sectionPositions := Map()
-    try {
-        logLine := FormatTime(, "yyyy-MM-dd HH:mm:ss")
-            . " | load palette=" p.name
-            . " | sectionPositions=" p.sectionPositions.Count
-            . "`r`n"
-        FileAppend(logLine, "C:\tmp\section-position-debug.log", "UTF-8")
-    }
+    
+    ; Copy offsets to app
+    app.pickGuiOffsetX := p.HasOwnProp("pickGuiOffsetX") ? p.pickGuiOffsetX : -325
+    app.pickGuiOffsetY := p.HasOwnProp("pickGuiOffsetY") ? p.pickGuiOffsetY : 90
 }
 
 TryParseSectionPositionLine(line, &sectionId, &x, &y, &w, &h) {
@@ -421,37 +428,38 @@ TryParseSectionPositionLine(line, &sectionId, &x, &y, &w, &h) {
     y := 0
     w := 0
     h := 0
-
+    
     if (SubStr(line, 1, 10) != "#POSITION|")
         return false
-
+    
     posData := Trim(SubStr(line, 11))
     parts := StrSplit(posData, "|")
     if (parts.Length < 5)
         return false
-
+    
     lastIndex := parts.Length
     hText := Trim(parts[lastIndex])
     wText := Trim(parts[lastIndex - 1])
     yText := Trim(parts[lastIndex - 2])
     xText := Trim(parts[lastIndex - 3])
-
+    
     if !(RegExMatch(xText, "^-?\d+$") && RegExMatch(yText, "^-?\d+$")
         && RegExMatch(wText, "^-?\d+$") && RegExMatch(hText, "^-?\d+$"))
         return false
-
+    
     sectionId := Trim(parts[1])
     Loop lastIndex - 5 {
         sectionId .= "|" parts[A_Index + 1]
     }
-
+    
     if (sectionId = "")
         return false
-
+    
     x := Integer(xText)
     y := Integer(yText)
     w := Integer(wText)
     h := Integer(hText)
+    
     return true
 }
 
@@ -467,7 +475,9 @@ SavePalette(p, version) {
     guiMode := p.HasOwnProp("guiMode") ? p.guiMode : "undocked"
     note := p.HasOwnProp("note") ? EscapeSectionMeta(p.note) : ""
     priority := p.HasOwnProp("priority") ? p.priority : 1
-    f.WriteLine("#META|version=" version "|historyMax=" p.historyMax "|maxCols=" p.maxCols "|guiMode=" guiMode "|priority=" priority "|note=" note)
+    offsetX := p.HasOwnProp("pickGuiOffsetX") ? p.pickGuiOffsetX : -325
+    offsetY := p.HasOwnProp("pickGuiOffsetY") ? p.pickGuiOffsetY : 90
+    f.WriteLine("#META|version=" version "|historyMax=" p.historyMax "|maxCols=" p.maxCols "|guiMode=" guiMode "|priority=" priority "|note=" note "|offsetX=" offsetX "|offsetY=" offsetY)
 
     if p.HasOwnProp("roleOrder") {
         p.roleOrder := NormalizeRoleOrderList(p.roleOrder)

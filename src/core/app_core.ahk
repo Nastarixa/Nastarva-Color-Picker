@@ -10,6 +10,8 @@ InitApp() {
 
         pickGui: 0,
         pickGuiRoleVisible: false,
+        pickGuiOffsetX: -325,
+        pickGuiOffsetY: 90,
         historyGui: 0,
         roleMenuGui: 0,
         roleMenuHwnd: 0,

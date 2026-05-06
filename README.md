@@ -86,7 +86,7 @@ Apply as:
 ---
 
 ### 🧭 Display Modes
-- Normal / Compact / Square
+- Normal / Compact / Square / Character Sheet
 - HEX or RGB primary mode
 - Docked or floating panels
 

@@ -241,9 +241,9 @@ GetLayoutLabel(app) {
     p := app.activePalette
     layout := p.HasOwnProp("layout") ? p.layout : "normal"
     switch layout {
-        case "grid": return "🔲 Layout: Grid"
-        case "vertical": return "📱 Layout: Vertical"
-        default: return "📄 Layout: Normal"
+        case "grid": return "Layout: Grid"
+        case "vertical": return "Layout: Vertical"
+        default: return "Layout: Normal"
     }
 }
 

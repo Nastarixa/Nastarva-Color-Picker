@@ -1245,6 +1245,8 @@ ParsePaletteTxtImport(content, sourceName) {
         hex := Trim(parts[1])
         if (InStr(hex, "#") = 1)
             hex := SubStr(hex, 2)
+        if (hex = "" || !RegExMatch(hex, "^[0-9A-Fa-f]{6}$"))
+            continue
 
         colorSection := parts.Length >= 7 ? Trim(parts[7]) : "Default"
         if (colorSection = "")
@@ -1280,6 +1282,14 @@ ParsePaletteIniImport(content, sourceName) {
 
     FinalizeIniColor() {
         if IsObject(currentColor) {
+            hex := Trim(currentColor.hex)
+            if (InStr(hex, "#") = 1)
+                hex := SubStr(hex, 2)
+            if (hex = "" || !RegExMatch(hex, "^[0-9A-Fa-f]{6}$")) {
+                currentColor := 0
+                return
+            }
+            currentColor.hex := hex
             if (!sectionColors.Has(currentSection))
                 sectionColors[currentSection] := []
             sectionColors[currentSection].Push(currentColor)
@@ -1320,11 +1330,13 @@ ParsePaletteIniImport(content, sourceName) {
             case "pinned":
                 currentColor.pinned := (value = "1") ? 1 : 0
             case "section":
+                FinalizeIniColor()
                 currentSection := value
                 if (!sectionColors.Has(currentSection)) {
                     sectionColors[currentSection] := []
                     sectionOrder.Push(currentSection)
                 }
+                currentColor := { hex: "", rgb: "", name: "", role: "Base", pinned: 0 }
         }
     }
     FinalizeIniColor()
@@ -1345,8 +1357,14 @@ ParsePaletteJsonImport(content, sourceName) {
         rgb := JsonFieldValue(block, "rgb")
         name := JsonFieldValue(block, "name")
         role := JsonFieldValue(block, "role")
-        sectionName := JsonFieldValue(block, "section")
+sectionName := JsonFieldValue(block, "section")
         pinned := StrLower(JsonFieldValue(block, "pinned")) = "true" ? 1 : 0
+
+        hex := Trim(hex)
+        if (InStr(hex, "#") = 1)
+            hex := SubStr(hex, 2)
+        if (hex = "" || !RegExMatch(hex, "^[0-9A-Fa-f]{6}$"))
+            continue
 
         if (sectionName = "")
             sectionName := "Default"
@@ -1409,6 +1427,8 @@ ParsePaletteCsvImport(content, sourceName) {
         hex := Trim(parts[1])
         if (InStr(hex, "#") = 1)
             hex := SubStr(hex, 2)
+        if (hex = "" || !RegExMatch(hex, "^[0-9A-Fa-f]{6}$"))
+            continue
 
         sectionName := parts.Length >= 7 ? Trim(parts[7]) : "Default"
         if (sectionName = "")

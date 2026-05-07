@@ -107,13 +107,13 @@ ShowFavoritesWindow(app) {
         g.favList.Modify(1, "Select Focus")
     }
 
-    g.AddButton("xm y+5 w105 h24", "📋 Copy HEX")
+    g.AddButton("xm y+5 w90 h24", "📋 Copy HEX")
         .OnEvent("Click", (*) => FavCopyHex(app, g))
-    g.AddButton("x+5 w105 h24", "📋 Copy RGB")
+    g.AddButton("x+5 w90 h24", "📋 Copy RGB")
         .OnEvent("Click", (*) => FavCopyRGB(app, g))
-    g.AddButton("x+5 w105 h24", "➕ Add to Section")
+    g.AddButton("x+5 w125 h24", "➕ Add to Section")
         .OnEvent("Click", (*) => FavAddToSection(app, g))
-    g.AddButton("x+5 w105 h24", "🗑 Remove")
+    g.AddButton("x+5 w100 h24", "🗑 Remove")
         .OnEvent("Click", (*) => FavRemove(app, g))
 
     g.AddButton("xm y+5 w420 h24", "❌ Close")

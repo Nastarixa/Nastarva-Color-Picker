@@ -800,17 +800,24 @@ ImportPaletteImageUI(app) {
     if (path = "")
         return
 
-    ext := SubStr(path, InStr(path, ".") + 1)
-    ext := StrLower(ext)
+    ext := GetImportFileExtension(path)
 
-    if (ext = "png" || ext = "jpg" || ext = "jpeg" || ext = "bmp") {
+    if IsImageImportExtension(ext) {
         ShowImportModeDialog(app, path)
+        return
     }
+
+    if IsPaletteDataImportExtension(ext) {
+        ImportPaletteDataFile(app, path)
+        return
+    }
+
+    ShowToast(app, "Unsupported import file type")
 }
 
 PickImportImagePath(app) {
     try {
-        path := FileSelect("1", , "Import Palette", "Images (*.png;*.jpg;*.jpeg;*.bmp)")
+        path := FileSelect("1", , "Import Palette", "Supported Files (*.png;*.jpg;*.jpeg;*.bmp;*.txt;*.ini;*.json;*.csv)")
         if (path != "")
             return path
     } catch {
@@ -822,15 +829,15 @@ PickImportImagePath(app) {
 
 ShowImportPathDialog(app) {
     result := ""
-    g := Gui("+AlwaysOnTop +ToolWindow +Border", "Import Image Path")
+    g := Gui("+AlwaysOnTop +ToolWindow +Border", "Import File Path")
     g.BackColor := "323338"
     g.SetFont("s9", "Consolas")
     g.MarginX := 16
     g.MarginY := 12
 
-    g.AddText("cFFFFFF w360", "Paste image path or drop an image file here:")
+    g.AddText("cFFFFFF w360", "Paste a file path or drop a supported import file here:")
     g.pathEdit := g.AddEdit("w360 y+6")
-    g.AddText("c909090 w360 y+6", "Supported: PNG, JPG, JPEG, BMP")
+    g.AddText("c909090 w360 y+6", "Supported: PNG, JPG, JPEG, BMP, TXT, INI, JSON, CSV")
 
     g.OnEvent("DropFiles", ImportPathDialogDropFiles)
     g.AddButton("w120 h28 y+14", "Import").OnEvent("Click", (*) => ConfirmImportPathDialog(app, g, &result))
@@ -854,17 +861,17 @@ ImportPathDialogDropFiles(g, files) {
 ConfirmImportPathDialog(app, g, &result) {
     path := Trim(g.pathEdit.Value)
     if (path = "") {
-        ShowToast(app, "Enter image path")
+        ShowToast(app, "Enter file path")
         return
     }
     if !FileExist(path) {
-        ShowToast(app, "Image file not found")
+        ShowToast(app, "Import file not found")
         return
     }
 
-    ext := StrLower(SubStr(path, InStr(path, ".",, -1) + 1))
-    if !(ext = "png" || ext = "jpg" || ext = "jpeg" || ext = "bmp") {
-        ShowToast(app, "Unsupported image type")
+    ext := GetImportFileExtension(path)
+    if !(IsImageImportExtension(ext) || IsPaletteDataImportExtension(ext)) {
+        ShowToast(app, "Unsupported import type")
         return
     }
 
@@ -883,7 +890,7 @@ ShowFolderSelectDialog(app) {
     g.MarginX := 16
     g.MarginY := 12
 
-    g.AddText("cFFFFFF", "Select folder with images:")
+    g.AddText("cFFFFFF", "Select folder with import files:")
     g.folderEdit := g.AddEdit("w265 y+4")
     g.AddButton("x+5 yp w30 h24", "...").OnEvent("Click", (*) => DoBrowseFolder(app, g))
 
@@ -899,7 +906,7 @@ ShowFolderSelectDialog(app) {
 }
 
 DoBrowseFolder(app, g) {
-    folderPath := DirSelect(, 3, "Select folder with images")
+    folderPath := DirSelect(, 3, "Select folder with import files")
     if (folderPath != "") {
         g.folderEdit.Value := folderPath
         g.pathEdit.Value := folderPath
@@ -923,22 +930,20 @@ ContinueFolderImport(app, folderPath) {
         return
     }
 
-    imageExtensions := "png;jpg;jpeg;bmp;gif;webp"
-    imageFiles := []
+    importFiles := []
 
     Loop Files, folderPath "\*", "F" {
-        ext := SubStr(A_LoopFileName, InStr(A_LoopFileName, ".") + 1)
-        if InStr(imageExtensions, ext) {
-            imageFiles.Push(A_LoopFileFullPath)
-        }
+        ext := GetImportFileExtension(A_LoopFileName)
+        if IsImageImportExtension(ext) || IsPaletteDataImportExtension(ext)
+            importFiles.Push(A_LoopFileFullPath)
     }
 
-    if imageFiles.Length = 0 {
-        ShowToast(app, "No images found in folder")
+    if importFiles.Length = 0 {
+        ShowToast(app, "No supported import files found in folder")
         return
     }
 
-    ShowImportFolderPreview(app, folderPath, imageFiles)
+    ShowImportFolderPreview(app, folderPath, importFiles)
 }
 
 ShowImportMenu(app, g) {
@@ -949,7 +954,7 @@ ShowImportMenu(app, g) {
     menu.MarginY := 0
 
     menu.AddButton("w130 h28", "📷 Screenshot").OnEvent("Click", (*) => (menu.Destroy(), DispatchAction(app, g, "Snip")))
-    menu.AddButton("w130 h28", "🖼️ Image File").OnEvent("Click", (*) => (menu.Destroy(), DispatchAction(app, g, "Import")))
+    menu.AddButton("w130 h28", "🖼️ Import File").OnEvent("Click", (*) => (menu.Destroy(), DispatchAction(app, g, "Import")))
     menu.AddButton("w130 h28", "📁 Folder").OnEvent("Click", (*) => (menu.Destroy(), DispatchAction(app, g, "Folder")))
     menu.AddButton("w130 h28", "❌ Cancel").OnEvent("Click", (*) => (menu.Destroy()))
 
@@ -970,7 +975,7 @@ ShowImportFolderPreview(app, folderPath, imageFiles) {
     g.AddText("cFFFFFF", "Folder: " shortPath)
     g.AddButton("x+8 yp w30 h20", "📁").OnEvent("Click", (*) => Run('explorer.exe "' folderPath '"'))
 
-    g.AddText("xm cAAAAAA y+5", "Found " imageFiles.Length " images:")
+    g.AddText("xm cAAAAAA y+5", "Found " imageFiles.Length " supported files:")
     g.fileList := g.AddListView("w450 h200 -Multi", ["#", "File Name"])
     g.fileList.SetFont("s8", "Consolas")
     totalW := 450
@@ -988,7 +993,7 @@ ShowImportFolderPreview(app, folderPath, imageFiles) {
 
     totalColors := 0
     for imgPath in imageFiles {
-        imported := RunPaletteImportDetection(app, imgPath)
+        imported := GetImportedTextFromImportFile(app, imgPath)
         if (Trim(imported) = "")
             continue
 
@@ -997,7 +1002,7 @@ ShowImportFolderPreview(app, folderPath, imageFiles) {
             totalColors += parsed.sections[sectionName].Length
     }
 
-    g.AddText("y+5 cAAAAAA", "Est. ~" totalColors " detected colors from import blocks")
+    g.AddText("y+5 cAAAAAA", "Est. ~" totalColors " detected/importable colors")
 
     g.AddButton("w140 h28 y+10", "🔍 Import Colors").OnEvent("Click", (*) => DoImportFolderImages(app, g, folderPath, imageFiles))
     g.AddButton("w140 h28 x+10", "Cancel").OnEvent("Click", (*) => g.Destroy())
@@ -1007,20 +1012,20 @@ ShowImportFolderPreview(app, folderPath, imageFiles) {
 
 DoImportFolderImages(app, g, folderPath, imageFiles) {
     g.Destroy()
-    ShowToast(app, "Processing " imageFiles.Length " images...")
+    ShowToast(app, "Processing " imageFiles.Length " files...")
 
     successCount := 0
     for imgPath in imageFiles {
         try {
             tempPath := A_Temp "astarxa_import_" A_Index ".png"
-            if ProcessSingleImageImport(app, imgPath, tempPath) {
+            if ProcessSingleImportFile(app, imgPath, tempPath) {
                 successCount++
             }
         }
     }
 
     if successCount > 0 {
-        ShowToast(app, "Imported colors from " successCount " images")
+        ShowToast(app, "Imported colors from " successCount " files")
         RefreshPaletteManager(app, app.paletteGui)
         SwitchPalette(app, app.activePalette.name)
     } else {
@@ -1057,15 +1062,48 @@ RunPaletteImportDetection(app, imgPath) {
     return imported
 }
 
+GetImportedTextFromImportFile(app, path) {
+    ext := GetImportFileExtension(path)
+
+    if IsImageImportExtension(ext)
+        return RunPaletteImportDetection(app, path)
+    if IsPaletteDataImportExtension(ext)
+        return ParsePaletteDataFileToImportedText(path)
+
+    return ""
+}
+
+ProcessSingleImportFile(app, imgPath, tempPath) {
+    ext := GetImportFileExtension(imgPath)
+    if IsImageImportExtension(ext)
+        return ProcessSingleImageImport(app, imgPath, tempPath)
+    if IsPaletteDataImportExtension(ext)
+        return ProcessSinglePaletteDataImport(app, imgPath)
+    return false
+}
+
 ProcessSingleImageImport(app, imgPath, tempPath) {
-    imported := RunPaletteImportDetection(app, imgPath)
+    imported := GetImportedTextFromImportFile(app, imgPath)
     if (Trim(imported) = "")
         return false
 
     parsed := ParseImportedData(imported)
-    totalImported := 0
+    return ApplyParsedImportToActivePalette(app, parsed)
+}
 
+ProcessSinglePaletteDataImport(app, path) {
+    imported := GetImportedTextFromImportFile(app, path)
+    if (Trim(imported) = "")
+        return false
+
+    parsed := ParseImportedData(imported)
+    return ApplyParsedImportToActivePalette(app, parsed)
+}
+
+ApplyParsedImportToActivePalette(app, parsed) {
+    totalImported := 0
     p := app.activePalette
+
     for _, sectionName in parsed.sectionOrder {
         AddSectionName(p, sectionName)
         for _, color in parsed.sections[sectionName] {
@@ -1089,6 +1127,336 @@ ProcessSingleImageImport(app, imgPath, tempPath) {
     }
 
     return totalImported > 0
+}
+
+ImportPaletteDataFile(app, path) {
+    imported := ParsePaletteDataFileToImportedText(path)
+    if (Trim(imported) = "") {
+        ShowToast(app, "Could not parse palette file")
+        return
+    }
+
+    reviewPath := A_Temp "\astarxa_palette_file_import.txt"
+    if FileExist(reviewPath)
+        FileDelete(reviewPath)
+    FileAppend(imported, reviewPath, "UTF-8")
+
+    importMode := app.HasOwnProp("importMode") ? app.importMode : "insert"
+    app.importMode := ""
+    ShowImportReview(app, imported, reviewPath, "", false, importMode)
+}
+
+GetImportFileExtension(path) {
+    dotPos := InStr(path, ".",, -1)
+    return dotPos ? StrLower(SubStr(path, dotPos + 1)) : ""
+}
+
+IsImageImportExtension(ext) {
+    return ext = "png" || ext = "jpg" || ext = "jpeg" || ext = "bmp" || ext = "gif" || ext = "webp"
+}
+
+IsPaletteDataImportExtension(ext) {
+    return ext = "txt" || ext = "ini" || ext = "json" || ext = "csv"
+}
+
+GetImportSourceName(path) {
+    SplitPath(path, &fileName)
+    name := RegExReplace(fileName, "\.[^.]+$")
+    name := StrReplace(name, "_", " ")
+    name := StrReplace(name, "-", " ")
+    name := RegExReplace(name, "\s+", " ")
+    return Trim(name) != "" ? Trim(name) : "Imported"
+}
+
+ParsePaletteDataFileToImportedText(path) {
+    ext := GetImportFileExtension(path)
+    content := FileRead(path, "UTF-8")
+    sourceName := GetImportSourceName(path)
+
+    switch ext {
+        case "txt":
+            return ParsePaletteTxtImport(content, sourceName)
+        case "ini":
+            return ParsePaletteIniImport(content, sourceName)
+        case "json":
+            return ParsePaletteJsonImport(content, sourceName)
+        case "csv":
+            return ParsePaletteCsvImport(content, sourceName)
+        default:
+            return ""
+    }
+}
+
+BuildImportedTextFromSections(sourceName, sectionOrder, sectionColors) {
+    lines := []
+    lines.Push("#IMAGE|0|0|" sourceName)
+
+    for _, sectionName in sectionOrder {
+        if !sectionColors.Has(sectionName)
+            continue
+        lines.Push("#SECTION||" sectionName)
+        pinOrder := 1
+        for _, color in sectionColors[sectionName] {
+            hex := StrUpper(RegExReplace(color.hex, "(?i)[^0-9A-F]"))
+            if !RegExMatch(hex, "^[0-9A-F]{6}$")
+                continue
+
+            rgb := color.rgb != "" ? color.rgb : ImportReviewGetRGBFromHex(hex)
+            name := color.name != "" ? color.name : sectionName " " color.role
+            role := color.role != "" ? color.role : "Base"
+            pinned := color.HasOwnProp("pinned") ? color.pinned : 0
+            order := color.HasOwnProp("pinOrder") && color.pinOrder > 0 ? color.pinOrder : pinOrder
+            lines.Push(hex "|" rgb "|" name "|" role "|" pinned "|" order "|" sectionName "|0|0|0|0")
+            pinOrder++
+        }
+    }
+
+    return JoinLines(lines)
+}
+
+ParsePaletteTxtImport(content, sourceName) {
+    sectionOrder := ["Default"]
+    sectionColors := Map("Default", [])
+    currentSection := "Default"
+
+    for _, rawLine in StrSplit(content, "`n", "`r") {
+        line := Trim(rawLine)
+        if (line = "")
+            continue
+
+        if (SubStr(line, 1, 1) = "#") {
+            if (SubStr(line, 1, 9) = "#SECTION|") {
+                parts := StrSplit(line, "|")
+                if (parts.Length >= 3) {
+                    currentSection := Trim(parts[3])
+                    if (!sectionColors.Has(currentSection)) {
+                        sectionColors[currentSection] := []
+                        sectionOrder.Push(currentSection)
+                    }
+                }
+            }
+            continue
+        }
+
+        parts := StrSplit(line, "|")
+        if parts.Length < 7
+            continue
+
+        hex := Trim(parts[1])
+        if (InStr(hex, "#") = 1)
+            hex := SubStr(hex, 2)
+
+        colorSection := parts.Length >= 7 ? Trim(parts[7]) : "Default"
+        if (colorSection = "")
+            colorSection := currentSection
+
+        if (!sectionColors.Has(colorSection)) {
+            sectionColors[colorSection] := []
+            sectionOrder.Push(colorSection)
+        }
+
+        role := Trim(parts[4])
+        pinned := 0
+        if parts.Length >= 5 && InStr(parts[5], "pinned=")
+            pinned := (Trim(SubStr(parts[5], 8)) = "1") ? 1 : 0
+
+        sectionColors[colorSection].Push({
+            hex: hex,
+            rgb: Trim(parts[2]),
+            name: Trim(parts[3]),
+            role: role,
+            pinned: pinned
+        })
+    }
+
+    return BuildImportedTextFromSections(sourceName, sectionOrder, sectionColors)
+}
+
+ParsePaletteIniImport(content, sourceName) {
+    sectionOrder := ["Default"]
+    sectionColors := Map("Default", [])
+    currentSection := "Default"
+    currentColor := 0
+
+    FinalizeIniColor() {
+        if IsObject(currentColor) {
+            if (!sectionColors.Has(currentSection))
+                sectionColors[currentSection] := []
+            sectionColors[currentSection].Push(currentColor)
+        }
+    }
+
+    for _, rawLine in StrSplit(content, "`n", "`r") {
+        line := Trim(rawLine)
+        if (line = "" || SubStr(line, 1, 1) = ";")
+            continue
+
+        if RegExMatch(line, "^\[(.+)\]$", &m) {
+            FinalizeIniColor()
+            currentSection := Trim(m[1])
+            if (!sectionColors.Has(currentSection)) {
+                sectionColors[currentSection] := []
+                sectionOrder.Push(currentSection)
+            }
+            currentColor := { hex: "", rgb: "", name: "", role: "Base", pinned: 0 }
+            continue
+        }
+
+        eqPos := InStr(line, "=")
+        if !eqPos || !IsObject(currentColor)
+            continue
+
+        key := StrLower(Trim(SubStr(line, 1, eqPos - 1)))
+        value := Trim(SubStr(line, eqPos + 1))
+        switch key {
+            case "hex":
+                currentColor.hex := value
+            case "rgb":
+                currentColor.rgb := value
+            case "name":
+                currentColor.name := value
+            case "role":
+                currentColor.role := value
+            case "pinned":
+                currentColor.pinned := (value = "1") ? 1 : 0
+            case "section":
+                currentSection := value
+                if (!sectionColors.Has(currentSection)) {
+                    sectionColors[currentSection] := []
+                    sectionOrder.Push(currentSection)
+                }
+        }
+    }
+    FinalizeIniColor()
+
+    return BuildImportedTextFromSections(sourceName, sectionOrder, sectionColors)
+}
+
+ParsePaletteJsonImport(content, sourceName) {
+    sectionOrder := []
+    sectionColors := Map()
+    pos := 1
+
+    while RegExMatch(content, '\{[^{}]*"hex"\s*:\s*"([^"]+)"[^{}]*\}', &m, pos) {
+        block := m[0]
+        pos := m.Pos + m.Len
+
+        hex := JsonFieldValue(block, "hex")
+        rgb := JsonFieldValue(block, "rgb")
+        name := JsonFieldValue(block, "name")
+        role := JsonFieldValue(block, "role")
+        sectionName := JsonFieldValue(block, "section")
+        pinned := StrLower(JsonFieldValue(block, "pinned")) = "true" ? 1 : 0
+
+        if (sectionName = "")
+            sectionName := "Default"
+        if !sectionColors.Has(sectionName) {
+            sectionColors[sectionName] := []
+            sectionOrder.Push(sectionName)
+        }
+
+        sectionColors[sectionName].Push({
+            hex: hex,
+            rgb: rgb,
+            name: name,
+            role: role,
+            pinned: pinned
+        })
+    }
+
+    return BuildImportedTextFromSections(sourceName, sectionOrder, sectionColors)
+}
+
+JsonFieldValue(block, fieldName) {
+    pattern := '"' fieldName '"\s*:\s*"([^"]*)"'
+    if RegExMatch(block, pattern, &m)
+        return m[1]
+    if RegExMatch(block, '"' fieldName '"\s*:\s*(true|false)', &m)
+        return m[1]
+    if RegExMatch(block, '"' fieldName '"\s*:\s*(-?\d+\.?\d*)', &m)
+        return m[1]
+    return ""
+}
+
+ParsePaletteCsvImport(content, sourceName) {
+    sectionOrder := ["Default"]
+    sectionColors := Map("Default", [])
+    currentSection := "Default"
+
+    for _, rawLine in StrSplit(content, "`n", "`r") {
+        line := Trim(rawLine)
+        if (line = "")
+            continue
+
+        if (SubStr(line, 1, 1) = "#") {
+            if (SubStr(line, 1, 9) = "#SECTION|") {
+                parts := StrSplit(line, "|")
+                if (parts.Length >= 3) {
+                    currentSection := Trim(parts[3])
+                    if (!sectionColors.Has(currentSection)) {
+                        sectionColors[currentSection] := []
+                        sectionOrder.Push(currentSection)
+                    }
+                }
+            }
+            continue
+        }
+
+        parts := ParseCsvLine(line)
+        if parts.Length < 7
+            continue
+
+        hex := Trim(parts[1])
+        if (InStr(hex, "#") = 1)
+            hex := SubStr(hex, 2)
+
+        sectionName := parts.Length >= 7 ? Trim(parts[7]) : "Default"
+        if (sectionName = "")
+            sectionName := "Default"
+
+        if (!sectionColors.Has(sectionName)) {
+            sectionColors[sectionName] := []
+            sectionOrder.Push(sectionName)
+        }
+
+        sectionColors[sectionName].Push({
+            hex: hex,
+            rgb: Trim(parts[2]),
+            name: Trim(parts[3]),
+            role: Trim(parts[4]),
+            pinned: parts[5] = "1" ? 1 : 0
+        })
+    }
+
+    return BuildImportedTextFromSections(sourceName, sectionOrder, sectionColors)
+}
+
+ParseCsvLine(line) {
+    values := []
+    current := ""
+    inQuotes := false
+    i := 1
+
+    while (i <= StrLen(line)) {
+        ch := SubStr(line, i, 1)
+        if (ch = '"') {
+            if inQuotes && i < StrLen(line) && SubStr(line, i + 1, 1) = '"' {
+                current .= '"'
+                i += 1
+            } else {
+                inQuotes := !inQuotes
+            }
+        } else if (ch = "," && !inQuotes) {
+            values.Push(current)
+            current := ""
+        } else {
+            current .= ch
+        }
+        i += 1
+    }
+
+    values.Push(current)
+    return values
 }
 
 ShowImportModeDialog(app, imagePath) {

@@ -82,11 +82,13 @@ ShowImportReview(app, importedData, reviewPath, imagePath := "", isTemp := false
 
     g.AddText("x" rightX " y" topY " cAAAAAA", "Source Image")
     if (imagePath != "" && FileExist(imagePath)) {
-        try g.imagePreview := g.AddPicture("x" rightX " y" (topY + 18) " w" rightW " h220", imagePath)
-        catch
-            g.imagePreview := 0
+        try {
+            g.imagePreview := g.AddPicture("x" rightX " y" (topY + 18) " w" rightW " h220", imagePath)
+        }
     }
-    if !IsObject(g.imagePreview)
+    hasPreview := false
+    try hasPreview := IsObject(g.imagePreview)
+    if !hasPreview
         g.imagePreviewLabel := g.AddText("x" rightX " y" (topY + 18) " w" rightW " h220 c777777 +Border", imagePath != "" ? imagePath : "No image preview")
 
     settingsY := topY + 248

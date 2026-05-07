@@ -23,7 +23,7 @@ Nastarxa Color Picker is a powerful color workflow tool for fast creative iterat
 ## 🚀 Features
 
 ### 🎯 Color Picker
-- Live eyedropper with real-time HEX / RGB (`Ctrl + Alt + P`)
+- Live eyedropper with real-time `HEX` or `RGB` (`Ctrl + Alt + P`)
 - Middle-click instant save from screen
 - Clipboard HEX auto-detection
 
@@ -39,7 +39,8 @@ Nastarxa Color Picker is a powerful color workflow tool for fast creative iterat
 ---
 
 ### 🎭 Color Roles System
-- Base, Highlight, Shadow, Hi Shadow, 2 Shadow, Mask, Outline, Black
+- Built-in Roles:
+  `Base`, `Highlight`, `Shadow`, `Hi Shadow`, `2 Shadow`, `Mask`, `Outline`, `Black`
 - Batch role assignment (multi-select)
 - Custom role ordering
 
@@ -60,7 +61,7 @@ Nastarxa Color Picker is a powerful color workflow tool for fast creative iterat
 - Pre-import review system
 
 Export formats:
-TXT • JSON • INI • CSV • PNG • ASE
+TXT • JSON • INI • CSV • PNG 
 
 ---
 
@@ -96,37 +97,36 @@ Apply as:
 
 ### Global
 | Shortcut | Action |
-|----------|--------|
-| Ctrl + Alt + P | Toggle Color Picker |
-| Ctrl + Alt + O | Toggle Palette |
-| Ctrl + Alt + U | Screenshot Import |
-| Ctrl + Alt + I | Palette Manager |
-| Ctrl + Alt + F | Favorites |
-| Ctrl + Alt + V | Paste HEX |
-| Ctrl + Alt + 1–9 | Switch Palette |
+|---|---|
+| `Ctrl + Alt + P` | Toggle color picker |
+| `Ctrl + Alt + O` | Toggle palette |
+| `Ctrl + Alt + U` | Screenshot import |
+| `Ctrl + Alt + I` | Open palette manager |
+| `Ctrl + Alt + F` | Open favorites |
+| `Ctrl + Alt + V` | Paste HEX |
+| `Ctrl + Alt + 1-9` | Switch palette |
 
 ---
 
 ### Picker Mode
 | Input | Action |
-|------|--------|
-| Middle Mouse | Save HEX |
-| Ctrl + Middle Mouse | Save RGB |
+|---|---|
+| `Middle Mouse` | Save HEX |
+| `Ctrl + Middle Mouse` | Save RGB |
 
 ---
 
 ### Palette Mode
 | Input | Action |
-|------|--------|
-| Click | Copy value |
-| Ctrl + Click | Copy alternate format |
-| Shift + Click | Multi-select |
-| Right Click | Context menu |
-| Middle Click | Role assignment |
-| Arrow Keys | Navigate |
-| Enter | Copy |
-| Space | Toggle selection |
-
+|---|---|
+| `Click` | Copy current display value |
+| `Ctrl + Click` | Copy alternate format |
+| `Shift + Click` | Multi-select |
+| `Right Click` | Open color or section menu |
+| `Middle Click` | Open role actions |
+| `Arrow Keys` | Navigate palette cells |
+| `Enter` | Copy selected color |
+| `Space` | Toggle selection |
 ---
 
 ## 🖼 Image Preview
@@ -156,8 +156,9 @@ color/
 templates/
 ```
 Data:
-- palette files are stored in `color\`
-- palette order is stored in `color\palettes.txt`
+- palettes are stored in `color/`
+- palette order is stored in `color/palettes.txt`
+- template files are stored in `templates/`
 
 ---
 

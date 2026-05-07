@@ -873,26 +873,7 @@ ConfirmImportPathDialog(app, g, &result) {
 }
 
 ImportFolderImages(app) {
-    folderPath := ShowFolderSelectDialog(app)
-    if (folderPath = "")
-        return
-
-    imageExtensions := "png;jpg;jpeg;bmp;gif;webp"
-    imageFiles := []
-
-    Loop Files, folderPath "\*", "F" {
-        ext := SubStr(A_LoopFileName, InStr(A_LoopFileName, ".") + 1)
-        if InStr(imageExtensions, ext) {
-            imageFiles.Push(A_LoopFileFullPath)
-        }
-    }
-
-    if imageFiles.Length = 0 {
-        ShowToast(app, "No images found in folder")
-        return
-    }
-
-    ShowImportFolderPreview(app, folderPath, imageFiles)
+    ShowFolderSelectDialog(app)
 }
 
 ShowFolderSelectDialog(app) {
@@ -903,10 +884,10 @@ ShowFolderSelectDialog(app) {
     g.MarginY := 12
 
     g.AddText("cFFFFFF", "Select folder with images:")
-    g.folderEdit := g.AddEdit("w300 y+4")
+    g.folderEdit := g.AddEdit("w265 y+4")
     g.AddButton("x+5 yp w30 h24", "...").OnEvent("Click", (*) => DoBrowseFolder(app, g))
 
-    g.AddText("cFFFFFF y+10", "Or enter path:")
+    g.AddText("xm cFFFFFF y+10", "Or enter path:")
     g.pathEdit := g.AddEdit("w300 y+4")
 
     g.AddButton("w120 h28 y+15", "Select").OnEvent("Click", (*) => DoSelectFolder(app, g))
@@ -987,9 +968,9 @@ ShowImportFolderPreview(app, folderPath, imageFiles) {
         shortPath := "..." SubStr(folderPath, -47)
 
     g.AddText("cFFFFFF", "Folder: " shortPath)
-    g.AddButton("x+5 yp w30 h20", "📁").OnEvent("Click", (*) => Run('explorer.exe "' folderPath '"'))
+    g.AddButton("x+8 yp w30 h20", "📁").OnEvent("Click", (*) => Run('explorer.exe "' folderPath '"'))
 
-    g.AddText("cAAAAAA y+5", "Found " imageFiles.Length " images:")
+    g.AddText("xm cAAAAAA y+5", "Found " imageFiles.Length " images:")
     g.fileList := g.AddListView("w450 h200 -Multi", ["#", "File Name"])
     g.fileList.SetFont("s8", "Consolas")
     totalW := 450
@@ -1007,13 +988,16 @@ ShowImportFolderPreview(app, folderPath, imageFiles) {
 
     totalColors := 0
     for imgPath in imageFiles {
-        tempPath := A_Temp "\nastarxa_import_" A_Index ".png"
-        colors := ExtractColorsFromImage(imgPath, tempPath)
-        if colors.Length > 0
-            totalColors += colors.Length
+        imported := RunPaletteImportDetection(app, imgPath)
+        if (Trim(imported) = "")
+            continue
+
+        parsed := ParseImportedData(imported)
+        for _, sectionName in parsed.sectionOrder
+            totalColors += parsed.sections[sectionName].Length
     }
 
-    g.AddText("y+5 cAAAAAA", "Est. ~" totalColors " colors (top 10 per image)")
+    g.AddText("y+5 cAAAAAA", "Est. ~" totalColors " detected colors from import blocks")
 
     g.AddButton("w140 h28 y+10", "🔍 Import Colors").OnEvent("Click", (*) => DoImportFolderImages(app, g, folderPath, imageFiles))
     g.AddButton("w140 h28 x+10", "Cancel").OnEvent("Click", (*) => g.Destroy())
@@ -1028,7 +1012,7 @@ DoImportFolderImages(app, g, folderPath, imageFiles) {
     successCount := 0
     for imgPath in imageFiles {
         try {
-            tempPath := A_Temp "\nastarxa_import_" A_Index ".png"
+            tempPath := A_Temp "astarxa_import_" A_Index ".png"
             if ProcessSingleImageImport(app, imgPath, tempPath) {
                 successCount++
             }
@@ -1036,80 +1020,75 @@ DoImportFolderImages(app, g, folderPath, imageFiles) {
     }
 
     if successCount > 0 {
-        ShowToast(app, "Imported " successCount " images")
+        ShowToast(app, "Imported colors from " successCount " images")
         RefreshPaletteManager(app, app.paletteGui)
         SwitchPalette(app, app.activePalette.name)
     } else {
-        ShowToast(app, "No colors extracted from images")
+        ShowToast(app, "No importable palette colors detected")
     }
 }
 
-ExtractColorsFromImage(imgPath, tempPath) {
-    colors := []
-    scriptPath := A_Temp "\nastarxa_color_extract.ps1"
+RunPaletteImportDetection(app, imgPath) {
+    outPath := A_Temp "\astarxa_folder_import_" A_TickCount "_" Abs(Mod(StrLen(imgPath), 1000)) ".txt"
+    scriptPath := A_Temp "\astarxa_folder_import_" A_TickCount "_" Abs(Mod(StrLen(imgPath) * 7, 1000)) ".ps1"
+    trainingPath := GetImportTrainingPath()
 
-    script := "param([string]`$ImagePath, [string]`$OutPath)`nAdd-Type -AssemblyName System.Drawing`ntry {`n`$img = [System.Drawing.Image]::FromFile(`$ImagePath)`n`$bmp = New-Object System.Drawing.Bitmap(`$img)`n`$colors = @{}`nfor (`$y = 0; `$y -lt `$bmp.Height; `$y += 5) {`nfor (`$x = 0; `$x -lt `$bmp.Width; `$x += 5) {`n`$c = `$bmp.GetPixel(`$x, `$y)`n`$key = (`"{0:X2}{1:X2}{2:X2}`" -f `$c.R, `$c.G, `$c.B)`nif (-not `$colors.ContainsKey(`$key)) { `$colors[`$key] = 1 } else { `$colors[`$key]++ } } } }`n`$sorted = `$colors.GetEnumerator() | Sort-Object Value -Descending | Select-Object -First 10`n`$result = (`$sorted | ForEach-Object { `$_.Key }) -join `,`n`$result | Out-File -FilePath `$OutPath -Encoding UTF8`n`$bmp.Dispose()`n`$img.Dispose()`nexit 0 } catch { exit 1 }"
-
+    if FileExist(outPath)
+        FileDelete(outPath)
     if FileExist(scriptPath)
         FileDelete(scriptPath)
-    FileAppend(script, scriptPath, "UTF-8")
 
-    outputPath := A_Temp "\nastarxa_colors_output.txt"
-    if FileExist(outputPath)
-        FileDelete(outputPath)
+    FileAppend(GetPaletteImageImportScript(), scriptPath, "UTF-8")
 
-    cmd := Format('powershell -NoProfile -ExecutionPolicy Bypass -File "{}" "{}" "{}"', scriptPath, imgPath, outputPath)
+    cmd := Format(
+        'powershell -NoProfile -ExecutionPolicy Bypass -File "{}" "{}" "{}" "{}"',
+        scriptPath,
+        imgPath,
+        outPath,
+        trainingPath
+    )
     RunWait(cmd, , "Hide")
 
-    if FileExist(outputPath) {
-        hexList := StrSplit(Trim(FileRead(outputPath)), ",")
-        for hex in hexList {
-            hex := Trim(hex)
-            if (StrLen(hex) = 6)
-                colors.Push(hex)
-        }
-    }
+    imported := FileExist(outPath) ? FileRead(outPath, "UTF-8") : ""
 
-    return colors
+    try FileDelete(scriptPath)
+    try FileDelete(outPath)
+
+    return imported
 }
 
 ProcessSingleImageImport(app, imgPath, tempPath) {
-    scriptPath := A_Temp "\nastarxa_single_import.ps1"
-
-    script := "param([string]`$ImagePath, [string]`$OutPath)`nAdd-Type -AssemblyName System.Drawing`ntry {`n`$img = [System.Drawing.Image]::FromFile(`$ImagePath)`n`$bmp = New-Object System.Drawing.Bitmap(`$img)`n`$colors = @{}`nfor (`$y = 0; `$y -lt `$bmp.Height; `$y += 5) {`nfor (`$x = 0; `$x -lt `$bmp.Width; `$x += 5) {`n`$c = `$bmp.GetPixel(`$x, `$y)`n`$key = (`"{0:X2}{1:X2}{2:X2}`" -f `$c.R, `$c.G, `$c.B)`nif (-not `$colors.ContainsKey(`$key)) { `$colors[`$key] = 1 } else { `$colors[`$key]++ } } } }`n`$sorted = `$colors.GetEnumerator() | Sort-Object Value -Descending | Select-Object -First 10`n`$result = (`$sorted | ForEach-Object { `$_.Key }) -join `,`n`$result | Out-File -FilePath `$OutPath -Encoding UTF8`n`$bmp.Dispose()`n`$img.Dispose()`nexit 0 } catch { exit 1 }"
-
-    FileDelete(scriptPath)
-    FileAppend(script, scriptPath, "UTF-8")
-
-    outputPath := A_Temp "\nastarxa_colors_output.txt"
-    FileDelete(outputPath)
-
-    cmd := Format('powershell -NoProfile -ExecutionPolicy Bypass -File "{}" "{}" "{}"', scriptPath, imgPath, outputPath)
-    RunWait(cmd, , "Hide")
-
-    if !FileExist(outputPath)
+    imported := RunPaletteImportDetection(app, imgPath)
+    if (Trim(imported) = "")
         return false
 
-    hexList := StrSplit(Trim(FileRead(outputPath)), ",")
-    if hexList.Length = 0
-        return false
+    parsed := ParseImportedData(imported)
+    totalImported := 0
 
     p := app.activePalette
-    for hex in hexList {
-        hex := Trim(hex)
-        if StrLen(hex) != 6
-            continue
-        if p.map.Has(hex)
-            continue
-        rgb := HexToRGB(hex)
-        name := GetColorName(hex)
-        item := CreateItem(hex, rgb.r "," rgb.g "," rgb.b, name, "Base")
-        item.section := "Imported"
-        item.pinned := 0
-        AddColor(p, item)
-        AddSectionName(p, "Imported")
+    for _, sectionName in parsed.sectionOrder {
+        AddSectionName(p, sectionName)
+        for _, color in parsed.sections[sectionName] {
+            hex := Trim(color.hex)
+            if !RegExMatch(hex, "^[0-9A-Fa-f]{6}$")
+                continue
+            if p.map.Has(hex)
+                continue
+
+            rgb := color.rgb != "" ? color.rgb : ImportReviewGetRGBFromHex(hex)
+            name := color.name != "" ? color.name : GetColorName(hex)
+            role := color.role != "" ? color.role : "Base"
+
+            item := CreateItem(hex, rgb, name, role)
+            item.section := sectionName
+            item.pinned := color.HasOwnProp("pinned") ? color.pinned : 0
+            item.pinOrder := color.HasOwnProp("pinOrder") ? color.pinOrder : 0
+            AddColor(p, item)
+            totalImported++
+        }
     }
-    return true
+
+    return totalImported > 0
 }
 
 ShowImportModeDialog(app, imagePath) {
@@ -1134,8 +1113,8 @@ ShowImportModeDialog(app, imagePath) {
 }
 
 ImportPaletteImage(app, imagePath) {
-    outPath := A_Temp "\nastarxa_palette_import.txt"
-    scriptPath := A_Temp "\nastarxa_palette_import.ps1"
+    outPath := A_Temp "astarxa_palette_import.txt"
+    scriptPath := A_Temp "astarxa_palette_import.ps1"
     trainingPath := GetImportTrainingPath()
 
     if FileExist(outPath)
@@ -1193,7 +1172,7 @@ StartPaletteScreenshotImport(app) {
     app.screenshotCapture.active := true
     app.screenshotCapture.noSnipTicks := 0
     app.screenshotCapture.deadline := A_TickCount + 120000
-    app.screenshotCapture.tempPath := A_Temp "\nastarxa_palette_capture.png"
+    app.screenshotCapture.tempPath := A_Temp "astarxa_palette_capture.png"
 
     A_Clipboard := ""
     ShowToast(app, "Snip the palette area, then release mouse")
@@ -1263,7 +1242,7 @@ ClipboardHasImage() {
 }
 
 SaveClipboardImageToFile(path) {
-    scriptPath := A_Temp "\nastarxa_clipboard_image_save.ps1"
+    scriptPath := A_Temp "astarxa_clipboard_image_save.ps1"
 
     if FileExist(scriptPath)
         FileDelete(scriptPath)

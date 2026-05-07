@@ -1017,7 +1017,7 @@ DoImportFolderImages(app, g, folderPath, imageFiles) {
     successCount := 0
     for imgPath in imageFiles {
         try {
-            tempPath := A_Temp "astarxa_import_" A_Index ".png"
+            tempPath := A_Temp "\import_nastarxa_" A_Index ".png"
             if ProcessSingleImportFile(app, imgPath, tempPath) {
                 successCount++
             }
@@ -1034,8 +1034,8 @@ DoImportFolderImages(app, g, folderPath, imageFiles) {
 }
 
 RunPaletteImportDetection(app, imgPath) {
-    outPath := A_Temp "\astarxa_folder_import_" A_TickCount "_" Abs(Mod(StrLen(imgPath), 1000)) ".txt"
-    scriptPath := A_Temp "\astarxa_folder_import_" A_TickCount "_" Abs(Mod(StrLen(imgPath) * 7, 1000)) ".ps1"
+    outPath := A_Temp "\folder_import_nastarxa" A_TickCount "_" Abs(Mod(StrLen(imgPath), 1000)) ".txt"
+    scriptPath := A_Temp "\folder_import_nastarxa" A_TickCount "_" Abs(Mod(StrLen(imgPath) * 7, 1000)) ".ps1"
     trainingPath := GetImportTrainingPath()
 
     if FileExist(outPath)
@@ -1136,7 +1136,7 @@ ImportPaletteDataFile(app, path) {
         return
     }
 
-    reviewPath := A_Temp "\astarxa_palette_file_import.txt"
+    reviewPath := A_Temp "\palette_file_import_nastarxa.txt"
     if FileExist(reviewPath)
         FileDelete(reviewPath)
     FileAppend(imported, reviewPath, "UTF-8")
@@ -1501,8 +1501,8 @@ ShowImportModeDialog(app, imagePath) {
 }
 
 ImportPaletteImage(app, imagePath) {
-    outPath := A_Temp "astarxa_palette_import.txt"
-    scriptPath := A_Temp "astarxa_palette_import.ps1"
+    outPath := A_Temp "\palette_import_nastarxa.txt"
+    scriptPath := A_Temp "\palette_import_nastarxa.ps1"
     trainingPath := GetImportTrainingPath()
 
     if FileExist(outPath)
@@ -1560,7 +1560,7 @@ StartPaletteScreenshotImport(app) {
     app.screenshotCapture.active := true
     app.screenshotCapture.noSnipTicks := 0
     app.screenshotCapture.deadline := A_TickCount + 120000
-    app.screenshotCapture.tempPath := A_Temp "astarxa_palette_capture.png"
+    app.screenshotCapture.tempPath := A_Temp "\palette_capture_nastarxa.png"
 
     A_Clipboard := ""
     ShowToast(app, "Snip the palette area, then release mouse")
@@ -1630,7 +1630,7 @@ ClipboardHasImage() {
 }
 
 SaveClipboardImageToFile(path) {
-    scriptPath := A_Temp "astarxa_clipboard_image_save.ps1"
+    scriptPath := A_Temp "\clipboard_image_save_nastarxa.ps1"
 
     if FileExist(scriptPath)
         FileDelete(scriptPath)

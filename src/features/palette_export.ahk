@@ -100,8 +100,8 @@ ConfirmExportPathDialog(app, g, defaultExt, &result) {
 }
 
 ExportPalettePng(app, p, path, style := 1, showInfo := 1) {
-    jsonPath := A_Temp . "\nastarxa_palette_export.json"
-    scriptPath := A_Temp . "\nastarxa_palette_export.ps1"
+    jsonPath := A_Temp "astarxa_palette_export.json"
+    scriptPath := A_Temp "astarxa_palette_export.ps1"
 
     ; Validate palette has colors
     if (!p.HasOwnProp("colors") || !p.colors.Length) {
@@ -177,8 +177,8 @@ ExportPalettePng(app, p, path, style := 1, showInfo := 1) {
 }
 
 ExportPalettePngCharacter(app, p, path, showInfo := 1) {
-    jsonPath := A_Temp . "\nastarxa_palette_export_char.json"
-    scriptPath := A_Temp . "\nastarxa_palette_export_character.ps1"
+    jsonPath := A_Temp "astarxa_palette_export_char.json"
+    scriptPath := A_Temp "astarxa_palette_export_character.ps1"
 
     scriptContent := GetPalettePngExportCharacterScript()
     if (scriptContent = "") {

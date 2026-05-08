@@ -41,6 +41,11 @@ y += 26
     gui.btnHeaderCompact := gui.AddButton("x" leftX+5 " y" y " w" leftW-10 " h22", headerLabel)
     gui.btnHeaderCompact.OnEvent("Click", (*) => ToggleHeaderClicked(app, gui))
 
+    y += 26
+    paintIconMode := app.HasOwnProp("paintIconMode") ? app.paintIconMode : true
+    paintLabel := paintIconMode ? "Paint Icon: On" : "Paint Icon: Off"
+    gui.btnPaintIcon := gui.AddButton("x" leftX+5 " y" y " w" leftW-10 " h22", paintLabel)
+    gui.btnPaintIcon.OnEvent("Click", (*) => TogglePaintIconClicked(app, gui))
 
 }
 CreatePickerPanel(gui, app, leftX, leftW) {
@@ -179,6 +184,16 @@ ToggleHeaderClicked(app, gui) {
     app.ui.generation++
     RebuildUI(app)
     ShowToast(app, "Header: " (app.headerCompactMode ? "Compact" : "Normal"))
+}
+
+TogglePaintIconClicked(app, gui) {
+    current := app.HasOwnProp("paintIconMode") ? app.paintIconMode : true
+    app.paintIconMode := !current
+    if gui.HasOwnProp("btnPaintIcon")
+        gui.btnPaintIcon.Text := app.paintIconMode ? "Paint Icon: On" : "Paint Icon: Off"
+    app.ui.generation++
+    RebuildUI(app)
+    ShowToast(app, "Paint Icon: " (app.paintIconMode ? "On" : "Off"))
 }
 
 ToggleRoleOrderClicked(app, gui) {

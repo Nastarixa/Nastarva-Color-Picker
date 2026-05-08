@@ -294,6 +294,7 @@ CreateItem(hex, rgb, name := "", role := "Base") {
         pinned: false,
         pinOrder: 0,
         section: "Default",
+        paint: "",
         isSaved: false,
         copiedUntil: 0
     }
@@ -390,6 +391,7 @@ LoadHistory(app) {
         item.pinOrder := (part.Length >= 6) ? Integer(part[6]) : 0
         item.section := (part.Length >= 7 && part[7] != "") ? part[7] : "Default"
         item.id := (part.Length >= 8 && part[8] != "") ? part[8] : GenerateItemId()
+        item.paint := (part.Length >= 9 && part[9] != "") ? part[9] : ""
         item.isSaved := true
         item.copiedUntil := 0
         
@@ -464,7 +466,6 @@ TryParseSectionPositionLine(line, &sectionId, &x, &y, &w, &h) {
 }
 
 SaveHistory(app) {
-<<<<<<< HEAD
     p := app.activePalette
     SavePalette(p, app.version)
 }
@@ -472,8 +473,15 @@ SaveHistory(app) {
 SavePalette(p, version) {
     DirCreate(A_ScriptDir "\color")
 
-    filePath := A_ScriptDir "\color\" p.file
-    f := FileOpen(filePath, "w")
+    fileName := ""
+    if p.HasOwnProp("file") && p.file != "" {
+        SplitPath(p.file, &fileName)
+    }
+    if fileName = ""
+        fileName := p.name ".txt"
+    fileName := RegExReplace(fileName, "[^a-zA-Z0-9 _\-.]", "")
+    fullPath := A_ScriptDir "\color\" fileName
+    f := FileOpen(fullPath, "w")
     guiMode := p.HasOwnProp("guiMode") ? p.guiMode : "undocked"
     note := p.HasOwnProp("note") ? EscapeSectionMeta(p.note) : ""
     priority := p.HasOwnProp("priority") ? p.priority : 1
@@ -518,7 +526,9 @@ SavePalette(p, version) {
             item.name := GetColorName(item.hex)
         if !item.HasOwnProp("section") || Trim(item.section) = ""
             item.section := "Default"
-        f.WriteLine(item.hex "|" item.rgb "|" item.name "|" item.role "|" item.pinned "|" item.pinOrder "|" item.section "|" item.id)
+        if !item.HasOwnProp("paint")
+            item.paint := ""
+        f.WriteLine(item.hex "|" item.rgb "|" item.name "|" item.role "|" item.pinned "|" item.pinOrder "|" item.section "|" item.id "|" item.paint)
     }
     f.Close()
 }
@@ -559,99 +569,3 @@ GenerateSectionId() {
     seq += 1
     return "s" A_TickCount "-" seq "-" Random(1000, 9999)
 }
-=======
-    p := app.activePalette
-    SavePalette(p, app.version)
-}
-
-SavePalette(p, version) {
-    DirCreate(A_ScriptDir "\color")
-
-    filePath := A_ScriptDir "\color\" p.file
-    f := FileOpen(filePath, "w")
-    guiMode := p.HasOwnProp("guiMode") ? p.guiMode : "undocked"
-    note := p.HasOwnProp("note") ? EscapeSectionMeta(p.note) : ""
-    priority := p.HasOwnProp("priority") ? p.priority : 1
-    offsetX := p.HasOwnProp("pickGuiOffsetX") ? p.pickGuiOffsetX : -325
-    offsetY := p.HasOwnProp("pickGuiOffsetY") ? p.pickGuiOffsetY : 90
-    f.WriteLine("#META|version=" version "|historyMax=" p.historyMax "|maxCols=" p.maxCols "|guiMode=" guiMode "|priority=" priority "|note=" note "|offsetX=" offsetX "|offsetY=" offsetY)
-
-    if p.HasOwnProp("roleOrder") {
-        p.roleOrder := NormalizeRoleOrderList(p.roleOrder)
-        f.WriteLine("#ROLEORDER|" JoinRoleOrder(p.roleOrder))
-    }
-
-    EnsureDefaultSection(p)
-    for section in p.sections {
-        if IsObject(section) {
-            locked := section.HasOwnProp("locked") && section.locked ? 1 : 0
-            collapsed := section.HasOwnProp("collapsed") && section.collapsed ? 1 : 0
-            tag := section.HasOwnProp("tag") ? StrUpper(RegExReplace(section.tag, "(?i)[^0-9A-F]")) : ""
-            note := section.HasOwnProp("note") ? section.note : ""
-            f.WriteLine("#SECTION|" section.id "|" EscapeSectionMeta(section.name) "|locked=" locked "|collapsed=" collapsed "|tag=" tag "|note=" EscapeSectionMeta(note))
-        } else {
-            f.WriteLine("#SECTION|" EscapeSectionMeta(section))
-        }
-    }
-
-    if p.HasOwnProp("sectionPositions") && IsObject(p.sectionPositions) {
-        for sectionId, pos in p.sectionPositions {
-            if !IsObject(pos)
-                continue
-            x := pos.HasOwnProp("x") ? Integer(pos.x) : 0
-            y := pos.HasOwnProp("y") ? Integer(pos.y) : 0
-            w := pos.HasOwnProp("w") ? Integer(pos.w) : 0
-            h := pos.HasOwnProp("h") ? Integer(pos.h) : 0
-            f.WriteLine("#POSITION|" sectionId "|" x "|" y "|" w "|" h)
-        }
-    }
-
-    for item in p.colors {
-        item.role := NormalizeRoleName(item.role)
-        item.name := Trim(item.name)
-        if (item.name = "")
-            item.name := GetColorName(item.hex)
-        if !item.HasOwnProp("section") || Trim(item.section) = ""
-            item.section := "Default"
-        f.WriteLine(item.hex "|" item.rgb "|" item.name "|" item.role "|" item.pinned "|" item.pinOrder "|" item.section "|" item.id)
-    }
-    f.Close()
-}
-
-JoinRoleOrder(roleOrder) {
-    text := ""
-    for _, role in roleOrder {
-        role := Trim(role)
-        if (role = "")
-            continue
-
-        text .= (text = "" ? "" : ",") role
-    }
-    return text
-}
-
-DefaultRoleOrder() {
-    return [
-        "Black",
-        "Outline",
-        "Mask",
-        "Highlight",
-        "Base",
-        "Hi Shadow",
-        "Shadow",
-        "2 Shadow"
-    ]
-}
-
-GenerateItemId() {
-    static seq := 0
-    seq += 1
-    return A_TickCount "-" seq "-" Random(1000, 9999)
-}
-
-GenerateSectionId() {
-    static seq := 0
-    seq += 1
-    return "s" A_TickCount "-" seq "-" Random(1000, 9999)
-}
->>>>>>> origin/main

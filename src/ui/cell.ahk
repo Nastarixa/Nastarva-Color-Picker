@@ -52,12 +52,19 @@ CreateCell(app, item) {
         return
 
     if !fullCompact && !characterMode {
+        paintIconMode := app.HasOwnProp("paintIconMode") ? app.paintIconMode : true
+        paintIcon := ""
+        if paintIconMode && item.HasOwnProp("paint") && item.paint != "" {
+            paintIcon := item.paint = "P" ? "🅟 " : (item.paint = "T" ? "🆃 " : "🆃🅟 ")
+        }
         if compact {
-            text := (item.HasOwnProp("pinned") && item.pinned ? "📌 " : "") FormatColorInfo(item, "compact", app)
+            text := (item.HasOwnProp("pinned") && item.pinned ? "📌 " : "") paintIcon FormatColorInfo(item, "compact", app)
         } else {
             text := FormatColorInfo(item, "compact", app)
+            prefix := ""
             if (item.HasOwnProp("pinned") && item.pinned)
-                text := "📌 " text
+                prefix := "📌 "
+            text := prefix paintIcon text
         }
         
         lblH := compact ? 12 : 14
@@ -148,12 +155,19 @@ UpdateCellDisplay(app, token) {
     
     if !fullCompact && !characterMode && SafeGetControlHwnd(ctrl.txt) {
         compact := app.HasOwnProp("compactMode") && app.compactMode
+        paintIconMode := app.HasOwnProp("paintIconMode") ? app.paintIconMode : true
+        paintIcon := ""
+        if paintIconMode && item.HasOwnProp("paint") && item.paint != "" {
+            paintIcon := item.paint = "P" ? "🅟 " : (item.paint = "T" ? "🆃 " : "🆃🅟 ")
+        }
         if compact {
-            text := (item.HasOwnProp("pinned") && item.pinned ? "📌 " : "") FormatColorInfo(item, "compact", app)
+            text := (item.HasOwnProp("pinned") && item.pinned ? "📌 " : "") paintIcon FormatColorInfo(item, "compact", app)
         } else {
             text := FormatColorInfo(item, "compact", app)
+            prefix := ""
             if (item.HasOwnProp("pinned") && item.pinned)
-                text := "📌 " text
+                prefix := "📌 "
+            text := prefix paintIcon text
         }
         try ctrl.txt.Value := text
     }

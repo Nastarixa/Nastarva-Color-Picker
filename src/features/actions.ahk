@@ -130,6 +130,7 @@ DuplicatePaletteBtn(app) {
         clone.pinned := item.pinned
         clone.pinOrder := item.pinOrder
         clone.section := item.section
+        clone.paint := item.HasOwnProp("paint") ? item.paint : ""
         clone.isSaved := true
         dup.colors.Push(clone)
         if !dup.map.Has(clone.hex)

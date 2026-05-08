@@ -760,7 +760,8 @@ DeleteSectionMutation(p, sectionName) {
 TogglePin(app, token) {
     Mutate(app, (p) => TogglePinMutation(p, token))
     Commit(app)
-    }
+    RefreshCellByToken(app, token)
+}
 
 TogglePinMutation(p, token) {
     maxOrder := GetMaxPinOrder(p)
@@ -1330,6 +1331,7 @@ CloneItem(item) {
     clone.pinned := item.pinned
     clone.pinOrder := item.pinOrder
     clone.section := item.section
+    clone.paint := item.HasOwnProp("paint") ? item.paint : ""
     clone.isSaved := item.isSaved
     clone.copiedUntil := item.copiedUntil
     return clone

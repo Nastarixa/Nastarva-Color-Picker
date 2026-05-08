@@ -664,6 +664,7 @@ DuplicatePaletteConfirm(app, g, val) {
         clone.pinned := item.pinned
         clone.pinOrder := item.pinOrder
         clone.section := item.section
+        clone.paint := item.HasOwnProp("paint") ? item.paint : ""
         clone.isSaved := true
 
         p.colors.Push(clone)
@@ -1044,7 +1045,11 @@ DoImportFolderImages(app, g, folderPath, imageFiles) {
                 paletteName := originalName " " counter
             }
 
-            fileName := paletteName ".txt"
+            safeName := RegExReplace(paletteName, "[^a-zA-Z0-9 _\-]", "")
+            safeName := Trim(safeName)
+            if (safeName = "")
+                safeName := "ImportedPalette"
+            fileName := safeName ".txt"
             p := CreatePalette(paletteName, fileName)
 
             for _, sectionName in parsed.sectionOrder {
@@ -1060,6 +1065,7 @@ DoImportFolderImages(app, g, folderPath, imageFiles) {
 
                     item := CreateItem(hex, rgb, name, role)
                     item.section := sectionName
+                    item.paint := "TP"
                     AddColor(p, item)
                 }
             }
@@ -1172,6 +1178,7 @@ ApplyParsedImportToActivePalette(app, parsed) {
             item.section := sectionName
             item.pinned := color.HasOwnProp("pinned") ? color.pinned : 0
             item.pinOrder := color.HasOwnProp("pinOrder") ? color.pinOrder : 0
+            item.paint := "TP"
             AddColor(p, item)
             totalImported++
         }
@@ -1817,6 +1824,7 @@ DoPaletteMerge(app, g) {
         newItem := CreateItem(hex, item.rgb, item.name, item.role)
         newItem.section := item.section
         newItem.pinned := 0
+        newItem.paint := item.HasOwnProp("paint") ? item.paint : "TP"
         AddColor(tgt, newItem)
         added++
         if !HasSectionName(tgt, item.section)
@@ -2339,11 +2347,15 @@ AddTemplateItemToPalette(p, name, data, section) {
     hex := parts[1]
     rgb := parts[2]
     role := parts[3]
+    paint := parts.Length >= 4 ? parts[4] : "TP"
+    if paint = ""
+        paint := "TP"
     item := CreateItem(hex, rgb, name, role)
     item.pinned := 0
     if section = ""
         section := "Imported"
     item.section := section
+    item.paint := paint
     AddColor(p, item)
     AddSectionName(p, section)
 }
@@ -2523,7 +2535,8 @@ SavePaletteAsTemplateFile(app, tplName, p) {
     for secName, items in sectionMap {
         lines.Push("#SECTION|" secName)
         for item in items {
-            lines.Push("#COLOR|" item.hex "|" item.rgb "|" item.name "|" item.role "|" secName)
+            paintVal := item.HasOwnProp("paint") ? item.paint : ""
+            lines.Push("#COLOR|" item.hex "|" item.rgb "|" item.name "|" item.role "|" secName "|" paintVal)
         }
     }
 
@@ -2599,7 +2612,10 @@ LoadUserTemplates() {
             if InStr(line, "#COLOR|") {
                 cparts := StrSplit(line, "|")
                 if cparts.Length >= 6 {
-                    colorData := cparts[2] "|" cparts[4] "|" cparts[5]
+                    paintVal := cparts.Length >= 7 ? cparts[7] : ""
+                    if paintVal = ""
+                        paintVal := "TP"
+                    colorData := cparts[2] "|" cparts[4] "|" cparts[5] "|" paintVal
                     colorName := cparts[3]
                     sectionName := cparts.Length >= 6 ? cparts[6] : "Default"
                     if currentSection != "" && tpl["sections"].Has(currentSection) {

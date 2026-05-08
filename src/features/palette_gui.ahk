@@ -189,11 +189,37 @@ Layout(app, singleSection := "") {
                 cellH := itemH
             }
 
-            try ctrl.bg.Move(x, y, cellW, cellH)
-            catch {
+            try {
+                ctrl.bg.Move(x, y, cellW, cellH)
+            } catch {
                 if app.ui.controls.Has(token)
                     app.ui.controls.Delete(token)
                 continue
+            }
+
+            if characterMode {
+                paintIconMode := app.HasOwnProp("paintIconMode") ? app.paintIconMode : true
+                if paintIconMode {
+                    paintVal := item.HasOwnProp("paint") ? item.paint : ""
+                    paintIcon := ""
+                    if paintVal != "" {
+                        paintIcon := paintVal = "P" ? "🅟" : (paintVal = "T" ? "🆃" : "🆃🅟")
+                    }
+                    if paintIcon != "" {
+                        if !ctrl.HasOwnProp("paintLbl") || !SafeGetControlHwnd(ctrl.paintLbl) {
+                            try ctrl.paintLbl := g.AddText("x" (x + cellW - 16) " y" (y + cellH - 12) " w14 h10 cFFFFFF Background1A1A1A", paintIcon)
+                        } else {
+                            try {
+                                ctrl.paintLbl.Move(x + cellW - 16, y + cellH - 12, 14, 10)
+                                ctrl.paintLbl.Visible := true
+                            }
+                        }
+                    } else if ctrl.HasOwnProp("paintLbl") {
+                        try ctrl.paintLbl.Visible := false
+                    }
+                } else if ctrl.HasOwnProp("paintLbl") {
+                    try ctrl.paintLbl.Visible := false
+                }
             }
 
             if (ctrl.txt != ctrl.bg) && SafeGetControlHwnd(ctrl.txt) {
@@ -990,6 +1016,35 @@ OpenPinMenu(app, token, targetIds) {
 
         g.AddButton("w160", "🧩 Move To Section...")
             .OnEvent("Click", (*) => OpenMoveSectionDialog(app, token))
+
+        currentPaint := favItem.HasOwnProp("paint") ? favItem.paint : ""
+        g.AddText("cAAAAAA", "Paint:")
+        if currentPaint = "P" {
+            g.AddButton("w160", "🅟 Paint")
+                .OnEvent("Click", (*) => SetPaint(app, token, ""))
+        } else {
+            g.AddButton("w160", "🅟 Set Paint")
+                .OnEvent("Click", (*) => SetPaint(app, token, "P"))
+        }
+        if currentPaint = "T" {
+            g.AddButton("w160", "🆃 Trace")
+                .OnEvent("Click", (*) => SetPaint(app, token, ""))
+        } else {
+            g.AddButton("w160", "🆃 Set Trace")
+                .OnEvent("Click", (*) => SetPaint(app, token, "T"))
+        }
+        if currentPaint = "TP" {
+            g.AddButton("w160", "🆃🅟 Trace-Paint")
+                .OnEvent("Click", (*) => SetPaint(app, token, ""))
+        } else {
+            g.AddButton("w160", "🆃🅟 Set Trace-Paint")
+                .OnEvent("Click", (*) => SetPaint(app, token, "TP"))
+        }
+
+        paintIconMode := app.HasOwnProp("paintIconMode") ? app.paintIconMode : true
+        paintIconLabel := paintIconMode ? "🎨 Hide Paint Icons" : "🎨 Show Paint Icons"
+        g.AddButton("w160", paintIconLabel)
+            .OnEvent("Click", (*) => TogglePaintIconModeFromMenu(app))
     } else {
         batchDeleteLabel := (targetIds.Length > 1) ? "🗑 Delete Colors" : "🗑 Delete Color"
         g.AddButton("w160", batchDeleteLabel)
@@ -1006,6 +1061,21 @@ OpenPinMenu(app, token, targetIds) {
 
         g.AddButton("w160", "🧩 Move To Section...")
             .OnEvent("Click", (*) => OpenMoveSectionDialog(app, "", targetIds))
+
+        g.AddText("cAAAAAA", "Paint (" targetIds.Length " colors):")
+        g.AddButton("w160", "🅟 Set Paint")
+            .OnEvent("Click", (*) => BatchSetPaint(app, targetIds, "P"))
+        g.AddButton("w160", "🆃 Set Trace")
+            .OnEvent("Click", (*) => BatchSetPaint(app, targetIds, "T"))
+        g.AddButton("w160", "🆃🅟 Set Trace-Paint")
+            .OnEvent("Click", (*) => BatchSetPaint(app, targetIds, "TP"))
+        g.AddButton("w160", "🅟 Clear Paint")
+            .OnEvent("Click", (*) => BatchSetPaint(app, targetIds, ""))
+
+        paintIconMode := app.HasOwnProp("paintIconMode") ? app.paintIconMode : true
+        paintIconLabel := paintIconMode ? "🎨 Hide Paint Icons" : "🎨 Show Paint Icons"
+        g.AddButton("w160", paintIconLabel)
+            .OnEvent("Click", (*) => TogglePaintIconModeFromMenu(app))
     }
 
     GetCursorPosForCapture(app, &x, &y)
@@ -1041,6 +1111,68 @@ BatchMovePinnedFromMenu(app, targetIds, dir) {
         try app.roleMenuGui.Hide()
 
     BatchMovePinnedColor(app, targetIds, dir)
+}
+
+SetPaint(app, token, paintType) {
+    if SafeGetGuiHwnd(app.pinMenuGui)
+        try app.pinMenuGui.Hide()
+    if SafeGetGuiHwnd(app.roleMenuGui)
+        try app.roleMenuGui.Hide()
+
+    item := GetItemByToken(app, token)
+    if !item
+        return
+
+    oldPaint := item.HasOwnProp("paint") ? item.paint : ""
+    item.paint := paintType
+
+    SaveHistory(app)
+    RefreshCellByToken(app, token)
+}
+
+BatchSetPaint(app, targetIds, paintType) {
+    if SafeGetGuiHwnd(app.pinMenuGui)
+        try app.pinMenuGui.Hide()
+    if SafeGetGuiHwnd(app.roleMenuGui)
+        try app.roleMenuGui.Hide()
+
+    for token in targetIds {
+        item := GetItemByToken(app, token)
+        if item
+            item.paint := paintType
+    }
+
+    SaveHistory(app)
+    RefreshPaletteManager(app, app.paletteGui)
+}
+
+ClearPaint(app, token) {
+    if SafeGetGuiHwnd(app.pinMenuGui)
+        try app.pinMenuGui.Hide()
+    if SafeGetGuiHwnd(app.roleMenuGui)
+        try app.roleMenuGui.Hide()
+
+    item := GetItemByToken(app, token)
+    if !item
+        return
+
+    item.paint := ""
+
+    SaveHistory(app)
+    RefreshCellByToken(app, token)
+}
+
+TogglePaintIconModeFromMenu(app) {
+    if SafeGetGuiHwnd(app.pinMenuGui)
+        try app.pinMenuGui.Hide()
+    if SafeGetGuiHwnd(app.roleMenuGui)
+        try app.roleMenuGui.Hide()
+
+    current := app.HasOwnProp("paintIconMode") ? app.paintIconMode : true
+    app.paintIconMode := !current
+    app.ui.generation++
+    RebuildUI(app)
+    ShowToast(app, "Paint Icon: " (app.paintIconMode ? "On" : "Off"))
 }
 
 DeleteColorFromMenu(app, token) {

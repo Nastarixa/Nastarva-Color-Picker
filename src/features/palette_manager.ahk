@@ -1017,17 +1017,68 @@ DoImportFolderImages(app, g, folderPath, imageFiles) {
     successCount := 0
     for imgPath in imageFiles {
         try {
-            tempPath := A_Temp "\import_nastarxa_" A_Index ".png"
-            if ProcessSingleImportFile(app, imgPath, tempPath) {
+            imported := RunPaletteImportDetection(app, imgPath)
+            if (Trim(imported) = "") {
+                continue
+            }
+
+            parsed := ParseImportedData(imported)
+            if (!parsed.sections.Count) {
+                continue
+            }
+
+            sourceName := parsed.HasOwnProp("sourceName") && parsed.sourceName != "" ? parsed.sourceName : ""
+
+            if (sourceName = "") {
+                SplitPath(imgPath, &fileName)
+                sourceName := RegExReplace(fileName, "\.[^.]+$")
+                sourceName := StrReplace(sourceName, "_", " ")
+                sourceName := StrReplace(sourceName, "-", " ")
+            }
+
+            paletteName := sourceName
+            counter := 1
+            originalName := paletteName
+            while app.palettes.Has(paletteName) {
+                counter++
+                paletteName := originalName " " counter
+            }
+
+            fileName := paletteName ".txt"
+            p := CreatePalette(paletteName, fileName)
+
+            for _, sectionName in parsed.sectionOrder {
+                AddSectionName(p, sectionName)
+                for _, color in parsed.sections[sectionName] {
+                    hex := Trim(color.hex)
+                    if !RegExMatch(hex, "^[0-9A-Fa-f]{6}$")
+                        continue
+
+                    rgb := color.rgb != "" ? color.rgb : ImportReviewGetRGBFromHex(hex)
+                    name := color.name != "" ? color.name : GetColorName(hex)
+                    role := color.role != "" ? color.role : "Base"
+
+                    item := CreateItem(hex, rgb, name, role)
+                    item.section := sectionName
+                    AddColor(p, item)
+                }
+            }
+
+            if p.colors.Length > 0 {
+                app.palettes[paletteName] := p
+                app.paletteOrder.Push(paletteName)
+                SavePalette(p, app.version)
                 successCount++
             }
         }
     }
 
     if successCount > 0 {
-        ShowToast(app, "Imported colors from " successCount " files")
+        ShowToast(app, "Created " successCount " palettes")
         RefreshPaletteManager(app, app.paletteGui)
-        SwitchPalette(app, app.activePalette.name)
+        if app.palettes.Has(app.paletteOrder[app.paletteOrder.Length]) {
+            SwitchPalette(app, app.paletteOrder[app.paletteOrder.Length])
+        }
     } else {
         ShowToast(app, "No importable palette colors detected")
     }

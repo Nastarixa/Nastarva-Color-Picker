@@ -471,7 +471,8 @@ SaveHistory(app) {
 SavePalette(p, version) {
     DirCreate(A_ScriptDir "\color")
 
-    f := FileOpen(p.file, "w")
+    filePath := A_ScriptDir "\color\" p.file
+    f := FileOpen(filePath, "w")
     guiMode := p.HasOwnProp("guiMode") ? p.guiMode : "undocked"
     note := p.HasOwnProp("note") ? EscapeSectionMeta(p.note) : ""
     priority := p.HasOwnProp("priority") ? p.priority : 1

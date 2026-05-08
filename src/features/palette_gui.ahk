@@ -1093,6 +1093,25 @@ OpenPinMenu(app, token, targetIds) {
     g.Show("x" xPos " y" yPos " NoActivate")
 
     app.pinMenuGui := g
+
+    if !app.HasOwnProp("pinMenuTimerFn") {
+        app.pinMenuTimerFn := (*) => ClosePinMenuTimer(app)
+    }
+    SetTimer(app.pinMenuTimerFn, -5000)
+}
+
+ClosePinMenuTimer(app) {
+    if SafeGetGuiHwnd(app.pinMenuGui) {
+        try app.pinMenuGui.Destroy()
+        app.pinMenuGui := 0
+    }
+}
+
+ResetPinMenuTimer(app) {
+    if app.HasOwnProp("pinMenuTimerFn") {
+        SetTimer(app.pinMenuTimerFn, 0)
+        SetTimer(app.pinMenuTimerFn, -5000)
+    }
 }
 
 MovePinnedColorFromMenu(app, token, dir) {
@@ -1119,6 +1138,8 @@ SetPaint(app, token, paintType) {
     if SafeGetGuiHwnd(app.roleMenuGui)
         try app.roleMenuGui.Hide()
 
+    ResetPinMenuTimer(app)
+
     item := GetItemByToken(app, token)
     if !item
         return
@@ -1135,6 +1156,8 @@ BatchSetPaint(app, targetIds, paintType) {
         try app.pinMenuGui.Hide()
     if SafeGetGuiHwnd(app.roleMenuGui)
         try app.roleMenuGui.Hide()
+
+    ResetPinMenuTimer(app)
 
     for token in targetIds {
         item := GetItemByToken(app, token)
@@ -1167,6 +1190,8 @@ TogglePaintIconModeFromMenu(app) {
         try app.pinMenuGui.Hide()
     if SafeGetGuiHwnd(app.roleMenuGui)
         try app.roleMenuGui.Hide()
+
+    ResetPinMenuTimer(app)
 
     current := app.HasOwnProp("paintIconMode") ? app.paintIconMode : true
     app.paintIconMode := !current

@@ -137,8 +137,8 @@ OpenRoleSubMenu(app, token, targetIds, hex?, itemId?) {
     cancelBtn := g.AddButton("w160", "Cancel")
     cancelBtn.OnEvent("Click", (*) => g.Destroy())
 
-    g.OnEvent("Escape", (*) => CloseRoleMenu(app))
-    g.OnEvent("Close", (*) => CloseRoleMenu(app))
+    g.OnEvent("Escape", (*) => CloseRoleMenuWithTimerCancel(app))
+    g.OnEvent("Close", (*) => CloseRoleMenuWithTimerCancel(app))
 
     UpdateRoleMenuHighlight(g)
 
@@ -156,6 +156,11 @@ OpenRoleSubMenu(app, token, targetIds, hex?, itemId?) {
 
     app.roleMenuGui := g
     g.Show("x" xPos " y" yPos)
+
+    if !app.HasOwnProp("roleMenuTimerFn") {
+        app.roleMenuTimerFn := (*) => CloseRoleMenuTimer(app)
+    }
+    SetTimer(app.roleMenuTimerFn, -5000)
 }
 
 RoleMenuChangeRole(app, g, dir) {
@@ -190,9 +195,33 @@ CloseRoleMenu(app) {
     }
 }
 
+CloseRoleMenuTimer(app) {
+    try {
+        if app.HasOwnProp("roleMenuGui") && app.roleMenuGui {
+            app.roleMenuGui.Destroy()
+            app.roleMenuGui := 0
+        }
+    }
+}
+
+CloseRoleMenuWithTimerCancel(app) {
+    if app.HasOwnProp("roleMenuTimerFn") {
+        SetTimer(app.roleMenuTimerFn, 0)
+    }
+    CloseRoleMenu(app)
+}
+
+ResetRoleMenuTimer(app) {
+    if app.HasOwnProp("roleMenuTimerFn") {
+        SetTimer(app.roleMenuTimerFn, 0)
+        SetTimer(app.roleMenuTimerFn, -5000)
+    }
+}
+
 RoleBtnClick(app, role, itemId, hex, ctrl, *) {
     try ctrl.Gui.Destroy()
     CloseRoleMenu(app)
+    ResetRoleMenuTimer(app)
 
     ApplyRoleMutationById(app.activePalette, role, itemId)
     Commit(app)
@@ -204,6 +233,7 @@ RoleBtnClick(app, role, itemId, hex, ctrl, *) {
 BatchRoleBtnClickFromMenu(app, role, targetIds, ctrl, *) {
     try ctrl.Gui.Destroy()
     CloseRoleMenu(app)
+    ResetRoleMenuTimer(app)
 
     for _, id in targetIds {
         ApplyRoleMutationById(app.activePalette, role, id)

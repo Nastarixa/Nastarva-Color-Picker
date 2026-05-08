@@ -1044,7 +1044,11 @@ DoImportFolderImages(app, g, folderPath, imageFiles) {
                 paletteName := originalName " " counter
             }
 
-            fileName := paletteName ".txt"
+            safeName := RegExReplace(paletteName, "[^a-zA-Z0-9 _\-]", "")
+            safeName := Trim(safeName)
+            if (safeName = "")
+                safeName := "ImportedPalette"
+            fileName := safeName ".txt"
             p := CreatePalette(paletteName, fileName)
 
             for _, sectionName in parsed.sectionOrder {

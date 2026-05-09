@@ -1065,7 +1065,7 @@ DoImportFolderImages(app, g, folderPath, imageFiles) {
 
                     item := CreateItem(hex, rgb, name, role)
                     item.section := sectionName
-                    item.paint := "TP"
+                    item.paint := "P"
                     AddColor(p, item)
                 }
             }
@@ -1178,7 +1178,7 @@ ApplyParsedImportToActivePalette(app, parsed) {
             item.section := sectionName
             item.pinned := color.HasOwnProp("pinned") ? color.pinned : 0
             item.pinOrder := color.HasOwnProp("pinOrder") ? color.pinOrder : 0
-            item.paint := "TP"
+            item.paint := "P"
             AddColor(p, item)
             totalImported++
         }
@@ -2347,9 +2347,9 @@ AddTemplateItemToPalette(p, name, data, section) {
     hex := parts[1]
     rgb := parts[2]
     role := parts[3]
-    paint := parts.Length >= 4 ? parts[4] : "TP"
+    paint := parts.Length >= 4 ? parts[4] : "P"
     if paint = ""
-        paint := "TP"
+        paint := "P"
     item := CreateItem(hex, rgb, name, role)
     item.pinned := 0
     if section = ""
@@ -2614,7 +2614,7 @@ LoadUserTemplates() {
                 if cparts.Length >= 6 {
                     paintVal := cparts.Length >= 7 ? cparts[7] : ""
                     if paintVal = ""
-                        paintVal := "TP"
+                        paintVal := "P"
                     colorData := cparts[2] "|" cparts[4] "|" cparts[5] "|" paintVal
                     colorName := cparts[3]
                     sectionName := cparts.Length >= 6 ? cparts[6] : "Default"

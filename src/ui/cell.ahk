@@ -413,7 +413,7 @@ ShowSectionPanel(app, g, sectionOrName, panelIndex, totalW, totalH, dockOffset :
     tagW := 14
     try g.tag.Move(0, 0, tagW, headerH)
     if characterMode {
-        try g.header.Move(14, 0, 120, headerH)
+        try g.header.Move(14, 0, 140, headerH)
     } else {
         try g.header.Move(14, 0, totalW - (14 + rightWidth), headerH)
     }
@@ -429,7 +429,11 @@ ShowSectionPanel(app, g, sectionOrName, panelIndex, totalW, totalH, dockOffset :
     x -= btnW
     try g.lock.Move(x, 0, btnW, headerH)
     x -= btnW
-    try g.target.Move(x, 0, btnW, headerH)
+        if characterMode {
+        try g.target.Move(140, 0, btnW, headerH)
+    } else {
+        try g.target.Move(x, 0, btnW, headerH)
+    }
 
         try g.Show("x" showX " y" showY " w" totalW " h" totalH)
     LogSectionPanelRestoreDebug(app, sectionName, positionKey, legacyPositionKey, matchedKey, showX, showY, totalW, totalH)

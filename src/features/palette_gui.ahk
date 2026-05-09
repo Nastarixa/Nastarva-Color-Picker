@@ -207,11 +207,12 @@ Layout(app, singleSection := "") {
                     }
                     if paintIcon != "" {
                         fontColor := GetContrastColor(item.hex)
+                        labelX := x + cellW - 16
                         if !ctrl.HasOwnProp("paintLbl") || !SafeGetControlHwnd(ctrl.paintLbl) {
-                            try ctrl.paintLbl := g.AddText("x" (x + cellW - 16) " y" (y + cellH - 13) " w14 h10 BackgroundTrans c" fontColor, paintIcon)
+                            try ctrl.paintLbl := g.AddText("x" labelX " y" (y + cellH - 13) " w14 h10 BackgroundTrans Right c" fontColor, paintIcon)
                         } else {
                             try {
-                                ctrl.paintLbl.Move(x + cellW - 16, y + cellH - 12, 14, 10)
+                                ctrl.paintLbl.Move(labelX, y + cellH - 12, 12, 10)
                                 ctrl.paintLbl.Opt("c" fontColor)
                                 ctrl.paintLbl.Visible := true
                             }
@@ -489,7 +490,7 @@ UpdateSectionPanelChrome(app, g, sectionName) {
 
     if characterMode {
         try g.tag.Move(0, 0, 14, headerH)
-        try g.header.Move(14, 0, 120, headerH)
+        try g.header.Move(14, 0, 140, headerH)
         try g.lock.Move(-1000, 0, 0, 0)
         try g.menu.Move(-1000, 0, 0, 0)
         try g.collapse.Move(-1000, 0, 0, 0)

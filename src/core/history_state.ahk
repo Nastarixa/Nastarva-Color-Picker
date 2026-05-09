@@ -1377,9 +1377,9 @@ ShowHotkeyHelp(app) {
     "HEX Mode: Click=HEX, Ctrl=RGB`n"
     "RGB Mode: Click=RGB, Ctrl=HEX`n`n"
     "Paint Rules (🅟|🆃|🆃🅟):`n"
-    "P  = Paint       → Use inside outline, 🅟`n"
-    "T  = Trace       → Use at outline only, 🆃`n"
-    "TP = Trace-Paint → Both, 🆃🅟`n"
+    "P  = Paint       → Use inside outline: 🅟`n"
+    "T  = Trace       → Use at outline only: 🆃`n"
+    "TP = Trace-Paint → Both: 🆃🅟`n"
     "Right Click      → Set paint rule"
     )
 

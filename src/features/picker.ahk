@@ -131,6 +131,21 @@ PickerTick(app) {
     if !app.CheckActive
         return
 
+    if GetKeyState("MButton", "P") {
+        if !app.HasOwnProp("lastPickTime") || (A_TickCount - app.lastPickTime) > 500 {
+            hex := GetColorUnderCursor(app)
+            if GetKeyState("Ctrl", "P") {
+                rgb := GetRGBFromHex(hex)
+                A_Clipboard := rgb
+                ShowToast(app, "✔ COPIED RGB: " rgb)
+            } else {
+                A_Clipboard := hex
+                ShowToast(app, "✔ COPIED HEX: #" hex)
+            }
+            app.lastPickTime := A_TickCount
+        }
+    }
+
     hex := GetColorUnderCursor(app)
 
     if (hex != app.lastPickHex) {
@@ -292,6 +307,49 @@ SaveColor(app) {
     QueueHistoryRebuild(app)
 
     ShowToast(app, "Saved #" hex " to " section)
+}
+
+SaveColorAsRGB(app) {
+    if !App.CheckActive
+        return
+
+    palette := App.activePalette
+    hex := GetColorUnderCursor(App)
+    rgb := GetRGBFromHex(hex)
+    section := GetSelectedSectionName(palette)
+
+    if section = ""
+        section := "Default"
+
+    existsInSection := false
+    for c in palette.colors {
+        if c.hex = hex && c.section = section {
+            existsInSection := true
+            break
+        }
+    }
+
+    if existsInSection {
+        ShowToast(app, "Already in " section)
+        return
+    }
+
+    rgbName := "RGB-" rgb.r "-" rgb.g "-" rgb.b
+    item := CreateItem(hex, rgb.r "," rgb.g "," rgb.b, rgbName, "Base")
+    item.section := section
+    item.pinned := 0
+
+    AddColor(palette, item)
+
+    if !HasSectionName(palette, section)
+        AddSectionName(palette, section)
+
+    Normalize(palette)
+    SaveHistory(app)
+
+    QueueHistoryRebuild(app)
+
+    ShowToast(app, "Saved " rgbName " to " section)
 }
 
 ApplyPickerSizeClicked(app, gui) {

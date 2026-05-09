@@ -206,11 +206,13 @@ Layout(app, singleSection := "") {
                         paintIcon := paintVal = "P" ? "🅟" : (paintVal = "T" ? "🆃" : "🆃🅟")
                     }
                     if paintIcon != "" {
+                        fontColor := GetContrastColor(item.hex)
                         if !ctrl.HasOwnProp("paintLbl") || !SafeGetControlHwnd(ctrl.paintLbl) {
-                            try ctrl.paintLbl := g.AddText("x" (x + cellW - 16) " y" (y + cellH - 12) " w14 h10 cFFFFFF Background1A1A1A", paintIcon)
+                            try ctrl.paintLbl := g.AddText("x" (x + cellW - 16) " y" (y + cellH - 13) " w14 h10 BackgroundTrans c" fontColor, paintIcon)
                         } else {
                             try {
                                 ctrl.paintLbl.Move(x + cellW - 16, y + cellH - 12, 14, 10)
+                                ctrl.paintLbl.Opt("c" fontColor)
                                 ctrl.paintLbl.Visible := true
                             }
                         }
@@ -350,6 +352,17 @@ GetCharacterCardSlot(role, headerH) {
         default:
             return { x: 106, y: topY, w: 30, h: 24 }
     }
+}
+
+GetContrastColor(hex) {
+    hex := RegExReplace(hex, "[^0-9A-Fa-f]", "")
+    if (StrLen(hex) != 6)
+        return "FFFFFF"
+    r := Integer("0x" SubStr(hex, 1, 2))
+    g := Integer("0x" SubStr(hex, 3, 2))
+    b := Integer("0x" SubStr(hex, 5, 2))
+    luminance := (r * 299 + g * 587 + b * 114) / 1000
+    return luminance > 128 ? "000000" : "FFFFFF"
 }
 
 HasHistoryPanels(app) {

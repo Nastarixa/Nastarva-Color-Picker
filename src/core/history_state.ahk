@@ -1375,7 +1375,12 @@ ShowHotkeyHelp(app) {
     "Enter          → Copy (current mode)`n`n"
     "Display Mode (in Manager):`n"
     "HEX Mode: Click=HEX, Ctrl=RGB`n"
-    "RGB Mode: Click=RGB, Ctrl=HEX"
+    "RGB Mode: Click=RGB, Ctrl=HEX`n`n"
+    "Paint Rules (🅟 🆃 🆃🅟):`n"
+    "P  = Paint   → Use inside outline`n"
+    "T  = Trace   → Use at outline only`n"
+    "TP = Trace-Paint → Both`n"
+    "Right Click → Set paint rule"
     )
 
     g.bg := g.AddText("x0 y0 w500 h360 Background323338")

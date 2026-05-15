@@ -39,6 +39,7 @@ LoadHistory(App)
 LoadFavorites(App)
 InitEvents(App)
 InitKeyboardNav(App)
+TogglePaletteManager(App)
 OnExit(HandleAppExit)
 ShowHotkeyHelp(App)
 

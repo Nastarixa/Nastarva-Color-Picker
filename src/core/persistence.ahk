@@ -1,5 +1,5 @@
 InitPalettes(app) {
-    base := A_ScriptDir "\color\"
+    base := A_ScriptDir "\colors\"
     paletteFile := base "palettes.txt"
 
     if FileExist(paletteFile) {
@@ -156,8 +156,8 @@ SortPaletteOrderByPriority(app) {
 }
 
 SavePaletteList(app) {
-    paletteFile := A_ScriptDir "\color\palettes.txt"
-    DirCreate(A_ScriptDir "\color")
+    paletteFile := A_ScriptDir "\colors\palettes.txt"
+    DirCreate(A_ScriptDir "\colors")
 
     f := FileOpen(paletteFile, "w")
     for name in app.paletteOrder
@@ -471,7 +471,7 @@ SaveHistory(app) {
 }
 
 SavePalette(p, version) {
-    DirCreate(A_ScriptDir "\color")
+    DirCreate(A_ScriptDir "\colors")
 
     fileName := ""
     if p.HasOwnProp("file") && p.file != "" {
@@ -480,7 +480,7 @@ SavePalette(p, version) {
     if fileName = ""
         fileName := p.name ".txt"
     fileName := RegExReplace(fileName, "[^a-zA-Z0-9 _\-.]", "")
-    fullPath := A_ScriptDir "\color\" fileName
+    fullPath := A_ScriptDir "\colors\" fileName
     f := FileOpen(fullPath, "w")
     guiMode := p.HasOwnProp("guiMode") ? p.guiMode : "undocked"
     note := p.HasOwnProp("note") ? EscapeSectionMeta(p.note) : ""

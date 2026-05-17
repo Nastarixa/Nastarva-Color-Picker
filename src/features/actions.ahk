@@ -73,7 +73,7 @@ NewPaletteConfirm(app, name) {
         ShowToast(app, "Palette already exists")
         return
     }
-    file := A_ScriptDir "\color\" name ".txt"
+    file := A_ScriptDir "\colors\" name ".txt"
     app.palettes[name] := CreatePalette(name, file)
     app.paletteOrder.Push(name)
     SavePaletteList(app)
@@ -123,7 +123,7 @@ DuplicatePaletteBtn(app) {
             newName := srcName " (Copy " A_Index ")"
         }
     } until !app.palettes.Has(testName)
-    newFile := A_ScriptDir "\color\" newName ".txt"
+    newFile := A_ScriptDir "\colors\" newName ".txt"
     dup := CreatePalette(newName, newFile)
     for item in p.colors {
         clone := CreateItem(item.hex, item.rgb, item.name, item.role)
@@ -163,7 +163,7 @@ DoRenamePalette(app, newName, oldName) {
     }
     p := app.palettes[oldName]
     p.name := newName
-    p.file := A_ScriptDir "\color\" newName ".txt"
+    p.file := A_ScriptDir "\colors\" newName ".txt"
     app.palettes.Delete(oldName)
     app.palettes[newName] := p
     for i, n in app.paletteOrder {

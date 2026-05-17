@@ -576,7 +576,7 @@ CreatePaletteConfirm(app, g, name) {
         return
     }
 
-    file := A_ScriptDir "\color\" name ".txt"
+    file := A_ScriptDir "\colors\" name ".txt"
 
     app.palettes[name] := CreatePalette(name, file)
     app.paletteOrder.Push(name)
@@ -655,7 +655,7 @@ DuplicatePaletteConfirm(app, g, val) {
 
     srcName := GetActivePaletteName(app)
     src := app.palettes[srcName]
-    newFile := A_ScriptDir "\color\" newName ".txt"
+    newFile := A_ScriptDir "\colors\" newName ".txt"
 
     p := CreatePalette(newName, newFile)
 
@@ -720,7 +720,7 @@ RenamePaletteConfirm(app, g, val) {
 
     oldName := GetActivePaletteName(app)
     oldFile := app.palettes[oldName].file
-    newFile := A_ScriptDir "\color\" newName ".txt"
+    newFile := A_ScriptDir "\colors\" newName ".txt"
 
     if FileExist(oldFile)
         FileMove(oldFile, newFile, true)
@@ -1049,7 +1049,7 @@ DoImportFolderImages(app, g, folderPath, imageFiles) {
             safeName := Trim(safeName)
             if (safeName = "")
                 safeName := "ImportedPalette"
-            fileName := A_ScriptDir "\color\" safeName ".txt"
+            fileName := A_ScriptDir "\colors\" safeName ".txt"
             p := CreatePalette(paletteName, fileName)
 
             for _, sectionName in parsed.sectionOrder {
@@ -2273,7 +2273,7 @@ DoCreatePaletteFromTemplate(app, inputGui, tpl) {
         ShowToast(app, "Name cannot be empty")
         return
     }
-    newFile := "color\" newName ".txt"
+    newFile := "colors\" newName ".txt"
 
     p := CreatePalette(newName, newFile)
 

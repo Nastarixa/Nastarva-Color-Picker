@@ -573,7 +573,7 @@ ImportReviewApply(app, g) {
             ImportReviewToast(app, "Enter a palette name")
             return
         }
-        basePath := A_ScriptDir "\color\"
+        basePath := A_ScriptDir "\colors\"
         if !DirExist(basePath)
             DirCreate(basePath)
         filePath := basePath . paletteName ".txt"
@@ -712,7 +712,7 @@ FindImportColorIndex(colors, targetColor) {
 }
 
 GetImportTrainingPath() {
-    basePath := A_ScriptDir "\color\"
+    basePath := A_ScriptDir "\colors\"
     if !DirExist(basePath)
         DirCreate(basePath)
     return basePath "import_training.txt"

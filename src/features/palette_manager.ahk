@@ -907,7 +907,7 @@ ShowFolderSelectDialog(app) {
 }
 
 DoBrowseFolder(app, g) {
-    folderPath := DirSelect(, 3, "Select folder with import files")
+    folderPath := FileSelect("D", , "Select folder with import files")
     if (folderPath != "") {
         g.folderEdit.Value := folderPath
         g.pathEdit.Value := folderPath
@@ -1018,7 +1018,7 @@ DoImportFolderImages(app, g, folderPath, imageFiles) {
     successCount := 0
     for imgPath in imageFiles {
         try {
-            imported := RunPaletteImportDetection(app, imgPath)
+            imported := GetImportedTextFromImportFile(app, imgPath)
             if (Trim(imported) = "") {
                 continue
             }
@@ -1049,7 +1049,7 @@ DoImportFolderImages(app, g, folderPath, imageFiles) {
             safeName := Trim(safeName)
             if (safeName = "")
                 safeName := "ImportedPalette"
-            fileName := safeName ".txt"
+            fileName := A_ScriptDir "\color\" safeName ".txt"
             p := CreatePalette(paletteName, fileName)
 
             for _, sectionName in parsed.sectionOrder {

@@ -637,6 +637,8 @@ ImportReviewApply(app, g) {
         ImportReviewEmit(app, "history_changed")
     app.ui.generation++
     ImportReviewRebuildUI(app)
+    if app.HasOwnProp("paletteGui") && IsObject(app.paletteGui) && app.paletteGui.Hwnd
+        RefreshPaletteManager(app, app.paletteGui)
 
     ImportReviewCancel(app, g, false)
     modeLabel := importMode = 1 ? "Replaced" : (importMode = 3 ? "Created" : "Inserted")
@@ -1420,62 +1422,62 @@ EscapeTrainingField(value) {
 }
 
 ImportReviewToast(app, text) {
-    try Func("ShowToast").Call(app, text)
+    try ShowToast(app, text)
     catch {
         try TrayTip("Nastarxa", text)
     }
 }
 
 ImportReviewShowInputDialog(app, prompt, title, callback, defaultValue := "") {
-    Func("ShowInputDialog").Call(app, prompt, title, callback, defaultValue)
+    ShowInputDialog(app, prompt, title, callback, defaultValue)
 }
 
 ImportReviewShowConfirmDialog(app, message, title, callback) {
-    Func("ShowConfirmDialog").Call(app, message, title, callback)
+    ShowConfirmDialog(app, message, title, callback)
 }
 
 ImportReviewJoinLines(lines) {
-    return Func("JoinLines").Call(lines)
+    return JoinLines(lines)
 }
 
 ImportReviewCreatePalette(name, filePath) {
-    return Func("CreatePalette").Call(name, filePath)
+    return CreatePalette(name, filePath)
 }
 
 ImportReviewEnsureDefaultSection(palette) {
-    return Func("EnsureDefaultSection").Call(palette)
+    return EnsureDefaultSection(palette)
 }
 
 ImportReviewCreateItem(hex, rgb, name, role) {
-    return Func("CreateItem").Call(hex, rgb, name, role)
+    return CreateItem(hex, rgb, name, role)
 }
 
 ImportReviewAddColor(palette, item) {
-    return Func("AddColor").Call(palette, item)
+    return AddColor(palette, item)
 }
 
 ImportReviewGetSectionObjectByName(palette, sectionName) {
-    return Func("GetSectionObjectByName").Call(palette, sectionName)
+    return GetSectionObjectByName(palette, sectionName)
 }
 
 ImportReviewMutate(app, callback) {
-    return Func("Mutate").Call(app, callback)
+    return Mutate(app, callback)
 }
 
 ImportReviewSaveHistory(app) {
-    return Func("SaveHistory").Call(app)
+    return SaveHistory(app)
 }
 
 ImportReviewLoadHistory(app) {
-    return Func("LoadHistory").Call(app)
+    return LoadHistory(app)
 }
 
 ImportReviewEmit(app, eventName) {
-    return Func("Emit").Call(app, eventName)
+    return Emit(app, eventName)
 }
 
 ImportReviewRebuildUI(app) {
-    return Func("RebuildUI").Call(app)
+    return RebuildUI(app)
 }
 
 ImportReviewGetRGBFromHex(hex) {
